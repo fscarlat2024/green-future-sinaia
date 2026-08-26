@@ -42,6 +42,19 @@ content:
       - { name: contactWhatsapp, label: "WhatsApp (ex. 40700000000)", type: string }
       - { name: contactEmail, label: Email contact, type: string }
       - { name: bookingUrl, label: "Link anunt Booking", type: string }
+      - { name: reviewScore, label: "Scor recenzii (ex. 10)", type: string }
+      - { name: reviewWord_ro, label: "Cuvant scor (RO)", type: string }
+      - { name: reviewWord_en, label: "Cuvant scor (EN)", type: string }
+      - { name: reviewCount, label: "Numar recenzii", type: number }
+      - { name: reviewsUrl, label: "Link recenzii Booking", type: string }
+      - name: reviews
+        label: Citate recenzii (optional)
+        type: object
+        list: true
+        fields:
+          - { name: author, label: Autor, type: string }
+          - { name: text_ro, label: "Text (RO)", type: text }
+          - { name: text_en, label: "Text (EN)", type: text }
 
   - name: settings
     label: Setari complex

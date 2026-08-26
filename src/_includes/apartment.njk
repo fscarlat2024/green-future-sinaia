@@ -79,6 +79,29 @@ layout: base.njk
 </section>
 {% endif %}
 
+{% if reviewScore %}
+<section class="block" id="recenzii" style="background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">{{ t.reviews_eyebrow }}</span><h2>{{ t.reviews_title }}</h2></div>
+    <div class="reviews-wrap">
+      <div class="review-score">
+        <div class="rs-num">{{ reviewScore }}<span>/10</span></div>
+        <div class="rs-meta">
+          <b>{{ reviewWord_ro if lang == "ro" else reviewWord_en }}</b>
+          <span class="rs-count">{{ reviewCount }} {{ t.reviews_of }} {{ t.reviews_on }}</span>
+          {% if reviewsUrl %}<a href="{{ reviewsUrl }}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:.7rem">{{ t.reviews_read }} →</a>{% endif %}
+        </div>
+      </div>
+      {% if reviews and reviews.length %}
+      <div class="review-quotes">
+        {% for r in reviews %}<figure class="quote"><blockquote>{{ r['text_' ~ lang] or r.text }}</blockquote><figcaption>— {{ r.author }}</figcaption></figure>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <section class="block" id="rezervare" style="padding-top:1rem">
   <div class="wrap">
     <div class="band">

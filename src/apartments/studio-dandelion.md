@@ -17,6 +17,12 @@ tagline_en: "A studio with soul, at the foot of the mountain — bright, warm an
 contactWhatsapp: "40700000000"
 contactEmail: "contact@studiodandelion.ro"
 bookingUrl: "https://www.booking.com/hotel/ro/dandelion-studio.html"
+reviewScore: "10"
+reviewWord_ro: "Excepțional"
+reviewWord_en: "Exceptional"
+reviewCount: 19
+reviewsUrl: "https://www.booking.com/hotel/ro/dandelion-studio.html#tab-reviews"
+reviews: []
 amenities_ro:
   - Balcon cu vedere la munte
   - Bucătărie complet utilată

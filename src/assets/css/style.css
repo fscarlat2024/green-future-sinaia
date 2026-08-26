@@ -93,6 +93,22 @@ header.nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srg
 .slide-arrow.prev { left: .9rem; }
 .slide-arrow.next { right: .9rem; }
 @media (max-width: 560px) { .slide-arrow { width: 40px; height: 40px; font-size: 1.4rem; } }
+/* recenzii */
+.reviews-wrap { display: grid; gap: 2rem; align-items: center; }
+@media (min-width: 860px) { .reviews-wrap { grid-template-columns: auto 1fr; gap: 3rem; } }
+.review-score { display: flex; gap: 1.2rem; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.4rem 1.6rem; box-shadow: var(--shadow); }
+.rs-num { font-family: "Spectral", serif; font-size: 3.6rem; font-weight: 700; color: var(--accent-strong); line-height: .9; }
+.rs-num span { font-size: 1.3rem; color: var(--muted); }
+.rs-meta { display: flex; flex-direction: column; gap: .15rem; }
+.rs-meta b { font-family: "Spectral", serif; font-size: 1.35rem; font-weight: 600; }
+.rs-count { color: var(--muted); font-size: .9rem; }
+.review-quotes { display: grid; gap: 1rem; }
+@media (min-width: 620px) { .review-quotes { grid-template-columns: 1fr 1fr; } }
+.quote { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem; box-shadow: var(--shadow); }
+.quote blockquote { margin: 0; font-family: "Spectral", serif; font-style: italic; color: var(--ink); line-height: 1.5; }
+.quote blockquote::before { content: "\201C"; }
+.quote blockquote::after { content: "\201D"; }
+.quote figcaption { margin-top: .5rem; font-size: .85rem; color: var(--muted); font-weight: 600; }
 .hero-veil { position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(180deg, rgba(15,22,12,.2) 0%, rgba(15,22,12,.34) 46%, rgba(12,18,10,.85) 100%); }
 .hero-in { position: relative; z-index: 2; color: #fff; padding: 3.5rem 0 3.4rem; display: grid; gap: 1.1rem; max-width: 660px; }
