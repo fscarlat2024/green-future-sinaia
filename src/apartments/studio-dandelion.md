@@ -2,7 +2,7 @@
 name: "Studio Dandelion"
 order: 1
 featured: true
-hero: /assets/img/apartments/studio-dandelion/hero.jpg
+hero: /assets/img/apartments/studio-dandelion/living-full.jpg
 price: 260
 priceUnit_ro: "lei / noapte"
 priceUnit_en: "lei / night"
@@ -56,12 +56,10 @@ amenities_en:
   - Linens & towels included
   - Warm, nature-inspired decor
 gallery:
-  - { src: /assets/img/apartments/studio-dandelion/bedroom-1.jpg, alt_ro: "Dormitor cu perete decorat cu păpădii", alt_en: "Bedroom with a dandelion-decorated wall" }
-  - { src: /assets/img/apartments/studio-dandelion/living-2.jpg, alt_ro: "Zona de living cu canapea muștar", alt_en: "Living area with a mustard sofa" }
-  - { src: /assets/img/apartments/studio-dandelion/kitchen.jpg, alt_ro: "Bucătărie utilată", alt_en: "Equipped kitchen" }
-  - { src: /assets/img/apartments/studio-dandelion/bedroom-2.jpg, alt_ro: "Dormitor luminos", alt_en: "Bright bedroom" }
+  - { src: /assets/img/apartments/studio-dandelion/bedroom-hd.jpg, alt_ro: "Dormitor cu perete decorat cu păpădii și separator din lemn", alt_en: "Bedroom with dandelion-decorated wall and wooden divider" }
+  - { src: /assets/img/apartments/studio-dandelion/overview-1.jpg, alt_ro: "Vedere de ansamblu - bucătărie, bar și zona de zi", alt_en: "Overview - kitchen, bar and living area" }
+  - { src: /assets/img/apartments/studio-dandelion/overview-2.jpg, alt_ro: "Studioul luminos, cu separator din lemn și candelabru păpădie", alt_en: "The bright studio, with wooden divider and dandelion chandelier" }
   - { src: /assets/img/apartments/studio-dandelion/balcony.jpg, alt_ro: "Balcon cu vedere la munte", alt_en: "Balcony with a mountain view" }
-  - { src: /assets/img/apartments/studio-dandelion/fireplace.jpg, alt_ro: "Șemineu cu ambianță caldă", alt_en: "Fireplace with a warm ambiance" }
 desc_ro:
   - "Dacă simți nevoia să respiri aer curat, să te trezești cu muntele în față și să te lași învăluit de liniște — Dandelion poate fi locul tău de evadare."
   - "Am amenajat acest spațiu cu grijă și drag, inspirată de fragilitatea și libertatea unei păpădii — simbolul viselor simple, al renașterii și al liniștii interioare. Fiecare colț spune o poveste și oferă acel „acasă” pe care uneori îl căutăm departe de agitația orașului."
