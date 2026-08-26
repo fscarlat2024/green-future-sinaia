@@ -110,14 +110,13 @@ eleventyComputed:
     </div>
     <div class="attr-cards">
       {% for a in site.attractions %}
-      <a class="attr-card" href="{{ a['url_' ~ lang] }}" target="_blank" rel="noopener">
+      <div class="attr-card">
         <img src="{{ a.img }}" alt="{{ a[lang].name }}" loading="lazy">
         <span class="veil"></span>
-        <span class="cap"><b>{{ a[lang].name }}</b><span>{{ a[lang].desc }}</span><span class="go">{{ t.discover }}</span></span>
-      </a>
+        <span class="cap"><b>{{ a[lang].name }}</b><span>{{ a[lang].desc }}</span></span>
+      </div>
       {% endfor %}
     </div>
-    <p class="attr-note">{{ t.sinaia_attr }}</p>
   </div>
 </section>
 

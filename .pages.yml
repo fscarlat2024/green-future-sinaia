@@ -99,8 +99,6 @@ content:
         list: true
         fields:
           - { name: img, label: Poza, type: image }
-          - { name: url_ro, label: Link RO, type: string }
-          - { name: url_en, label: Link EN, type: string }
           - name: ro
             label: RO
             type: object
