@@ -1,0 +1,133 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/index.html' if lang == 'ro' else '/en/index.html' }}"
+layout: base.njk
+eleventyComputed:
+  title: "{{ site.name }} - {{ site[lang].tagline }}"
+  description: "{{ site[lang].intro }}"
+  urlRo: "/"
+  urlEn: "/en/"
+---
+{% set t = i18n[lang] %}
+{% set home = "/" if lang == "ro" else "/en/" %}
+{% set apts = collections.apartmentsRo if lang == "ro" else collections.apartmentsEn %}
+
+<main class="hero" id="top">
+  <div class="hero-photo" style="background-image:url('{{ site.heroImage }}')" aria-hidden="true"></div>
+  <div class="hero-veil" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <span class="loc-tag">Sinaia · {{ site.address }}</span>
+    <h1>{{ site[lang].tagline }}</h1>
+    <p class="lead">{{ site[lang].intro }}</p>
+    <div class="hero-cta">
+      <a href="#apartamente" class="btn btn-ochre btn-lg">{{ t.hero_cta_apts }}</a>
+      <a href="#facilitati" class="btn btn-ghost btn-lg">{{ t.hero_cta_fac }}</a>
+    </div>
+  </div>
+</main>
+
+<div class="wrap">
+  <div class="facts">
+    <div class="fact"><span class="fi">🏊</span><div><b>{{ t.fact_pool_t }}</b><span>{{ t.fact_pool_n }}</span></div></div>
+    <div class="fact"><span class="fi">🏔️</span><div><b>{{ t.fact_view_t }}</b><span>{{ t.fact_view_n }}</span></div></div>
+    <div class="fact"><span class="fi">🎿</span><div><b>{{ t.fact_slope_t }}</b><span>{{ t.fact_slope_n }}</span></div></div>
+    <div class="fact"><span class="fi">🤝</span><div><b>{{ t.fact_book_t }}</b><span>{{ t.fact_book_n }}</span></div></div>
+  </div>
+</div>
+
+<section class="block" id="despre">
+  <div class="wrap split">
+    <div class="copy">
+      <span class="eyebrow">{{ t.about_eyebrow }}</span>
+      <h2 style="font-size:clamp(1.9rem,4vw,2.7rem);font-weight:600;margin-top:.7rem">{{ site[lang].about_title }}</h2>
+      <p>{{ site[lang].about_p1 }}</p>
+      <p>{{ site[lang].about_p2 }}</p>
+    </div>
+    <div class="photo"><img src="{{ site.exteriorImage }}" alt="{{ site.name }}" loading="lazy"></div>
+  </div>
+</section>
+
+<section class="block" id="apartamente" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ t.apts_eyebrow }}</span>
+      <h2>{{ t.apts_title }}</h2>
+      <p>{{ t.apts_sub }}</p>
+    </div>
+    <div class="apts">
+      {% for apt in apts %}
+      <article class="apt">
+        <a href="{{ apt.url }}" class="ph" aria-label="{{ apt.data.name }}"><span class="tagpill">{{ t.available }}</span><img src="{{ apt.data.hero }}" alt="{{ apt.data.name }}" loading="lazy"></a>
+        <div class="body">
+          <h3>{{ apt.data.name }}</h3>
+          <div class="meta"><span>{{ apt.data.capacity }}</span>{% if apt.data.metaExtra %}<span>·</span><span>{{ apt.data.metaExtra }}</span>{% endif %}</div>
+          <p class="desc">{{ apt.data.tagline }}</p>
+          <div class="foot">
+            <div class="price"><b>{{ apt.data.price }}</b> <small>{{ apt.data.priceUnit }}</small></div>
+            <a href="{{ apt.url }}" class="btn btn-primary">{{ t.view_apt }}</a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+
+      <article class="apt">
+        <div class="ph" style="background:linear-gradient(140deg,#6FA07A,#2E5E42);display:grid;place-items:center;color:#fff;font-family:'Spectral',serif;font-size:1.1rem">{{ t.soon }}</div>
+        <div class="body">
+          <h3>{{ t.soon_name }}</h3>
+          <div class="meta"><span>{{ t.soon_cap }}</span></div>
+          <p class="desc">{{ t.soon_desc }}</p>
+          <div class="foot"><div class="price"><small>—</small></div><span class="btn btn-ghost" style="pointer-events:none;opacity:.6">{{ t.soon }}</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="block wellness" id="facilitati">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ t.fac_eyebrow }}</span>
+      <h2>{{ t.fac_title }}</h2>
+      <p>{{ t.fac_sub }}</p>
+    </div>
+    <div class="well-grid">
+      {% for w in site.wellness %}
+      <div class="well"><div class="ph"><img src="{{ w.img }}" alt="{{ w[lang].title }}" loading="lazy"></div><div class="cap"><b>{{ w[lang].title }}</b><span>{{ w[lang].note }}</span></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="block" id="sinaia">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ t.sinaia_eyebrow }}</span>
+      <h2>{{ site[lang].sinaia_title }}</h2>
+      <p>{{ t.sinaia_sub }}</p>
+    </div>
+    <div class="attr-cards">
+      {% for a in site.attractions %}
+      <a class="attr-card" href="{{ a['url_' ~ lang] }}" target="_blank" rel="noopener">
+        <img src="{{ a.img }}" alt="{{ a[lang].name }}" loading="lazy">
+        <span class="veil"></span>
+        <span class="cap"><b>{{ a[lang].name }}</b><span>{{ a[lang].desc }}</span><span class="go">{{ t.discover }}</span></span>
+      </a>
+      {% endfor %}
+    </div>
+    <p class="attr-note">{{ t.sinaia_attr }}</p>
+  </div>
+</section>
+
+<section class="block" id="proprietari" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="band">
+      <span class="pill">🤝 {{ t.owners_pill }}</span>
+      <h2>{{ t.owners_title }}</h2>
+      <p>{{ t.owners_text }}</p>
+      <a href="mailto:{{ site.email }}" class="btn btn-white btn-lg">{{ t.owners_btn }}</a>
+    </div>
+  </div>
+</section>

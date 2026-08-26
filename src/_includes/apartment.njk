@@ -1,0 +1,92 @@
+---
+layout: base.njk
+---
+{% set t = i18n[lang] %}
+<main class="hero tall" id="top">
+  <div class="hero-photo" style="background-image:url('{{ hero }}')" aria-hidden="true"></div>
+  <div class="hero-veil" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <span class="loc-tag">{{ site.name }} · Sinaia</span>
+    <h1>{{ name }}</h1>
+    <p class="lead">{{ tagline }}</p>
+    <div class="hero-cta">
+      <a href="#rezervare" class="btn btn-ochre btn-lg">{{ t.ap_verify }}</a>
+      <a href="#galerie" class="btn btn-ghost btn-lg">{{ t.ap_see_gallery }}</a>
+    </div>
+  </div>
+</main>
+
+<div class="wrap">
+  <div class="facts">
+    <div class="fact"><span class="fi">🏔️</span><div><b>{{ t.fact_view_t }}</b><span>{{ t.fact_view_n }}</span></div></div>
+    <div class="fact"><span class="fi">👥</span><div><b>{{ capacity }}</b><span>{{ roomType }}</span></div></div>
+    <div class="fact"><span class="fi">🍳</span><div><b>{{ "Bucătărie utilată" if lang == "ro" else "Equipped kitchen" }}</b><span>{{ "tot ce ai nevoie" if lang == "ro" else "everything you need" }}</span></div></div>
+    <div class="fact"><span class="fi">🛜</span><div><b>Wi-Fi & Smart TV</b><span>{{ "internet rapid" if lang == "ro" else "fast internet" }}</span></div></div>
+  </div>
+</div>
+
+<section class="block" id="despre">
+  <div class="wrap article-intro">
+    <span class="eyebrow">{{ t.ap_welcome }}</span>
+    <div class="rich">
+      {% for p in desc %}<p>{{ p }}</p>{% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if gallery and gallery.length %}
+<section class="block" id="galerie" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ t.ap_gallery_eyebrow }}</span>
+      <h2>{{ t.ap_gallery_title }}</h2>
+    </div>
+    <div class="gallery">
+      {% for g in gallery %}
+      <figure><img src="{{ g.src }}" alt="{{ g['alt_' ~ lang] or name }}" loading="lazy"></figure>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="block wellness" id="facilitati">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ t.fac_eyebrow }}</span>
+      <h2>{{ t.ap_fac_title }}</h2>
+      <p>{{ t.ap_fac_sub }}</p>
+    </div>
+    <div class="well-grid">
+      {% for w in site.wellness %}
+      <div class="well"><div class="ph"><img src="{{ w.img }}" alt="{{ w[lang].title }}" loading="lazy"></div><div class="cap"><b>{{ w[lang].title }}</b><span>{{ w[lang].note }}</span></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if amenities and amenities.length %}
+<section class="block" id="dotari">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">{{ t.ap_amen_eyebrow }}</span><h2>{{ t.ap_amen_title }}</h2></div>
+    <div class="amen">
+      {% for a in amenities %}<div><span class="ck">✓</span> {{ a }}</div>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="block" id="rezervare" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="band">
+      <span class="pill">{{ t.ap_book_pill }}</span>
+      <h2>{{ t.ap_book_prefix }} {{ name }}</h2>
+      <p>{{ t.ap_book_text }}</p>
+      {% if price %}<div class="price">{{ t.price_from }} <b>{{ price }}</b> {{ priceUnit }}</div>{% endif %}
+      <div class="cta-row">
+        {% if contactWhatsapp %}<a href="https://wa.me/{{ contactWhatsapp }}" class="btn btn-white btn-lg">{{ t.wa_btn }}</a>{% endif %}
+        {% if contactEmail %}<a href="mailto:{{ contactEmail }}" class="btn btn-outline btn-lg">{{ t.email_btn }}</a>{% endif %}
+      </div>
+    </div>
+  </div>
+</section>

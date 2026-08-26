@@ -1,0 +1,52 @@
+{
+  "name": "Green Future Sinaia",
+  "shortName": "Green Future",
+  "address": "Str. Walter Maracineanu nr. 20, Sinaia",
+  "email": "contact@greenfuturesinaia.com",
+  "whatsapp": "40700000000",
+  "url": "https://greenfuturesinaia.com",
+  "heroImage": "/assets/img/complex/hero-pool.jpg",
+  "exteriorImage": "/assets/img/complex/exterior.jpg",
+  "ro": {
+    "tagline": "Apartamente cu wellness, la poalele Bucegilor.",
+    "intro": "Green Future Sinaia este un complex rezidential modern in inima statiunii, cu apartamente luminoase, piscina interioara, sauna si vedere la munte. Rezervi direct de la proprietari, fara comision de intermediar.",
+    "about_title": "Un loc nou de evadare in Sinaia",
+    "about_p1": "Green Future Sinaia este un complex rezidential modern pe Str. Walter Maracineanu nr. 20, la cativa pasi de centrul statiunii si de partii. Apartamentele sunt luminoase, cu balcoane orientate spre munte.",
+    "about_p2": "Ce face diferenta: oaspetii au acces la o zona de wellness cu vedere la munte - piscina interioara incalzita, jacuzzi, sauna finlandeza si sala de fitness. Perfect dupa o zi pe partie sau pe traseele Bucegilor.",
+    "sinaia_title": "Sinaia - Perla Carpatilor"
+  },
+  "en": {
+    "tagline": "Apartments with wellness, at the foot of the Bucegi mountains.",
+    "intro": "Green Future Sinaia is a modern residential complex in the heart of the resort, with bright apartments, an indoor pool, sauna and mountain views. Book directly from the owners, with no middleman commission.",
+    "about_title": "A new place to escape in Sinaia",
+    "about_p1": "Green Future Sinaia is a modern residential complex on Walter Maracineanu St. no. 20, steps from the resort centre and the ski slopes. The apartments are bright, with balconies facing the mountains.",
+    "about_p2": "What sets it apart: guests have access to a wellness area with a mountain view - a heated indoor pool, jacuzzi, Finnish sauna and a gym. Perfect after a day on the slopes or on the Bucegi trails.",
+    "sinaia_title": "Sinaia - The Pearl of the Carpathians"
+  },
+  "wellness": [
+    { "img": "/assets/img/complex/pool.jpg", "ro": { "title": "Piscina interioara", "note": "incalzita, cu geam panoramic" }, "en": { "title": "Indoor pool", "note": "heated, with a panoramic window" } },
+    { "img": "/assets/img/complex/jacuzzi.jpg", "ro": { "title": "Jacuzzi", "note": "relaxare cu priveliste" }, "en": { "title": "Jacuzzi", "note": "relax with a view" } },
+    { "img": "/assets/img/complex/sauna.jpg", "ro": { "title": "Sauna finlandeza", "note": "caldura dupa o zi pe munte" }, "en": { "title": "Finnish sauna", "note": "warmth after a day on the mountain" } },
+    { "img": "/assets/img/complex/gym.jpg", "ro": { "title": "Sala de fitness", "note": "echipament complet" }, "en": { "title": "Fitness room", "note": "fully equipped" } }
+  ],
+  "attractions": [
+    { "img": "/assets/img/sinaia/peles.jpg", "url_ro": "https://ro.wikipedia.org/wiki/Castelul_Pele%C8%99", "url_en": "https://en.wikipedia.org/wiki/Pele%C8%99_Castle",
+      "ro": { "name": "Castelul Peles", "desc": "Unul dintre cele mai frumoase castele din Europa, fosta resedinta regala." },
+      "en": { "name": "Peles Castle", "desc": "One of the most beautiful castles in Europe, a former royal residence." } },
+    { "img": "/assets/img/sinaia/pelisor.jpg", "url_ro": "https://ro.wikipedia.org/wiki/Castelul_Peli%C8%99or", "url_en": "https://en.wikipedia.org/wiki/Peli%C8%99or",
+      "ro": { "name": "Castelul Pelisor", "desc": "Mai mic, dar plin de farmec, decorat in stil Art Nouveau." },
+      "en": { "name": "Pelisor Castle", "desc": "Smaller but full of charm, decorated in Art Nouveau style." } },
+    { "img": "/assets/img/sinaia/manastire.jpg", "url_ro": "https://ro.wikipedia.org/wiki/M%C4%83n%C4%83stirea_Sinaia", "url_en": "https://en.wikipedia.org/wiki/Sinaia_Monastery",
+      "ro": { "name": "Manastirea Sinaia", "desc": "Ctitorita in 1695, de unde vine si numele orasului." },
+      "en": { "name": "Sinaia Monastery", "desc": "Founded in 1695, the monastery that gave the town its name." } },
+    { "img": "/assets/img/sinaia/bucegi.jpg", "url_ro": "https://ro.wikipedia.org/wiki/Mun%C8%9Bii_Bucegi", "url_en": "https://en.wikipedia.org/wiki/Bucegi_Mountains",
+      "ro": { "name": "Muntii Bucegi", "desc": "Telecabina te duce la peste 2000 m, spre trasee si aer curat." },
+      "en": { "name": "Bucegi Mountains", "desc": "The cable car takes you above 2000 m, to trails and fresh air." } },
+    { "img": "/assets/img/sinaia/sfinx.jpg", "url_ro": "https://ro.wikipedia.org/wiki/Sfinxul_din_Bucegi", "url_en": "https://en.wikipedia.org/wiki/Sphinx_(Bucegi_Mountains)",
+      "ro": { "name": "Sfinxul din Bucegi", "desc": "Monument natural celebru pe platoul Bucegi, langa Babele." },
+      "en": { "name": "The Bucegi Sphinx", "desc": "A famous natural monument on the Bucegi plateau, near Babele." } },
+    { "img": "/assets/img/sinaia/oras.jpg", "url_ro": "https://ro.wikipedia.org/wiki/Sinaia", "url_en": "https://en.wikipedia.org/wiki/Sinaia",
+      "ro": { "name": "Orasul Sinaia", "desc": "Cafenele cochete, hoteluri istorice, gradini si festivaluri." },
+      "en": { "name": "Sinaia town", "desc": "Cozy cafes, historic hotels, gardens and festivals." } }
+  ]
+}

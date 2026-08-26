@@ -1,0 +1,115 @@
+media:
+  input: src/assets/img
+  output: /assets/img
+  extensions: [jpg, jpeg, png, webp, svg]
+
+content:
+  - name: apartments
+    label: Apartamente
+    type: collection
+    path: src/apartments
+    filename: '{fields.name}.md'
+    view:
+      fields: [name, price, order, featured]
+    fields:
+      - { name: name, label: Nume apartament, type: string }
+      - { name: order, label: Ordine afisare, type: number, default: 5 }
+      - { name: featured, label: Publicat, type: boolean, default: true }
+      - { name: price, label: Pret pe noapte (lei), type: number }
+      - { name: priceUnit_ro, label: "Unitate pret (RO)", type: string, default: 'lei / noapte' }
+      - { name: priceUnit_en, label: "Unitate pret (EN)", type: string, default: 'lei / night' }
+      - { name: hero, label: Poza principala, type: image }
+      - { name: capacity_ro, label: "Capacitate (RO)", type: string }
+      - { name: capacity_en, label: "Capacitate (EN)", type: string }
+      - { name: roomType_ro, label: "Tip (RO)", type: string }
+      - { name: roomType_en, label: "Tip (EN)", type: string }
+      - { name: metaExtra_ro, label: "Eticheta scurta (RO)", type: string }
+      - { name: metaExtra_en, label: "Eticheta scurta (EN)", type: string }
+      - { name: tagline_ro, label: "Slogan (RO)", type: string }
+      - { name: tagline_en, label: "Slogan (EN)", type: string }
+      - { name: desc_ro, label: "Descriere - paragrafe (RO)", type: text, list: true }
+      - { name: desc_en, label: "Descriere - paragrafe (EN)", type: text, list: true }
+      - { name: amenities_ro, label: "Dotari (RO)", type: string, list: true }
+      - { name: amenities_en, label: "Dotari (EN)", type: string, list: true }
+      - name: gallery
+        label: Galerie foto
+        type: object
+        list: true
+        fields:
+          - { name: src, label: Poza, type: image }
+          - { name: alt_ro, label: "Descriere poza (RO)", type: string }
+          - { name: alt_en, label: "Descriere poza (EN)", type: string }
+      - { name: contactWhatsapp, label: "WhatsApp (ex. 40700000000)", type: string }
+      - { name: contactEmail, label: Email contact, type: string }
+
+  - name: settings
+    label: Setari complex
+    type: file
+    path: src/_data/site.json
+    fields:
+      - { name: name, label: Nume complex, type: string }
+      - { name: shortName, label: Nume scurt, type: string }
+      - { name: address, label: Adresa, type: string }
+      - { name: email, label: Email, type: string }
+      - { name: whatsapp, label: WhatsApp, type: string }
+      - { name: url, label: URL site, type: string }
+      - { name: heroImage, label: Poza hero, type: image }
+      - { name: exteriorImage, label: Poza exterior, type: image }
+      - name: ro
+        label: Texte RO
+        type: object
+        fields:
+          - { name: tagline, label: Slogan, type: string }
+          - { name: intro, label: Intro, type: text }
+          - { name: about_title, label: Titlu despre, type: string }
+          - { name: about_p1, label: Paragraf 1, type: text }
+          - { name: about_p2, label: Paragraf 2, type: text }
+          - { name: sinaia_title, label: Titlu Sinaia, type: string }
+      - name: en
+        label: Texte EN
+        type: object
+        fields:
+          - { name: tagline, label: Tagline, type: string }
+          - { name: intro, label: Intro, type: text }
+          - { name: about_title, label: About title, type: string }
+          - { name: about_p1, label: Paragraph 1, type: text }
+          - { name: about_p2, label: Paragraph 2, type: text }
+          - { name: sinaia_title, label: Sinaia title, type: string }
+      - name: wellness
+        label: Facilitati wellness
+        type: object
+        list: true
+        fields:
+          - { name: img, label: Poza, type: image }
+          - name: ro
+            label: RO
+            type: object
+            fields:
+              - { name: title, label: Titlu, type: string }
+              - { name: note, label: Nota, type: string }
+          - name: en
+            label: EN
+            type: object
+            fields:
+              - { name: title, label: Title, type: string }
+              - { name: note, label: Note, type: string }
+      - name: attractions
+        label: Obiective Sinaia
+        type: object
+        list: true
+        fields:
+          - { name: img, label: Poza, type: image }
+          - { name: url_ro, label: Link RO, type: string }
+          - { name: url_en, label: Link EN, type: string }
+          - name: ro
+            label: RO
+            type: object
+            fields:
+              - { name: name, label: Nume, type: string }
+              - { name: desc, label: Descriere, type: string }
+          - name: en
+            label: EN
+            type: object
+            fields:
+              - { name: name, label: Name, type: string }
+              - { name: desc, label: Description, type: string }

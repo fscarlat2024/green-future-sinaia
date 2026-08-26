@@ -1,0 +1,14 @@
+{
+  "name": "green-future-sinaia",
+  "version": "1.0.0",
+  "description": "Site de prezentare pentru complexul Green Future Sinaia - apartamente de inchiriat pentru turisti.",
+  "scripts": {
+    "start": "eleventy --serve",
+    "build": "eleventy"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0"
+  }
+}
