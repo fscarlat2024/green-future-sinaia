@@ -46,7 +46,8 @@ module.exports = {
     ap_book_prefix: "Vino să descoperi",
     ap_book_text: "Scrie-ne pentru disponibilitate și rezervi direct cu proprietarul.",
     price_from: "de la",
-    wa_btn: "Scrie pe WhatsApp", email_btn: "Trimite email"
+    wa_btn: "Scrie pe WhatsApp", email_btn: "Trimite email",
+    check_booking: "Verifică disponibilitatea pe Booking"
   },
   en: {
     nav_apartments: "Apartments",
@@ -93,6 +94,7 @@ module.exports = {
     ap_book_prefix: "Come discover",
     ap_book_text: "Message us for availability and book directly with the owner.",
     price_from: "from",
-    wa_btn: "Message on WhatsApp", email_btn: "Send email"
+    wa_btn: "Message on WhatsApp", email_btn: "Send email",
+    check_booking: "Check availability on Booking"
   }
 };

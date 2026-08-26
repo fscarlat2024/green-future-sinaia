@@ -87,7 +87,8 @@ layout: base.njk
       <p>{{ t.ap_book_text }}</p>
       {% if price %}<div class="price">{{ t.price_from }} <b>{{ price }}</b> {{ priceUnit }}</div>{% endif %}
       <div class="cta-row">
-        {% if contactWhatsapp %}<a href="https://wa.me/{{ contactWhatsapp }}" class="btn btn-white btn-lg">{{ t.wa_btn }}</a>{% endif %}
+        {% if bookingUrl %}<a href="{{ bookingUrl }}" target="_blank" rel="noopener" class="btn btn-white btn-lg">{{ t.check_booking }}</a>{% endif %}
+        {% if contactWhatsapp %}<a href="https://wa.me/{{ contactWhatsapp }}" class="btn btn-outline btn-lg">{{ t.wa_btn }}</a>{% endif %}
         {% if contactEmail %}<a href="mailto:{{ contactEmail }}" class="btn btn-outline btn-lg">{{ t.email_btn }}</a>{% endif %}
       </div>
     </div>

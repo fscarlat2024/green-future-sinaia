@@ -41,6 +41,7 @@ content:
           - { name: alt_en, label: "Descriere poza (EN)", type: string }
       - { name: contactWhatsapp, label: "WhatsApp (ex. 40700000000)", type: string }
       - { name: contactEmail, label: Email contact, type: string }
+      - { name: bookingUrl, label: "Link anunt Booking", type: string }
 
   - name: settings
     label: Setari complex

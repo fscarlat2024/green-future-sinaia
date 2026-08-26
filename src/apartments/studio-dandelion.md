@@ -16,6 +16,7 @@ tagline_ro: "O garsonieră cu suflet, la poalele muntelui — luminoasă, caldă
 tagline_en: "A studio with soul, at the foot of the mountain — bright, warm and quiet."
 contactWhatsapp: "40700000000"
 contactEmail: "contact@studiodandelion.ro"
+bookingUrl: "https://www.booking.com/hotel/ro/dandelion-studio.html"
 amenities_ro:
   - Balcon cu vedere la munte
   - Bucătărie complet utilată
