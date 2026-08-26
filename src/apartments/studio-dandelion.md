@@ -22,7 +22,19 @@ reviewWord_ro: "Excepțional"
 reviewWord_en: "Exceptional"
 reviewCount: 19
 reviewsUrl: "https://www.booking.com/hotel/ro/dandelion-studio.html#tab-reviews"
-reviews: []
+reviews:
+  - author: "Ioan, Franța"
+    text_ro: "Identic ca în poze! Foarte funcțional și proprietar super reactiv."
+    text_en: "Exactly like the photos! Very functional and a super responsive host."
+  - author: "Evelina, România"
+    text_ro: "Studioul este curat, luminos și primitor. Gazda amabilă ne-a îndrumat cu toate detaliile necesare. Cu siguranță vom reveni!"
+    text_en: "The studio is clean, bright and welcoming. The kind host guided us with all the details we needed. We'll definitely be back!"
+  - author: "Andreea, România"
+    text_ro: "Ne-a plăcut foarte mult locul – curat, cozy și cu o priveliște frumoasă. Totul a fost exact ca în poze. Recomand!"
+    text_en: "We loved the place – clean, cozy and with a beautiful view. Everything was exactly like the photos. Highly recommend!"
+  - author: "Mihai, România"
+    text_ro: "Rafinament, bun gust, intimitate, curățenie. Gazde super de treabă. Totul perfect."
+    text_en: "Refinement, good taste, privacy, cleanliness. Wonderful hosts. Everything perfect."
 amenities_ro:
   - Balcon cu vedere la munte
   - Bucătărie complet utilată
