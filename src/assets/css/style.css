@@ -76,6 +76,15 @@ header.nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srg
 .hero { position: relative; min-height: min(84vh, 720px); display: flex; align-items: flex-end; overflow: hidden; }
 .hero.tall { min-height: min(88vh, 760px); }
 .hero-photo { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
+/* slideshow hero */
+.hero-slides { position: absolute; inset: 0; z-index: 0; }
+.hero-slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 1.4s ease; }
+.hero-slide.is-active { opacity: 1; }
+.hero-dots { position: absolute; bottom: 1.3rem; left: 0; right: 0; z-index: 4; display: flex; gap: .5rem; justify-content: center; }
+.hero-dots button { width: 9px; height: 9px; padding: 0; border: none; border-radius: 999px; background: rgba(255,255,255,.45); cursor: pointer; transition: width .25s ease, background .25s ease; }
+.hero-dots button.on { width: 24px; background: #fff; }
+.hero-dots button:hover { background: rgba(255,255,255,.8); }
+@media (prefers-reduced-motion: reduce) { .hero-slide { transition: none; } }
 .hero-veil { position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(180deg, rgba(15,22,12,.2) 0%, rgba(15,22,12,.34) 46%, rgba(12,18,10,.85) 100%); }
 .hero-in { position: relative; z-index: 2; color: #fff; padding: 3.5rem 0 3.4rem; display: grid; gap: 1.1rem; max-width: 660px; }

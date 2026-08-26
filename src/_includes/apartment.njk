@@ -3,7 +3,10 @@ layout: base.njk
 ---
 {% set t = i18n[lang] %}
 <main class="hero tall" id="top">
-  <div class="hero-photo" style="background-image:url('{{ hero }}')" aria-hidden="true"></div>
+  <div class="hero-slides" data-slideshow aria-hidden="true">
+    <div class="hero-slide is-active" style="background-image:url('{{ hero }}')"></div>
+    {% for g in gallery %}<div class="hero-slide" style="background-image:url('{{ g.src }}')"></div>{% endfor %}
+  </div>
   <div class="hero-veil" aria-hidden="true"></div>
   <div class="wrap hero-in">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>
