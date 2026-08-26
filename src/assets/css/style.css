@@ -85,6 +85,14 @@ header.nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srg
 .hero-dots button.on { width: 24px; background: #fff; }
 .hero-dots button:hover { background: rgba(255,255,255,.8); }
 @media (prefers-reduced-motion: reduce) { .hero-slide { transition: none; } }
+/* galerie ca slideshow */
+.gallery-show { position: relative; aspect-ratio: 16 / 10; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); background: var(--surface-2); }
+.gallery-show .hero-dots { bottom: .9rem; }
+.slide-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; background: rgba(15,22,12,.42); color: #fff; font-size: 1.7rem; line-height: 1; display: grid; place-items: center; transition: background .2s ease; }
+.slide-arrow:hover { background: rgba(15,22,12,.7); }
+.slide-arrow.prev { left: .9rem; }
+.slide-arrow.next { right: .9rem; }
+@media (max-width: 560px) { .slide-arrow { width: 40px; height: 40px; font-size: 1.4rem; } }
 .hero-veil { position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(180deg, rgba(15,22,12,.2) 0%, rgba(15,22,12,.34) 46%, rgba(12,18,10,.85) 100%); }
 .hero-in { position: relative; z-index: 2; color: #fff; padding: 3.5rem 0 3.4rem; display: grid; gap: 1.1rem; max-width: 660px; }

@@ -6,11 +6,12 @@
     var slides = Array.prototype.slice.call(box.querySelectorAll(".hero-slide"));
     if (slides.length < 2) return;
 
+    var host = box.parentElement || box;
     var i = 0;
     var timer = null;
-    var DELAY = 5000;
+    var DELAY = box.hasAttribute("data-arrows") ? 4500 : 5000;
 
-    // buline de navigare
+    // buline
     var dots = document.createElement("div");
     dots.className = "hero-dots";
     var btns = slides.map(function (_, idx) {
@@ -22,8 +23,22 @@
       dots.appendChild(b);
       return b;
     });
-    // pune bulinele in interiorul hero-ului (parintele slideshow-ului)
-    (box.parentElement || box).appendChild(dots);
+    host.appendChild(dots);
+
+    // sageti (doar daca are data-arrows)
+    if (box.hasAttribute("data-arrows")) {
+      host.appendChild(mkArrow("prev", "‹", function () { go(i - 1); restart(); }));
+      host.appendChild(mkArrow("next", "›", function () { go(i + 1); restart(); }));
+    }
+    function mkArrow(dir, ch, fn) {
+      var a = document.createElement("button");
+      a.type = "button";
+      a.className = "slide-arrow " + dir;
+      a.innerHTML = ch;
+      a.setAttribute("aria-label", dir === "prev" ? "Poza anterioara" : "Poza urmatoare");
+      a.addEventListener("click", fn);
+      return a;
+    }
 
     function go(n) {
       slides[i].classList.remove("is-active");
@@ -37,9 +52,8 @@
     function stop() { if (timer) { clearInterval(timer); timer = null; } }
     function restart() { stop(); start(); }
 
-    // pauza la hover
-    box.parentElement.addEventListener("mouseenter", stop);
-    box.parentElement.addEventListener("mouseleave", start);
+    host.addEventListener("mouseenter", stop);
+    host.addEventListener("mouseleave", start);
 
     start();
   });
