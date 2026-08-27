@@ -109,6 +109,7 @@ layout: base.njk
       <h2>{{ t.ap_book_prefix }} {{ name }}</h2>
       <p>{{ t.ap_book_text }}</p>
       {% if price %}<div class="price">{{ t.price_from }} <b>{{ price }}</b> {{ priceUnit }}</div>{% endif %}
+      {% if t.price_note %}<p style="color:rgba(255,255,255,.82);font-size:.84rem;margin:.35rem 0 0;max-width:44ch">{{ t.price_note }}</p>{% endif %}
       <div class="cta-row">
         {% if bookingUrl %}<a href="{{ bookingUrl }}" target="_blank" rel="noopener" class="btn btn-white btn-lg">{{ t.check_booking }}</a>{% endif %}
         {% if contactWhatsapp %}<a href="https://wa.me/{{ contactWhatsapp }}" class="btn btn-outline btn-lg">{{ t.wa_btn }}</a>{% endif %}

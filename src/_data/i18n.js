@@ -48,6 +48,7 @@ module.exports = {
     price_from: "de la",
     wa_btn: "Scrie pe WhatsApp", email_btn: "Trimite email",
     check_booking: "Verifică disponibilitatea pe Booking",
+    price_note: "Prețul variază în funcție de perioadă. Vezi prețul exact și disponibilitatea pe Booking.",
     reviews_eyebrow: "Recenzii", reviews_title: "Ce spun oaspeții",
     reviews_of: "recenzii", reviews_on: "pe Booking", reviews_read: "Citește recenziile pe Booking"
   },
@@ -98,6 +99,7 @@ module.exports = {
     price_from: "from",
     wa_btn: "Message on WhatsApp", email_btn: "Send email",
     check_booking: "Check availability on Booking",
+    price_note: "The price varies by period. See the exact price and availability on Booking.",
     reviews_eyebrow: "Reviews", reviews_title: "What guests say",
     reviews_of: "reviews", reviews_on: "on Booking", reviews_read: "Read the reviews on Booking"
   }
