@@ -3,7 +3,6 @@ name: "Studio Dandelion"
 order: 1
 featured: true
 hero: /assets/img/apartments/studio-dandelion/living-full.jpg
-price: 250
 priceUnit_ro: "lei / noapte"
 priceUnit_en: "lei / night"
 capacity_ro: "2 persoane"

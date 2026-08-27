@@ -66,7 +66,7 @@ eleventyComputed:
           <div class="meta"><span>{{ apt.data.capacity }}</span>{% if apt.data.metaExtra %}<span>·</span><span>{{ apt.data.metaExtra }}</span>{% endif %}</div>
           <p class="desc">{{ apt.data.tagline }}</p>
           <div class="foot">
-            <div class="price"><b>{{ apt.data.price }}</b> <small>{{ apt.data.priceUnit }}</small></div>
+            {% if apt.data.price %}<div class="price"><b>{{ apt.data.price }}</b> <small>{{ apt.data.priceUnit }}</small></div>{% else %}<div class="price"><small>{{ "Preț pe Booking" if lang == "ro" else "Price on Booking" }}</small></div>{% endif %}
             <a href="{{ apt.url }}" class="btn btn-primary">{{ t.view_apt }}</a>
           </div>
         </div>
