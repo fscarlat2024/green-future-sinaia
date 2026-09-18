@@ -19,7 +19,7 @@ bookingUrl: "https://www.booking.com/hotel/ro/dandelion-studio.html"
 reviewScore: "10"
 reviewWord_ro: "Excepțional"
 reviewWord_en: "Exceptional"
-reviewCount: 19
+reviewCount: 22
 reviewsUrl: "https://www.booking.com/hotel/ro/dandelion-studio.html#tab-reviews"
 reviews:
   - author: "Ioan, Franța"
