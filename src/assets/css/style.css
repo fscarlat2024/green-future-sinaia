@@ -583,3 +583,4 @@ body.no-scroll { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .cart-bar.is-bump { animation: none; } .cart-drawer, .cart-scrim { transition: none; } }
 
 section.menu-section { padding: 0 0 8rem; }
+@media (max-width: 619px) { .hero.tall .hero-cta { display: grid; grid-template-columns: 1fr 1fr; } .hero.tall .hero-cta .btn { padding-inline: .5rem; } }
