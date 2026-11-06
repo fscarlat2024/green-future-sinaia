@@ -112,6 +112,13 @@ export function mailGuestReset(env, g, token) {
   return send(env, g.email, title, wrap(esc(title), body));
 }
 
+export function mailChat(env, to, title, text, link, lang) {
+  const label = lang === "en" ? "Open the conversation" : "Deschide conversația";
+  const body = `<p style="white-space:pre-wrap">${esc(text)}</p>
+    <p style="margin-top:18px"><a href="${esc(link)}" style="background:#2E6B47;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${label}</a></p>`;
+  return send(env, to, title, wrap(esc(title), body));
+}
+
 export function mailConflict(env, p, b, event) {
   const title = `Suprapunere în calendar: ${p.name}, ${b.code}`;
   const body = `<p>Calendarul extern arată o perioadă ocupată (${fmt(event.from, "ro")} - ${fmt(event.to, "ro")}) peste rezervarea directă de mai jos. Verifică și rezolvă manual.</p>

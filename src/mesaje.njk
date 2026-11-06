@@ -1,0 +1,15 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/mesaje/index.html' if lang == 'ro' else '/en/messages/index.html' }}"
+layout: base.njk
+noindex: true
+scripts: ["/assets/js/chat.js"]
+eleventyComputed:
+  title: "{{ 'Mesaje' if lang == 'ro' else 'Messages' }} - {{ site.name }}"
+  urlRo: "/mesaje/"
+  urlEn: "/en/messages/"
+---
+<main class="chat-page"><div id="chat" class="chat" data-lang="{{ lang }}"></div></main>

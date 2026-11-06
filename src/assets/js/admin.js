@@ -152,6 +152,49 @@
           o.status === "new" || o.status === "confirmed" ? act(o, "cancel", "Anulează", "btn-ghost") : null)))) : h("p", { class: "adm-card" }, "Nu există comenzi încă."));
   }
 
+  // ---------- mesaje ----------
+  let chatTimer = null;
+  const stopChat = () => { clearInterval(chatTimer); chatTimer = null; };
+  const when = (ms) => new Date(ms).toLocaleString("ro-RO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  async function renderChats() {
+    stopChat();
+    const { chats } = await api("chats");
+    root.replaceChildren(
+      h("div", { class: "adm-head" }, h("h1", null, "Mesaje"), h("p", null, chats.some((c) => c.unread) ? "Ai mesaje necitite." : "Nimic necitit.")),
+      chats.length ? h("div", { class: "adm-list" }, chats.map((c) => h("button", { type: "button", class: "adm-card acc-chat adm-chat-row", on: { click: guarded(() => renderThread(c.id)) } },
+        h("div", { class: "adm-bk-top" }, h("b", null, c.guest_name), c.unread ? h("span", { class: "chat-badge" }, `${c.unread} noi`) : null),
+        h("span", null, c.property_name), h("span", null, c.last)))) : h("p", { class: "adm-card" }, "Nu există mesaje încă."));
+  }
+  async function renderThread(id) {
+    stopChat();
+    const list = h("div", { class: "chat-list", role: "log", "aria-live": "polite" });
+    const err = h("p", { class: "bk-err", role: "alert", hidden: true });
+    const input = h("textarea", { rows: 2, maxlength: 1000, placeholder: "Scrie răspunsul", "aria-label": "Răspuns" });
+    let shown = -1;
+    const load = async () => {
+      const t = await api(`chats/${id}`);
+      title.textContent = `${t.guestName}, ${t.propertyName}`;
+      if (t.messages.length === shown) return;
+      shown = t.messages.length;
+      list.replaceChildren(...t.messages.map((m) => h("div", { class: `msg ${m.sender === "owner" ? "me" : "them"}` }, h("span", null, m.body), h("small", null, when(m.created_at)))));
+      list.scrollTop = list.scrollHeight;
+    };
+    const title = h("b");
+    root.replaceChildren(h("div", { class: "chat adm-thread" },
+      h("header", { class: "chat-head" }, h("button", { type: "button", class: "chat-back", "aria-label": "Înapoi", on: { click: guarded(renderChats) } }, "‹"), title),
+      list, err,
+      h("form", { class: "chat-form", on: { submit: async (ev) => {
+        ev.preventDefault();
+        const body = input.value.trim();
+        if (!body) return;
+        err.hidden = true;
+        try { await api(`chats/${id}`, "POST", { body }); input.value = ""; await load(); }
+        catch (e) { err.textContent = e.message; err.hidden = false; }
+      } } }, input, h("button", { type: "submit", class: "btn btn-primary" }, "Trimite"))));
+    await load();
+    chatTimer = setInterval(() => load().catch(() => {}), 6000);
+  }
+
   // ---------- oaspeti cu cont ----------
   const LEVEL = { member: "Membru", silver: "Silver", gold: "Gold" };
   async function renderGuests() {
@@ -288,8 +331,9 @@
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers };
+  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats };
   function openTab(name) {
+    stopChat();
     nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
     guarded(TABS[name])();
   }
@@ -303,7 +347,8 @@
     nav.querySelector('[data-tab="guests"]').hidden = me.role !== "admin";
     nav.querySelector('[data-tab="offers"]').hidden = me.role !== "admin";
     nav.hidden = false;
-    openTab("bookings");
+    openTab(location.hash === "#mesaje" ? "chats" : "bookings");
   });
+  window.addEventListener("hashchange", () => { if (token && location.hash === "#mesaje") openTab("chats"); });
   if (token) start(); else renderLogin();
 })();

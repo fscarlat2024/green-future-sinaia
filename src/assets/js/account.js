@@ -19,6 +19,7 @@
       rules: "Contează sejururile încheiate rezervate din cont. 5 comenzi livrate la bistro contează cât un sejur. Reducerea se aplică la prețul nopților, fără curățenie, la apartamentele ai căror proprietari participă.",
       stats: (s, o) => `${s === 1 ? "1 sejur încheiat" : `${s} sejururi încheiate`} · ${o === 1 ? "1 comandă livrată" : `${o} comenzi livrate`}`,
       offers: "Ofertele tale", valid: (d) => `Valabilă până la ${d}`, off: (p, k) => `-${p}% ${k === "bistro" ? "la bistro" : "la sejur"}`, offerNote: "Reducerea se aplică automat, o singură dată, și nu se adună cu cea de nivel.", useStay: "Rezervă", useBistro: "Vezi meniul",
+      messages: "Mesajele mele", unread: (n) => (n === 1 ? "1 mesaj nou" : `${n} mesaje noi`), chatPath: "/mesaje/",
       bookings: "Rezervările mele", noBookings: "Nu ai încă rezervări din acest cont.", book: "Vezi apartamentele", discount: (d) => `reducere ${d} lei`,
       status: { pending: "De confirmat", confirmed: "Confirmată", declined: "Refuzată", cancelled: "Anulată", expired: "Expirată" },
       logout: "Ieșire din cont", deleteOpen: "Șterge contul", deleteTitle: "Ștergi contul?",
@@ -41,6 +42,7 @@
       rules: "Completed stays booked from your account count. 5 delivered bistro orders count as one stay. The discount applies to the nightly price, not to cleaning, at apartments whose owners participate.",
       stats: (s, o) => `${s === 1 ? "1 completed stay" : `${s} completed stays`} · ${o === 1 ? "1 delivered order" : `${o} delivered orders`}`,
       offers: "Your offers", valid: (d) => `Valid until ${d}`, off: (p, k) => `${p}% off ${k === "bistro" ? "at the bistro" : "your stay"}`, offerNote: "The discount applies automatically, once, and does not add to your level discount.", useStay: "Book", useBistro: "See menu",
+      messages: "My messages", unread: (n) => (n === 1 ? "1 new message" : `${n} new messages`), chatPath: "/en/messages/",
       bookings: "My bookings", noBookings: "No bookings from this account yet.", book: "See apartments", discount: (d) => `${d} lei off`,
       status: { pending: "Pending", confirmed: "Confirmed", declined: "Declined", cancelled: "Cancelled", expired: "Expired" },
       logout: "Sign out", deleteOpen: "Delete account", deleteTitle: "Delete your account?",
@@ -103,6 +105,9 @@
     }
     store.set(KEY, data.token);
     window.gfRegisterPush?.();
+    // revine la conversatia de unde a venit; doar pagini de pe site
+    const next = new URLSearchParams(location.search).get("next");
+    if (next && /^\/(?![/\\])/.test(next)) { location.replace(next); return; }
     dashboard();
   }
 
@@ -150,6 +155,7 @@
       root.replaceChildren(h("p", { class: "bk-err", role: "alert" }, e.message));
       return;
     }
+    const chats = (await call("chats", "GET", null, token).catch(() => ({ chats: [] }))).chats;
     const lv = me.level;
     const first = me.name.split(" ")[0];
     const danger = h("div", { class: "acc-card", hidden: true });
@@ -182,6 +188,10 @@
       h("section", { class: "acc-card" },
         h("ul", { class: "club-tiers" }, T.tiers.map(([name, when, key]) => h("li", { class: key === lv.key ? "on" : null }, h("span", null, name), h("span", null, when)))),
         h("p", null, T.rules)),
+      chats.length ? h("section", { class: "acc-card" }, h("h3", null, T.messages),
+        chats.map((c) => h("a", { class: "acc-chat", href: `${T.chatPath}?p=${encodeURIComponent(c.slug)}` },
+          h("div", { class: "acc-row" }, h("b", null, c.name), c.unread ? h("span", { class: "chat-badge" }, T.unread(c.unread)) : null),
+          h("span", null, c.last)))) : null,
       h("section", { class: "acc-card" }, h("h3", null, T.bookings),
         me.bookings.length
           ? me.bookings.map((b) => h("div", { class: "acc-booking" },

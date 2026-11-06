@@ -2,7 +2,7 @@
 // Auth panou: parola PBKDF2 + token Bearer (merge si in site, si in viitoarea aplicatie mobila).
 // Disponibilitatea e verificata in aceeasi instructiune SQL cu rezervarea, ca doi oaspeti
 // sa nu poata prinde aceeasi perioada.
-import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, brevoKeepAlive } from "./mail.js";
+import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailChat, brevoKeepAlive } from "./mail.js";
 import restaurant from "../src/_data/restaurant.json";
 import { parseIcal, buildIcal } from "./ical.js";
 import { pushEnabled, validPushToken, pushTo, pushToStaff, guestBookingMessage, guestOrderMessage } from "./push.js";
@@ -388,6 +388,45 @@ async function adminRoutes(req, env, ctx, parts) {
     }
   }
 
+  if (first === "chats") {
+    const slugs = await adminSlugs(env, a);
+    if (!second && req.method === "GET") {
+      if (!slugs.length) return json({ chats: [] });
+      const { results } = await env.DB.prepare(
+        `SELECT c.id, c.unread_owner AS unread, c.last_at, p.name AS property_name, g.name AS guest_name,
+           (SELECT body FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1) AS last
+         FROM chats c JOIN properties p ON p.slug = c.property_slug JOIN guests g ON g.id = c.guest_id
+         WHERE c.property_slug IN (${slugs.map(() => "?").join(",")}) ORDER BY c.last_at DESC LIMIT 200`
+      ).bind(...slugs).all();
+      return json({ chats: results });
+    }
+    if (second) {
+      const chat = await env.DB.prepare(
+        `SELECT c.*, g.name AS guest_name, g.email AS guest_email, g.lang AS guest_lang, g.id AS gid
+         FROM chats c JOIN guests g ON g.id = c.guest_id WHERE c.id = ?`
+      ).bind(Number(second)).first();
+      // alt proprietar nu poate afla nici macar ca exista conversatia
+      if (!chat || !slugs.includes(chat.property_slug)) fail(404, "not_found");
+      if (req.method === "GET") {
+        if (chat.unread_owner) await env.DB.prepare("UPDATE chats SET unread_owner = 0 WHERE id = ?").bind(chat.id).run();
+        const p = await getProperty(env, chat.property_slug);
+        return json({ guestName: chat.guest_name, guestEmail: chat.guest_email, propertyName: p.name, messages: await threadOf(env, chat.id) });
+      }
+      if (req.method === "POST") {
+        const b = await readJson(req);
+        const body = cleanMessage(b.body);
+        const now = Date.now();
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO messages (chat_id, sender, body, created_at) VALUES (?, 'owner', ?, ?)").bind(chat.id, body, now),
+          env.DB.prepare("UPDATE chats SET unread_guest = unread_guest + 1, unread_owner = 0, last_at = ? WHERE id = ?").bind(now, chat.id),
+        ]);
+        const p = await getProperty(env, chat.property_slug);
+        ctx.waitUntil(notifyGuest(env, p, { id: chat.gid, email: chat.guest_email, lang: chat.guest_lang }, body).catch((e) => console.error("chat", e)));
+        return json({ ok: true }, 201);
+      }
+    }
+  }
+
   if (first === "offers") {
     if (a.role !== "admin") fail(403, "forbidden");
     if (!second && req.method === "GET") {
@@ -633,6 +672,33 @@ async function createOrder(req, env, ctx) {
   return json({ code, total, discount, demo: !!demo }, 201);
 }
 
+// ---------- mesaje oaspete - proprietar ----------
+const cleanMessage = (v) => {
+  const body = String(v || "").trim();
+  if (!body || body.length > 1000) fail(400, "invalid_message");
+  return body;
+};
+const threadOf = async (env, chatId) => (await env.DB.prepare(
+  "SELECT sender, body, created_at FROM messages WHERE chat_id = ? ORDER BY id DESC LIMIT 200"
+).bind(chatId).all()).results.reverse();
+// proprietarul apartamentului; administratorul primeste doar daca apartamentul nu are proprietar setat
+async function notifyOwner(env, p, guest, body) {
+  const owners = (await env.DB.prepare("SELECT admin_id FROM admin_properties WHERE property_slug = ?").bind(p.slug).all()).results.map((r) => r.admin_id);
+  const q = owners.length
+    ? env.DB.prepare(`SELECT token FROM push_devices WHERE admin_id IN (${owners.map(() => "?").join(",")})`).bind(...owners)
+    : env.DB.prepare("SELECT d.token FROM push_devices d JOIN admins a ON a.id = d.admin_id WHERE a.role = 'admin'");
+  const tokens = (await q.all()).results.map((r) => r.token);
+  const r = await pushTo(env, tokens, { title: `${guest.name}, ${p.name}`, body: body.slice(0, 180), url: "/admin/#mesaje" });
+  if (!r.sent) await mailChat(env, p.owner_email || env.MAIL_FROM, `Mesaj nou de la ${guest.name}: ${p.name}`, body, `${env.SITE_URL}/admin/#mesaje`, "ro");
+}
+async function notifyGuest(env, p, guest, body) {
+  const tokens = (await env.DB.prepare("SELECT token FROM push_devices WHERE guest_id = ?").bind(guest.id).all()).results.map((r) => r.token);
+  const en = guest.lang === "en";
+  const path = `${en ? "/en/messages/" : "/mesaje/"}?p=${encodeURIComponent(p.slug)}`;
+  const r = await pushTo(env, tokens, { title: p.name, body: body.slice(0, 180), url: path });
+  if (!r.sent) await mailChat(env, guest.email, en ? `New message about ${p.name}` : `Mesaj nou despre ${p.name}`, body, env.SITE_URL + path, guest.lang);
+}
+
 // ---------- conturi de oaspeti si Green Future Club ----------
 function levelFrom(stays, orders, override) {
   const score = stays + Math.floor(orders / ORDERS_PER_STAY);
@@ -785,6 +851,36 @@ async function guestRoutes(req, env, ctx, parts) {
   }
 
   const g = await requireGuest(req, env);
+  if (first === "chats" && req.method === "GET") {
+    const { results } = await env.DB.prepare(
+      `SELECT c.property_slug AS slug, c.unread_guest AS unread, c.last_at, p.name,
+         (SELECT body FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1) AS last
+       FROM chats c JOIN properties p ON p.slug = c.property_slug WHERE c.guest_id = ? ORDER BY c.last_at DESC LIMIT 50`
+    ).bind(g.id).all();
+    return json({ chats: results });
+  }
+  if (first === "chat" && parts[1]) {
+    const p = await getProperty(env, parts[1]);
+    if (!p) fail(404, "not_found");
+    if (req.method === "GET") {
+      const chat = await env.DB.prepare("SELECT id, unread_guest FROM chats WHERE property_slug = ? AND guest_id = ?").bind(p.slug, g.id).first();
+      if (chat?.unread_guest) await env.DB.prepare("UPDATE chats SET unread_guest = 0 WHERE id = ?").bind(chat.id).run();
+      return json({ propertyName: p.name, messages: chat ? await threadOf(env, chat.id) : [] });
+    }
+    if (req.method === "POST") {
+      const b = await readJson(req);
+      const body = cleanMessage(b.body);
+      await rateLimit(env, `chat:${g.id}`, 40, 3600000);
+      const now = Date.now();
+      const chat = await env.DB.prepare(
+        `INSERT INTO chats (property_slug, guest_id, unread_owner, last_at) VALUES (?1, ?2, 1, ?3)
+         ON CONFLICT(property_slug, guest_id) DO UPDATE SET unread_owner = unread_owner + 1, last_at = ?3 RETURNING id`
+      ).bind(p.slug, g.id, now).first();
+      await env.DB.prepare("INSERT INTO messages (chat_id, sender, body, created_at) VALUES (?, 'guest', ?, ?)").bind(chat.id, body, now).run();
+      ctx.waitUntil(notifyOwner(env, p, g, body).catch((e) => console.error("chat", e)));
+      return json({ ok: true }, 201);
+    }
+  }
   if (first === "logout" && req.method === "POST") {
     const m = req.headers.get("authorization").match(/^Bearer (.+)$/);
     await env.DB.prepare("DELETE FROM guest_sessions WHERE token_hash = ?").bind(await sha256(m[1])).run();
@@ -807,8 +903,10 @@ async function guestRoutes(req, env, ctx, parts) {
     const b = await readJson(req);
     await rateLimit(env, `delete:${g.id}`, 8, 3600000);
     if (!(await verifyPassword(String(b.password || ""), g.pass_hash))) fail(401, "bad_login");
-    // rezervarile raman pentru evidenta proprietarului, fara legatura cu contul
+    // rezervarile raman pentru evidenta proprietarului, fara legatura cu contul; mesajele se sterg
     await env.DB.batch([
+      env.DB.prepare("DELETE FROM messages WHERE chat_id IN (SELECT id FROM chats WHERE guest_id = ?)").bind(g.id),
+      env.DB.prepare("DELETE FROM chats WHERE guest_id = ?").bind(g.id),
       env.DB.prepare("UPDATE bookings SET guest_id = NULL WHERE guest_id = ?").bind(g.id),
       env.DB.prepare("UPDATE orders SET guest_id = NULL WHERE guest_id = ?").bind(g.id),
       env.DB.prepare("DELETE FROM guest_sessions WHERE guest_id = ?").bind(g.id),
