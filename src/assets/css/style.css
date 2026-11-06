@@ -633,3 +633,4 @@ html.gf-app .cart-bar:not([hidden]) { bottom: calc(58px + .8rem); }
   body.adm #adm-nav { width: 100%; overflow-x: auto; scrollbar-width: none; }
   body.adm #adm-nav > * { flex: none; }
 }
+.gf-owner { display: block; padding: 1.4rem 1rem; text-align: center; font-size: .82rem; color: var(--ink-soft); }

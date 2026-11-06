@@ -42,4 +42,12 @@
     bar.append(a);
   }
   document.body.append(bar);
+  // subsolul site-ului e ascuns in aplicatie; proprietarii intra in panou de aici
+  if (location.pathname === "/" || location.pathname === "/en/") {
+    const owner = document.createElement("a");
+    owner.className = "gf-owner";
+    owner.href = "/admin/";
+    owner.textContent = en ? "Are you an owner? Open the panel" : "Ești proprietar? Intră în panou";
+    bar.before(owner);
+  }
 })();
