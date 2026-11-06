@@ -8,27 +8,20 @@ eleventyExcludeFromCollections: true
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>Panou rezervări - Green Future Sinaia</title>
-  <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0C110D">
+  <title>Panou - Green Future Sinaia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css?v={{ build }}">
 </head>
 <body class="adm">
-  <header class="nav">
-    <div class="wrap nav-in">
-      <a href="/" class="brand"><span><b>Green Future</b><small>Panou rezervări</small></span></a>
-      <nav class="nav-links" id="adm-nav" hidden>
-        <button type="button" class="adm-tab" data-tab="bookings">Rezervări</button>
-        <button type="button" class="adm-tab" data-tab="orders" hidden>Comenzi</button>
-        <button type="button" class="adm-tab" data-tab="chats">Mesaje</button>
-        <button type="button" class="adm-tab" data-tab="settings">Apartamente</button>
-        <button type="button" class="adm-tab" data-tab="guests" hidden>Oaspeți</button>
-        <button type="button" class="adm-tab" data-tab="offers" hidden>Oferte</button>
-        <button type="button" class="adm-tab" data-tab="push" hidden>Notificări</button>
-        <button type="button" class="btn btn-ghost" id="adm-logout">Ieșire</button>
-      </nav>
-    </div>
-  </header>
-  <main class="wrap adm-main" id="adm"></main>
+  <nav class="pn-nav" id="adm-nav" aria-label="Meniu panou" hidden></nav>
+  <div class="pn-body">
+    <header class="pn-top">
+      <a href="/" class="pn-brand"><b>Green Future</b><small>Panou</small></a>
+      <button type="button" class="pn-exit" id="adm-logout">Ieșire</button>
+    </header>
+    <main class="adm-main" id="adm"></main>
+  </div>
   <script src="/assets/js/app-native.js?v={{ build }}" defer></script>
   <script src="/assets/js/admin.js?v={{ build }}" defer></script>
 </body>

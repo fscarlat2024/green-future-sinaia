@@ -9,7 +9,7 @@
   const ERR = {
     bad_login: "Email sau parolă greșită.", too_many_requests: "Prea multe încercări. Reîncearcă în 15 minute.",
     calendar_conflict: "Perioada se suprapune cu o rezervare sau cu un calendar extern.", wrong_status: "Rezervarea și-a schimbat deja starea.",
-    invalid_dates: "Verifică datele: sfârșitul trebuie să fie după început, iar oferta valabilă cel puțin azi.", invalid_value: "Verifică valorile introduse.",
+    invalid_phone: "Numărul de telefon nu pare corect.", invalid_dates: "Verifică datele: sfârșitul trebuie să fie după început, iar oferta valabilă cel puțin azi.", invalid_value: "Verifică valorile introduse.",
     price_required: "Pune un preț pe noapte înainte de a activa rezervările.", invalid_ical_url: "Linkul calendarului trebuie să înceapă cu https://.",
     forbidden: "Nu ai acces la acest apartament.", push_off: "Cheia pentru notificări nu e pusă pe server.",
   };
@@ -72,6 +72,71 @@
       h("label", { class: "bk-field" }, h("span", null, "Parolă"), h("input", { name: "password", type: "password", required: true, autocomplete: "current-password" })),
       err,
       h("button", { class: "btn btn-primary btn-lg", type: "submit" }, "Intră")));
+  }
+
+  // ---------- acasa ----------
+  const lei = (n) => `${Number(n).toLocaleString("ro-RO")} lei`;
+  const STAFF_LABEL = { cleaner: "Sună femeia de serviciu", technician: "Sună tehnicianul", laundry: "Sună spălătoria" };
+  async function renderHome() {
+    const d = await api("dashboard");
+    const count = d.properties.length || 1;
+    const occupancy = Math.round(d.properties.reduce((sum, p) => sum + p.occupancy, 0) / count);
+    const revenue = d.properties.reduce((sum, p) => sum + p.revenue, 0);
+    const prev = d.properties.reduce((sum, p) => sum + p.prevRevenue, 0);
+    const monthName = new Date(`${d.month}-01T00:00:00Z`).toLocaleDateString("ro-RO", { month: "long", year: "numeric", timeZone: "UTC" });
+    const kpi = (value, label, tab) => h(tab ? "button" : "div", { class: "pn-kpi", ...(tab ? { type: "button", on: { click: () => openTab(tab) } } : {}) }, h("b", null, value), h("span", null, label));
+    const call = (key) => (d.contacts[key]
+      ? h("a", { class: "pn-action", href: `tel:${d.contacts[key].replace(/[^+\d]/g, "")}` }, STAFF_LABEL[key])
+      : h("span", { class: "pn-action is-off" }, STAFF_LABEL[key], h("small", null, "Număr nesetat")));
+    const row = (p) => h("div", { class: "pn-apt" },
+      h("div", { class: "adm-bk-top" }, h("b", null, p.name), h("b", null, lei(p.revenue))),
+      h("div", { class: "pn-bar", role: "img", "aria-label": `Ocupare ${p.occupancy}%` }, h("i", { style: `width:${p.occupancy}%` })),
+      h("small", null, `${p.occupancy}% ocupare · ${p.nights} din ${d.days} nopți · luna trecută ${lei(p.prevRevenue)}`));
+    // administratorul vede apartamentele grupate pe proprietar; proprietarul doar pe ale lui
+    const groups = new Map();
+    for (const p of d.properties) {
+      const key = isAdmin ? (p.owners.join(", ") || "Fără proprietar setat") : "Apartamentele mele";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    }
+    root.replaceChildren(
+      h("div", { class: "adm-head" }, h("h1", null, "Acasă"), h("p", null, monthName)),
+      h("div", { class: "pn-kpis" },
+        kpi(`${occupancy}%`, "grad de ocupare"), kpi(lei(revenue), "venit din platformă"),
+        kpi(String(d.pending), d.pending === 1 ? "rezervare de confirmat" : "rezervări de confirmat", "bookings"), kpi(String(d.unread), d.unread === 1 ? "mesaj necitit" : "mesaje necitite", "chats")),
+      h("p", { class: "pn-note" }, `Luna trecută: ${lei(prev)} din platformă. Venitul include doar rezervările directe, pentru că Booking și Airbnb nu transmit prețuri în calendar. Ocuparea le include și pe ale lor.`),
+      h("div", { class: "pn-actions" }, call("cleaner"), call("technician"), call("laundry"),
+        h("button", { type: "button", class: "pn-action is-main", on: { click: () => openTab("chats") } }, "Chat cu chiriașii", d.unread ? h("span", { class: "chat-badge" }, String(d.unread)) : null)),
+      ...[...groups].map(([title, list]) => h("section", { class: "adm-card pn-group" }, h("h2", null, title), list.map(row))),
+      h("section", { class: "adm-card pn-group" }, h("h2", null, "Următorii oaspeți"),
+        d.upcoming.length ? d.upcoming.map((b) => h("div", { class: "adm-bk-top pn-next" },
+          h("div", null, h("b", null, b.guest_name), h("small", null, `${date(b.checkin)} – ${date(b.checkout)} · ${b.property_name}`)),
+          h("span", { class: `mg-status is-${b.status}` }, STATUS[b.status]))) : h("p", null, "Nicio rezervare directă viitoare.")));
+    const badge = nav.querySelector('[data-tab="chats"] .pn-dot');
+    if (badge) { badge.textContent = d.unread || ""; badge.hidden = !d.unread; }
+  }
+
+  // ---------- mai mult (telefon) ----------
+  function renderMore() {
+    const extra = TAB_LIST().filter((t) => !t.main);
+    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, "Mai mult")),
+      h("div", { class: "pn-hub" }, extra.map((t) => h("button", { type: "button", on: { click: () => openTab(t.tab) } }, h("b", null, t.label), h("span", null, t.hint))),
+        h("a", { href: "/" }, h("b", null, "Site-ul"), h("span", null, "Înapoi la Green Future")),
+        h("button", { type: "button", on: { click: guarded(async () => { await api("logout", "POST"); logout(); }) } }, h("b", null, "Ieșire"), h("span", null, "Din panou"))));
+  }
+
+  // ---------- contacte echipa ----------
+  async function renderContacts() {
+    const { contacts } = await api("contacts");
+    const say = h("p", { role: "status" });
+    const field = (key, label) => h("label", { class: "bk-field" }, h("span", null, label), h("input", { name: key, type: "tel", value: contacts[key] || "", maxlength: 25, autocomplete: "off" }));
+    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, "Echipa"), h("p", null, "Numerele apar ca butoane de apel la toți proprietarii.")),
+      h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+        ev.preventDefault();
+        await api("contacts", "POST", Object.fromEntries(new FormData(ev.currentTarget).entries()));
+        say.textContent = "Salvat.";
+      }) } }, field("cleaner", "Femeia de serviciu"), field("technician", "Tehnician"), field("laundry", "Spălătorie"), say,
+        h("button", { class: "btn btn-primary", type: "submit" }, "Salvează")));
   }
 
   // ---------- rezervari ----------
@@ -331,23 +396,60 @@
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats };
+  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts };
+  const ICON = {
+    home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.500 10v10h13V10"/>',
+    bookings: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+    chats: '<path d="M5 5h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1Z"/>',
+    settings: '<path d="M4 20V5.500L12 3l8 2.500V20"/><path d="M2.500 20h19M9 8h1.500M13.500 8H15M9 12h1.500M13.500 12H15"/>',
+    more: '<rect x="4" y="4" width="7" height="7" rx="1.500"/><rect x="13" y="4" width="7" height="7" rx="1.500"/><rect x="4" y="13" width="7" height="7" rx="1.500"/><rect x="13" y="13" width="7" height="7" rx="1.500"/>',
+    orders: '<path d="M7 3v8M4.500 3v5a2.500 2.500 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.500 1-4 4-4 8h4"/>',
+    guests: '<circle cx="9" cy="8" r="3.500"/><path d="M2.500 20c.7-3.500 3.200-5.500 6.500-5.500s5.800 2 6.500 5.500M16 5a3.500 3.500 0 0 1 0 6.500M18 14.800c1.800.8 3 2.500 3.500 5.200"/>',
+    offers: '<path d="M4 4h7l9 9-7 7-9-9V4Z"/><circle cx="8" cy="8" r="1.300"/>',
+    push: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4"/>',
+    contacts: '<path d="M6 3h3l2 5-2.500 1.500a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2Z"/>',
+  };
+  let isAdmin = false;
+  // pe telefon apar doar cele principale, restul sunt in Mai mult; pe calculator apar toate in stanga
+  const TAB_LIST = () => [
+    { tab: "home", label: "Acasă", main: true },
+    { tab: "bookings", label: "Rezervări", main: true },
+    { tab: "chats", label: "Mesaje", main: true },
+    { tab: "settings", label: "Apartamente", main: !isAdmin, hint: "Prețuri, calendar, reguli" },
+    ...(isAdmin ? [
+      { tab: "orders", label: "Comenzi", hint: "Bistro, la cameră" },
+      { tab: "guests", label: "Oaspeți", hint: "Conturi și nivele" },
+      { tab: "offers", label: "Oferte", hint: "Reduceri personalizate" },
+      { tab: "push", label: "Notificări", hint: "Anunț în aplicație" },
+      { tab: "contacts", label: "Echipa", hint: "Numere de telefon" },
+    ] : []),
+    ...(isAdmin ? [{ tab: "more", label: "Mai mult", main: true, phoneOnly: true }] : []),
+  ];
+  function buildNav() {
+    nav.replaceChildren(h("a", { class: "pn-side-brand", href: "/" }, h("b", null, "Green Future"), h("small", null, "Panou")));
+    for (const t of TAB_LIST()) {
+      const b = h("button", { type: "button", class: `adm-tab${t.main ? " is-main" : ""}${t.phoneOnly ? " is-phone" : ""}`, "data-tab": t.tab, on: { click: () => openTab(t.tab) } });
+      b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[t.tab]}</svg>`;
+      b.append(t.label);
+      if (t.tab === "chats") b.append(h("span", { class: "pn-dot", hidden: true }));
+      nav.append(b);
+    }
+  }
   function openTab(name) {
     stopChat();
-    nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
+    const inMore = !TAB_LIST().find((t) => t.tab === name)?.main;
+    nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name || (inMore && b.dataset.tab === "more")));
+    window.scrollTo(0, 0);
     guarded(TABS[name])();
   }
-  nav.querySelectorAll(".adm-tab").forEach((b) => b.addEventListener("click", () => openTab(b.dataset.tab)));
   document.getElementById("adm-logout").addEventListener("click", guarded(async () => { await api("logout", "POST"); logout(); }));
 
   const start = guarded(async () => {
     const me = await api("me");
-    nav.querySelector('[data-tab="orders"]').hidden = me.role !== "admin";
-    nav.querySelector('[data-tab="push"]').hidden = me.role !== "admin";
-    nav.querySelector('[data-tab="guests"]').hidden = me.role !== "admin";
-    nav.querySelector('[data-tab="offers"]').hidden = me.role !== "admin";
+    isAdmin = me.role === "admin";
+    buildNav();
     nav.hidden = false;
-    openTab(location.hash === "#mesaje" ? "chats" : "bookings");
+    openTab(location.hash === "#mesaje" ? "chats" : "home");
   });
   window.addEventListener("hashchange", () => { if (token && location.hash === "#mesaje") openTab("chats"); });
   if (token) start(); else renderLogin();

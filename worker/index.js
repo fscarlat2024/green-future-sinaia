@@ -388,6 +388,25 @@ async function adminRoutes(req, env, ctx, parts) {
     }
   }
 
+  if (first === "dashboard" && req.method === "GET") return json(await dashboard(env, a));
+  if (first === "contacts") {
+    if (req.method === "GET") return json({ contacts: await staffContacts(env) });
+    if (req.method === "POST") {
+      if (a.role !== "admin") fail(403, "forbidden");
+      const b = await readJson(req);
+      const stmts = [];
+      for (const k of STAFF) {
+        const phone = String(b[k] || "").trim();
+        if (phone && (!/^\+?[\d\s().-]{6,25}$/.test(phone))) fail(400, "invalid_phone");
+        stmts.push(phone
+          ? env.DB.prepare("INSERT INTO staff_contacts (key, phone) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET phone = ?2").bind(k, phone)
+          : env.DB.prepare("DELETE FROM staff_contacts WHERE key = ?").bind(k));
+      }
+      await env.DB.batch(stmts);
+      return json({ contacts: await staffContacts(env) });
+    }
+  }
+
   if (first === "chats") {
     const slugs = await adminSlugs(env, a);
     if (!second && req.method === "GET") {
@@ -670,6 +689,59 @@ async function createOrder(req, env, ctx) {
     pushToStaff(env, null, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
   ]));
   return json({ code, total, discount, demo: !!demo }, 201);
+}
+
+// ---------- tabloul proprietarilor ----------
+const nextMonth = (m) => { const [y, mo] = m.split("-").map(Number); return new Date(Date.UTC(y, mo, 1)).toISOString().slice(0, 7); };
+const prevMonth = (m) => { const [y, mo] = m.split("-").map(Number); return new Date(Date.UTC(y, mo - 2, 1)).toISOString().slice(0, 7); };
+const nightsIn = (a, b, from, to) => Math.max(0, diffDays(a < from ? from : a, b > to ? to : b));
+const STAFF = ["cleaner", "technician", "laundry"];
+async function staffContacts(env) {
+  const { results } = await env.DB.prepare("SELECT key, phone FROM staff_contacts").all();
+  return Object.fromEntries(STAFF.map((k) => [k, results.find((r) => r.key === k)?.phone || ""]));
+}
+// Ocupare: nopti din rezervari confirmate si din calendarele externe, o noapte numarata o singura data.
+// Venit: doar rezervarile directe; calendarele Booking/Airbnb nu transmit preturi.
+async function dashboard(env, a) {
+  const slugs = await adminSlugs(env, a);
+  const now = today();
+  const month = now.slice(0, 7);
+  const from = `${month}-01`, to = `${nextMonth(month)}-01`, prevFrom = `${prevMonth(month)}-01`;
+  const days = diffDays(from, to);
+  const contacts = await staffContacts(env);
+  if (!slugs.length) return { month, days, properties: [], pending: 0, unread: 0, upcoming: [], contacts };
+  const marks = slugs.map(() => "?").join(",");
+  const [props, bookings, blocks, owners, unread, upcoming] = await Promise.all([
+    env.DB.prepare(`SELECT slug, name FROM properties WHERE slug IN (${marks}) ORDER BY name`).bind(...slugs).all(),
+    env.DB.prepare(`SELECT property_slug AS slug, checkin, checkout, total, status FROM bookings WHERE property_slug IN (${marks}) AND status IN ${ACTIVE} AND checkout > ? AND checkin < ?`).bind(...slugs, prevFrom, to).all(),
+    env.DB.prepare(`SELECT property_slug AS slug, date_from, date_to FROM blocks WHERE property_slug IN (${marks}) AND source = 'ical' AND date_to > ? AND date_from < ?`).bind(...slugs, from, to).all(),
+    env.DB.prepare(`SELECT ap.property_slug AS slug, ad.email FROM admin_properties ap JOIN admins ad ON ad.id = ap.admin_id WHERE ap.property_slug IN (${marks}) AND ad.role = 'owner'`).bind(...slugs).all(),
+    env.DB.prepare(`SELECT COALESCE(SUM(unread_owner), 0) AS n FROM chats WHERE property_slug IN (${marks})`).bind(...slugs).first(),
+    env.DB.prepare(`SELECT b.code, b.checkin, b.checkout, b.guest_name, b.status, b.total, p.name AS property_name FROM bookings b JOIN properties p ON p.slug = b.property_slug
+      WHERE b.property_slug IN (${marks}) AND b.status IN ${ACTIVE} AND b.checkout >= ? ORDER BY b.checkin LIMIT 8`).bind(...slugs, now).all(),
+  ]);
+  const properties = props.results.map((p) => {
+    const taken = new Set();
+    const mark = (x, y) => { for (let d = x < from ? from : x; d < y && d < to; d = addDays(d, 1)) taken.add(d); };
+    let revenue = 0, prevRevenue = 0, pending = 0;
+    for (const b of bookings.results) {
+      if (b.slug !== p.slug) continue;
+      if (b.status === "pending") { pending++; continue; }
+      const n = diffDays(b.checkin, b.checkout);
+      if (b.checkout > from) mark(b.checkin, b.checkout);
+      revenue += b.total * nightsIn(b.checkin, b.checkout, from, to) / n;
+      prevRevenue += b.total * nightsIn(b.checkin, b.checkout, prevFrom, from) / n;
+    }
+    for (const x of blocks.results) if (x.slug === p.slug) mark(x.date_from, x.date_to);
+    return {
+      slug: p.slug, name: p.name, owners: owners.results.filter((o) => o.slug === p.slug).map((o) => o.email),
+      nights: taken.size, occupancy: Math.round(taken.size * 100 / days), revenue: Math.round(revenue), prevRevenue: Math.round(prevRevenue), pending,
+    };
+  });
+  return {
+    month, days, properties, contacts, unread: unread.n, upcoming: upcoming.results,
+    pending: properties.reduce((sum, p) => sum + p.pending, 0),
+  };
 }
 
 // ---------- mesaje oaspete - proprietar ----------
