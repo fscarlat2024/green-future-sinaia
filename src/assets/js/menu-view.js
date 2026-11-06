@@ -87,6 +87,7 @@
   };
   bar.addEventListener("click", (e) => { e.preventDefault(); setOpen(true); });
   closeBtn.addEventListener("click", () => setOpen(false));
+  document.addEventListener("gf-cart-close", () => setOpen(false));
   scrim.addEventListener("click", () => setOpen(false));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && drawer.classList.contains("is-open")) setOpen(false); });
   root.addEventListener("click", (e) => {

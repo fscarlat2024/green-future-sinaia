@@ -5,7 +5,7 @@
   const lang = root.dataset.lang === "en" ? "en" : "ro";
   const T = {
     ro: {
-      club: (l, p) => `Reducere ${l} (${p}%)`, title: "Comanda ta", empty: "Alege ceva din meniu.", total: "Total", next: "Continuă", back: "Înapoi",
+      club: (l, p) => `Reducere ${l} (${p}%)`, title: "Comanda ta", empty: "Alege ceva din meniu.", total: "Total", next: "Continuă", back: "Înapoi", backMenu: "Înapoi la meniu", cancelOrder: "Renunță la comandă", cancelSure: "Renunți la comandă? Produsele alese se șterg.",
       apartment: "Apartament", name: "Nume", phone: "Telefon", note: "Mențiuni (opțional)", notePh: "Ora dorită, alergii, alte preferințe",
       room: "Sunt de acord ca suma să fie trecută pe nota apartamentului.", send: "Trimite comanda", sending: "Se trimite...",
       remove: "Scoate", add: "Adaugă", bar: (n, t) => `Comanda ta · ${n} ${n === 1 ? "produs" : "produse"} · ${t} lei`,
@@ -16,7 +16,7 @@
       generic: "Comanda nu a putut fi trimisă. Te rugăm să încerci din nou.",
     },
     en: {
-      club: (l, p) => `${l} discount (${p}%)`, title: "Your order", empty: "Choose something from the menu.", total: "Total", next: "Continue", back: "Back",
+      club: (l, p) => `${l} discount (${p}%)`, title: "Your order", empty: "Choose something from the menu.", total: "Total", next: "Continue", back: "Back", backMenu: "Back to menu", cancelOrder: "Cancel order", cancelSure: "Cancel this order? The items you chose will be removed.",
       apartment: "Apartment", name: "Name", phone: "Phone", note: "Notes (optional)", notePh: "Preferred time, allergies, other wishes",
       room: "I agree that the amount is added to the apartment bill.", send: "Send order", sending: "Sending...",
       remove: "Remove", add: "Add", bar: (n, t) => `Your order · ${n} ${n === 1 ? "item" : "items"} · ${t} lei`,
@@ -101,10 +101,23 @@
   }));
   const field = (label, name, attrs) => h("label", { class: "bk-field" }, h("span", null, label), h("input", { name, required: true, ...attrs }));
 
+  const closeCart = () => document.dispatchEvent(new Event("gf-cart-close"));
+  const backToMenu = () => h("button", { type: "button", class: "bk-back", on: { click: closeCart } }, `‹ ${T.backMenu}`);
+  const cancelOrder = () => h("button", { type: "button", class: "cart-cancel", on: { click: () => {
+    if (!confirm(T.cancelSure)) return;
+    cart.clear();
+    save();
+    step = "items";
+    error = "";
+    render();
+    closeCart();
+  } } }, T.cancelOrder);
+
   function renderItems() {
-    cartEl.replaceChildren(h("h2", null, T.title), ...(cart.size
+    cartEl.replaceChildren(backToMenu(), h("h2", null, T.title), ...(cart.size
       ? [lines(), totalLine(), h("p", { class: "cart-room" }, T.note24),
-         h("button", { type: "button", class: "btn btn-primary btn-lg bk-go", on: { click: () => { step = "form"; error = ""; render(); } } }, T.next)]
+         h("button", { type: "button", class: "btn btn-primary btn-lg bk-go", on: { click: () => { step = "form"; error = ""; render(); } } }, T.next),
+         cancelOrder()]
       : [h("p", { class: "cart-empty" }, T.empty)]));
   }
 
@@ -119,7 +132,8 @@
       h("input", { class: "bk-trap", name: "website", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" }),
       h("label", { class: "bk-check" }, h("input", { type: "checkbox", name: "accept", required: true }), h("span", null, T.room)),
       error ? h("p", { class: "bk-err", role: "alert" }, error) : null,
-      h("button", { type: "submit", class: "btn btn-primary btn-lg bk-go" }, T.send));
+      h("button", { type: "submit", class: "btn btn-primary btn-lg bk-go" }, T.send),
+      cancelOrder());
     cartEl.replaceChildren(h("h2", null, T.title), form);
   }
 
@@ -151,7 +165,7 @@
       cartEl.replaceChildren(h("div", { class: "bk-done" }, h("div", { class: "bk-tick", "aria-hidden": "true" }, "✓"),
         h("h3", null, T.okTitle), h("p", null, data.demo ? T.okDemo : T.okReal),
         h("div", { class: "bk-code" }, h("small", null, T.code), h("b", null, data.code)),
-        h("button", { type: "button", class: "btn btn-ghost", on: { click: () => render() } }, T.again)));
+        h("button", { type: "button", class: "btn btn-ghost", on: { click: () => { render(); closeCart(); } } }, T.again)));
       cartEl.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
