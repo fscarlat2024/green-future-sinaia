@@ -11,7 +11,10 @@
   },
   "vars": {
     "SITE_URL": "https://greenfuturesinaia.com",
-    "MAIL_FROM": "rezervari@greenfuturesinaia.com"
+    "MAIL_FROM": "rezervari@greenfuturesinaia.com",
+    "APNS_TOPIC": "com.greenfuturesinaia.app",
+    "APNS_KEY_ID": "73UUH9L343",
+    "APNS_TEAM_ID": "L22K2CY58S"
   },
   "d1_databases": [
     {

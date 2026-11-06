@@ -244,7 +244,7 @@
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({
         slug: root.dataset.slug, checkin: state.checkin, checkout: state.checkout, adults: state.adults, children: state.children, lang,
-        name: f.get("name"), email: f.get("email"), phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on",
+        name: f.get("name"), email: f.get("email"), phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token,
       }),
     }).catch(() => null);
     const data = r ? await r.json().catch(() => ({})) : {};
@@ -259,6 +259,14 @@
   }
 
   function success(b) {
+    if (window.GF_NATIVE) {
+      // notificarile nu poarta cheia rezervarii; pagina o ia de aici, de pe telefonul care a rezervat
+      try {
+        const saved = JSON.parse(localStorage.getItem("gf_bookings") || "{}");
+        saved[b.code] = b.token;
+        localStorage.setItem("gf_bookings", JSON.stringify(saved));
+      } catch {}
+    }
     const path = lang === "en" ? "/en/booking/" : "/rezervare/";
     const link = `${path}?cod=${encodeURIComponent(b.code)}&t=${encodeURIComponent(b.token)}`;
     calEl.hidden = true;

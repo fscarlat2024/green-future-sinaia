@@ -110,7 +110,7 @@
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({
         lang, items: [...cart].map(([id, qty]) => ({ id, qty })), apartment: f.get("apartment"), name: f.get("name"),
-        phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on",
+        phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token,
       }),
     }).catch(() => null);
     const data = r ? await r.json().catch(() => ({})) : {};

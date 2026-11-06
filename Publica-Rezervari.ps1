@@ -44,6 +44,20 @@ Write-Host "4/6 Construire si publicare" -ForegroundColor Cyan
 npx @11ty/eleventy
 node $wrangler deploy
 
+Write-Host "    Cheia pentru notificarile din aplicatie"
+$apns = "C:\Users\florin\Downloads\key apple\AuthKey_73UUH9L343.p8"
+if ((node $wrangler secret list | Out-String) -match "APNS_KEY") {
+    Write-Host "    Exista deja."
+} elseif (Test-Path $apns) {
+    $tmp = Join-Path $env:TEMP ("apns-" + [guid]::NewGuid() + ".json")
+    try {
+        @{ APNS_KEY = [IO.File]::ReadAllText($apns) } | ConvertTo-Json | Out-File -FilePath $tmp -Encoding ascii
+        node $wrangler secret bulk $tmp
+    } finally { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+} else {
+    Write-Host "    Nu gasesc $apns. Notificarile raman oprite." -ForegroundColor Yellow
+}
+
 Write-Host "5/6 Cont administrator" -ForegroundColor Cyan
 if (Test-Path "cont-admin.txt") {
     Write-Host "    Exista deja, parola nu se schimba."
@@ -56,7 +70,7 @@ Write-Host "6/6 Salvare in GitHub" -ForegroundColor Cyan
 git add -A
 git diff --cached --quiet
 if ($LASTEXITCODE -ne 0) {
-    git commit -m "Rezervari directe: calendar, cautare, panou proprietari, sincronizare iCal" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    git commit -m "Green Future: actualizare site si notificari in aplicatie" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
     git push
 }
 

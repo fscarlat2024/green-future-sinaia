@@ -45,6 +45,7 @@
   function logout() {
     token = null;
     try { localStorage.removeItem(KEY); } catch {}
+    window.gfRegisterPush?.(); // telefonul nu mai primeste alertele de proprietar
     nav.hidden = true;
     renderLogin();
   }
@@ -61,6 +62,7 @@
         if (!r.ok) throw new Error(ERR[data.error] || "Autentificarea nu a reușit.");
         token = data.token;
         try { localStorage.setItem(KEY, token); } catch {}
+        window.gfRegisterPush?.();
         start();
       } catch (e) { err.textContent = e.message; err.hidden = false; }
     } } },
@@ -91,6 +93,40 @@
           b.status === "pending" ? act(b, "confirm", "Confirmă", "btn-primary") : null,
           b.status === "pending" ? act(b, "decline", "Refuză", "btn-ghost", "Refuzi această rezervare? Oaspetele primește un email.") : null,
           b.status === "confirmed" ? act(b, "cancel", "Anulează", "btn-ghost", "Anulezi această rezervare confirmată? Oaspetele primește un email.") : null)))) : h("p", { class: "adm-card" }, "Nu există rezervări încă."));
+  }
+
+  // ---------- anunt in aplicatie ----------
+  async function renderPush() {
+    const { devices, enabled } = await api("push");
+    const status = h("p", { role: "status" });
+    const send = async (ev) => {
+      ev.preventDefault();
+      const form = ev.currentTarget;
+      const f = new FormData(form);
+      if (!confirm(`Trimiți anunțul pe ${devices} telefoane? Nu poate fi retras.`)) return;
+      const btn = form.querySelector("[type=submit]");
+      btn.disabled = true;
+      status.textContent = "Se trimite...";
+      let sent = 0, failed = 0, after = "";
+      try {
+        do {
+          const r = await api("push", "POST", { title: f.get("title"), body: f.get("body"), url: f.get("url"), after });
+          sent += r.sent; failed += r.failed; after = r.next;
+        } while (after);
+        status.textContent = `Trimis: ${sent}${failed ? `, nereușite: ${failed}` : ""}.`;
+        form.reset();
+      } catch (e) { status.textContent = e.message; }
+      btn.disabled = false;
+    };
+    root.replaceChildren(
+      h("div", { class: "adm-head" }, h("h1", null, "Anunț în aplicație"), h("p", null, `${devices} telefoane cu aplicația.`)),
+      h("form", { class: "adm-card adm-login", on: { submit: send } },
+        enabled ? null : h("p", { class: "bk-err" }, "Cheia pentru notificări nu e pusă pe server."),
+        h("label", { class: "bk-field" }, h("span", null, "Titlu"), h("input", { name: "title", required: true, maxlength: 80 })),
+        h("label", { class: "bk-field" }, h("span", null, "Mesaj"), h("textarea", { name: "body", rows: 3, maxlength: 240 })),
+        h("label", { class: "bk-field" }, h("span", null, "Pagina deschisă la apăsare"), h("input", { name: "url", value: "/", maxlength: 200 })),
+        status,
+        h("button", { class: "btn btn-primary btn-lg", type: "submit", disabled: !enabled || !devices }, "Trimite")));
   }
 
   // ---------- comenzi restaurant ----------
@@ -187,7 +223,7 @@
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings() };
+  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush };
   function openTab(name) {
     nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
     guarded(TABS[name])();
@@ -198,6 +234,7 @@
   const start = guarded(async () => {
     const me = await api("me");
     nav.querySelector('[data-tab="orders"]').hidden = me.role !== "admin";
+    nav.querySelector('[data-tab="push"]').hidden = me.role !== "admin";
     nav.hidden = false;
     openTab("bookings");
   });

@@ -5,6 +5,7 @@
 import { mailOwnerNew, mailGuest, mailConflict, mailOrder, brevoKeepAlive } from "./mail.js";
 import restaurant from "../src/_data/restaurant.json";
 import { parseIcal, buildIcal } from "./ical.js";
+import { pushEnabled, validPushToken, pushTo, pushToStaff, guestBookingMessage, guestOrderMessage } from "./push.js";
 
 const enc = new TextEncoder();
 const SESSION_DAYS = 30;
@@ -205,21 +206,24 @@ async function createBooking(req, env, ctx) {
   const lang = b.lang === "en" ? "en" : "ro";
   const res = await env.DB.prepare(
     `INSERT INTO bookings (code, token_hash, property_slug, checkin, checkout, adults, children, guest_name,
-       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at)
-     SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17
+       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at, push_token)
+     SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18
      WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE property_slug = ?3 AND status IN ${ACTIVE} AND checkin < ?5 AND checkout > ?4)
        AND NOT EXISTS (SELECT 1 FROM blocks WHERE property_slug = ?3 AND date_from < ?5 AND date_to > ?4)`
   ).bind(code, await sha256(token), p.slug, q.checkin, q.checkout, adults, children, guest.name, guest.email,
-    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now).run();
+    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now, validPushToken(b.pushToken)).run();
   if (!res.meta.changes) fail(409, "unavailable");
 
   const booking = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
   ctx.waitUntil(Promise.allSettled([
     mailOwnerNew(env, p, booking),
     mailGuest(env, p, booking, status === "confirmed" ? "confirmed" : "received", token),
+    pushToStaff(env, p.slug, staffBookingMessage(p, booking, status === "confirmed" ? "Rezervare nouă confirmată" : "Rezervare nouă de confirmat")),
   ]));
   return json({ ...publicBooking(booking, p), token, emailSent: !!env.BREVO_API_KEY }, 201);
 }
+
+const staffBookingMessage = (p, b, title) => ({ title, body: `${p.name}: ${b.guest_name}, ${b.checkin} - ${b.checkout}, ${b.total} lei`, url: "/admin/" });
 
 async function guestBooking(env, code, token) {
   const b = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
@@ -344,7 +348,10 @@ async function adminRoutes(req, env, ctx, parts) {
       if (b.status !== "pending" && b.status !== "confirmed") fail(409, "wrong_status");
       updated = await setStatus(env, b, "cancelled");
     } else fail(404, "not_found");
-    ctx.waitUntil(mailGuest(env, p, updated, updated.status));
+    ctx.waitUntil(Promise.allSettled([
+      mailGuest(env, p, updated, updated.status),
+      pushTo(env, [b.push_token], guestBookingMessage(p, updated, updated.status)),
+    ]));
     return json({ ok: true, status: updated.status });
   }
 
@@ -359,11 +366,33 @@ async function adminRoutes(req, env, ctx, parts) {
     if (second && req.method === "POST") {
       const next = { confirm: ["new", "confirmed"], deliver: ["confirmed", "delivered"], cancel: [null, "cancelled"] }[third];
       if (!next) fail(404, "not_found");
-      const o = await env.DB.prepare("SELECT status FROM orders WHERE id = ?").bind(Number(second)).first();
+      const o = await env.DB.prepare("SELECT status, code, lang, push_token FROM orders WHERE id = ?").bind(Number(second)).first();
       if (!o) fail(404, "not_found");
       if (next[0] ? o.status !== next[0] : !["new", "confirmed"].includes(o.status)) fail(409, "wrong_status");
       await env.DB.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").bind(next[1], Date.now(), Number(second)).run();
+      ctx.waitUntil(pushTo(env, [o.push_token], guestOrderMessage(o, next[1])));
       return json({ ok: true, status: next[1] });
+    }
+  }
+
+  if (first === "push") {
+    if (a.role !== "admin") fail(403, "forbidden");
+    if (req.method === "GET") {
+      const r = await env.DB.prepare("SELECT COUNT(*) AS n FROM push_devices").first();
+      return json({ devices: r.n, enabled: pushEnabled(env) });
+    }
+    if (req.method === "POST") {
+      const b = await readJson(req);
+      const title = String(b.title || "").trim();
+      const body = String(b.body || "").trim();
+      const link = String(b.url || "/").trim() || "/";
+      if (!title || title.length > 80 || body.length > 240) fail(400, "invalid_value");
+      if (!/^\/(?!\/)/.test(link) || link.length > 200) fail(400, "invalid_link");
+      if (!pushEnabled(env)) fail(409, "push_off");
+      // cate 40 odata (limita Workers); panoul cere urmatorul grup pana se termina
+      const { results } = await env.DB.prepare("SELECT token FROM push_devices WHERE token > ? ORDER BY token LIMIT 40").bind(String(b.after || "")).all();
+      const r = await pushTo(env, results.map((d) => d.token), { title, body, url: link });
+      return json({ ...r, next: results.length === 40 ? results[39].token : null });
     }
   }
 
@@ -470,7 +499,9 @@ async function expirePending(env) {
   ).bind(Date.now() - PENDING_HOURS * 3600000).all();
   for (const b of results) {
     const updated = await setStatus(env, b, "expired");
-    await mailGuest(env, await getProperty(env, b.property_slug), updated, "expired").catch(() => {});
+    const p = await getProperty(env, b.property_slug);
+    await mailGuest(env, p, updated, "expired").catch(() => {});
+    await pushTo(env, [b.push_token], guestBookingMessage(p, updated, "expired")).catch(() => {});
   }
 }
 
@@ -507,10 +538,13 @@ async function createOrder(req, env, ctx) {
   const code = orderCode();
   const note = String(b.note || "").trim().slice(0, 500);
   await env.DB.prepare(
-    `INSERT INTO orders (code, apartment, guest_name, guest_phone, note, items, total, status, demo, lang, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?, 'new', ?,?,?,?)`
-  ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now).run();
-  ctx.waitUntil(mailOrder(env, { code, apartment, guest_name: name, guest_phone: phone, note, items, total, demo }));
+    `INSERT INTO orders (code, apartment, guest_name, guest_phone, note, items, total, status, demo, lang, created_at, updated_at, push_token)
+     VALUES (?,?,?,?,?,?,?, 'new', ?,?,?,?,?)`
+  ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now, validPushToken(b.pushToken)).run();
+  ctx.waitUntil(Promise.allSettled([
+    mailOrder(env, { code, apartment, guest_name: name, guest_phone: phone, note, items, total, demo }),
+    pushToStaff(env, null, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
+  ]));
   return json({ code, total, demo: !!demo }, 201);
 }
 
@@ -593,6 +627,21 @@ async function api(req, env, ctx, url) {
 
   if (first === "orders" && !second && req.method === "POST") return createOrder(req, env, ctx);
 
+  if (first === "push" && second === "register" && req.method === "POST") {
+    await rateLimit(env, `push:${clientIp(req)}`, 120, 3600000);
+    const b = await readJson(req);
+    const token = validPushToken(b.token);
+    if (!token || b.platform !== "ios") fail(400, "invalid_token");
+    // telefonul primeste alertele de proprietar doar cat timp sesiunea din panou e valida
+    const admin = await adminAuth(req, env).catch((e) => { if (e instanceof Fail) return null; throw e; });
+    const now = Date.now();
+    await env.DB.prepare(
+      `INSERT INTO push_devices (token, platform, lang, admin_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+       ON CONFLICT(token) DO UPDATE SET lang = ?3, admin_id = ?4, updated_at = ?5`
+    ).bind(token, b.platform, b.lang === "en" ? "en" : "ro", admin ? admin.id : null, now).run();
+    return json({ ok: true });
+  }
+
   if (first === "bookings") {
     if (!second && req.method === "POST") return createBooking(req, env, ctx);
     if (second) {
@@ -608,7 +657,10 @@ async function api(req, env, ctx, url) {
         const p = await getProperty(env, b.property_slug);
         if (!guestCanCancel(b, p)) fail(409, "cannot_cancel");
         const updated = await setStatus(env, b, "cancelled");
-        ctx.waitUntil(Promise.allSettled([mailGuest(env, p, updated, "cancelled"), mailOwnerNew(env, p, updated, true)]));
+        ctx.waitUntil(Promise.allSettled([
+          mailGuest(env, p, updated, "cancelled"), mailOwnerNew(env, p, updated, true),
+          pushToStaff(env, p.slug, staffBookingMessage(p, updated, "Rezervare anulată de oaspete")),
+        ]));
         return json(publicBooking(updated, p));
       }
     }

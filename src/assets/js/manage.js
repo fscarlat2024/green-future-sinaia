@@ -11,7 +11,9 @@
         status: { pending: "Așteaptă confirmarea proprietarului", confirmed: "Confirmată", declined: "Neconfirmată", cancelled: "Anulată", expired: "Expirată" },
         cancel: "Anulează rezervarea", sure: "Sigur vrei să anulezi această rezervare?", noCancel: "Perioada de anulare gratuită s-a încheiat. Te rugăm să contactezi gazda.", failed: "Nu am putut finaliza. Te rugăm să încerci din nou." };
   const q = new URLSearchParams(location.search);
-  const code = q.get("cod"), token = q.get("t");
+  const code = q.get("cod");
+  let token = q.get("t");
+  if (!token) { try { token = JSON.parse(localStorage.getItem("gf_bookings") || "{}")[code]; } catch {} }
   const url = (suffix = "") => `/api/bookings/${encodeURIComponent(code)}${suffix}?token=${encodeURIComponent(token)}`;
   const date = (d) => new Date(d + "T00:00:00Z").toLocaleDateString(lang === "en" ? "en-GB" : "ro-RO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   const show = (text) => { const p = document.createElement("p"); p.textContent = text; root.replaceChildren(p); };
