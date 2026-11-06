@@ -68,6 +68,15 @@ gallery:
   - { src: /assets/img/apartments/studio-dandelion/mountain-view.jpg, alt_ro: "Vedere spre munte de la Studio Dandelion", alt_en: "Mountain view from Studio Dandelion" }
   - { src: /assets/img/apartments/studio-dandelion/overview-3.jpg, alt_ro: "Bucătărie utilată, bar cu scaune și zona de dormit", alt_en: "Equipped kitchen, bar with stools and sleeping area" }
   - { src: /assets/img/apartments/studio-dandelion/balcony.jpg, alt_ro: "Balcon cu vedere la munte", alt_en: "Balcony with a mountain view" }
+storyMotif: true
+story_ro:
+  - "Îți mai amintești cum, copil fiind, luai o păpădie în palmă, îți puneai o dorință și suflai — iar semințele plecau libere, purtând-o mai departe?"
+  - "Studio Dandelion s-a născut exact din sentimentul acela."
+  - "Aici nu vii doar să dormi. Vii să respiri altfel, să te reîncarci și să pleci mai ușor decât ai venit — ca o dorință dusă de vânt."
+story_en:
+  - "Do you remember, as a child, holding a dandelion in your palm, making a wish and blowing — and the seeds drifting free, carrying it away?"
+  - "Studio Dandelion was born from that very feeling."
+  - "Here you don't just come to sleep. You come to breathe differently, to recharge, and to leave lighter than you arrived — like a wish carried by the wind."
 desc_ro:
   - "Dacă simți nevoia să respiri aer curat, să te trezești cu muntele în față și să te lași învăluit de liniște — Dandelion poate fi locul tău de evadare."
   - "Am amenajat acest spațiu cu grijă și drag, inspirată de fragilitatea și libertatea unei păpădii — simbolul viselor simple, al renașterii și al liniștii interioare. Fiecare colț spune o poveste și oferă acel „acasă” pe care uneori îl căutăm departe de agitația orașului."

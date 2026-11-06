@@ -15,6 +15,10 @@
     $("ap-name").textContent = p.name;
     $("ap-sub").textContent = [lang === "en" ? `${p.capacity} guests` : `${p.capacity} persoane`, p.roomType].filter(Boolean).join(" · ");
     $("ap-tagline").textContent = p.tagline || "";
+    if (p.story) {
+      $("ap-story").append(...p.story.split(/\n+/).filter(Boolean).map((t) => { const e = document.createElement("p"); e.textContent = t; return e; }));
+      $("ap-story").hidden = false;
+    }
     const box = $("ap-slides");
     p.photos.forEach((url, i) => {
       const s = document.createElement("div");

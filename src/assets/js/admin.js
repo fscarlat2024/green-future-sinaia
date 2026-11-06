@@ -346,12 +346,13 @@
       h("label", { class: "bk-field" }, h("span", null, "Câte persoane"), h("input", { name: "capacity", type: "number", min: 1, max: 30, required: true, value: p?.capacity || 2 })),
       h("label", { class: "bk-field" }, h("span", null, "Tip (ex. garsonieră, 2 camere)"), h("input", { name: "roomType", maxlength: 60, value: p?.roomType || "" }))),
     h("label", { class: "bk-field" }, h("span", null, "O frază scurtă"), h("input", { name: "tagline", maxlength: 160, value: p?.tagline || "" })),
+    (() => { const t = h("textarea", { name: "story", rows: 4, maxlength: 1200, placeholder: "De ce ai amenajat locul așa? Ce simte cineva când intră aici?" }); t.value = p?.story || ""; return h("label", { class: "bk-field" }, h("span", null, "Povestea apartamentului (apare într-un chenar auriu)"), t); })(),
     (() => { const t = h("textarea", { name: "description", rows: 6, maxlength: 4000 }); t.value = p?.description || ""; return h("label", { class: "bk-field" }, h("span", null, "Descriere"), t); })(),
     (() => { const t = h("textarea", { name: "amenities", rows: 6, maxlength: 2000, placeholder: "Wi-Fi\nBucătărie utilată\nBalcon" }); t.value = (p?.amenities || []).join("\n"); return h("label", { class: "bk-field" }, h("span", null, "Facilități, câte una pe rând"), t); })(),
   ];
   const listingBody = (form) => {
     const f = new FormData(form);
-    return { name: f.get("name"), capacity: Number(f.get("capacity")), roomType: f.get("roomType"), tagline: f.get("tagline"), description: f.get("description"), amenities: String(f.get("amenities")).split("\n") };
+    return { name: f.get("name"), capacity: Number(f.get("capacity")), roomType: f.get("roomType"), tagline: f.get("tagline"), description: f.get("description"), story: f.get("story"), amenities: String(f.get("amenities")).split("\n") };
   };
   function renderNewListing() {
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, "Apartament nou")),

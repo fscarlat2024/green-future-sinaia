@@ -16,10 +16,15 @@ eleventyComputed:
 <main id="top" class="ap-top" data-apartment data-lang="{{ lang }}" hidden>
   <div class="ap-gallery"><div class="hero-slides" id="ap-slides" data-arrows data-noauto></div></div>
   <div class="wrap ap-head">
+    <div class="ap-info">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>
     <h1 id="ap-name"></h1>
     <p class="ap-sub" id="ap-sub"></p>
     <p class="ap-tag" id="ap-tagline"></p>
+    </div>
+    <aside class="ap-story" id="ap-story" hidden>
+      <span class="eyebrow">{{ "Povestea acestui loc" if lang == "ro" else "The story of this place" }}</span>
+    </aside>
   </div>
 </main>
 <p class="wrap chat-note" id="ap-missing" hidden>{{ "Apartamentul nu a fost găsit." if lang == "ro" else "This apartment was not found." }}</p>

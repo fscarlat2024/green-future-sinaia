@@ -857,3 +857,20 @@ button.pn-kpi { cursor: pointer; }
 .collage-tile:first-child { grid-row: span 2; }
 .collage-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s ease; }
 .collage-tile img.on { opacity: 1; }
+/* povestea apartamentului */
+.ap-info { display: grid; gap: .5rem; justify-items: start; align-content: start; }
+.ap-story { position: relative; justify-self: stretch; overflow: hidden; margin-top: .8rem; padding: 1.5rem 1.6rem; border: 1px solid var(--accent); border-radius: var(--radius); outline: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); outline-offset: -7px; background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.ap-story[hidden] { display: none; }
+.ap-story > * { position: relative; }
+.ap-story .eyebrow { display: block; margin-bottom: .7rem; }
+.ap-story p { margin: 0 0 .7rem; font-family: "Cormorant Garamond", serif; font-size: 1.14rem; font-style: italic; line-height: 1.42; color: var(--ink); }
+.ap-story p:last-child { margin-bottom: 0; }
+.ap-story.has-motif { padding-right: 6.5rem; }
+.ap-story-flower, .ap-story-seeds { position: absolute !important; pointer-events: none; }
+.ap-story-flower { right: .6rem; bottom: -3.2rem; width: 6.2rem; opacity: .75; }
+.ap-story-seeds { top: .7rem; right: 3.6rem; width: 5.5rem; opacity: .6; }
+@media (min-width: 900px) {
+  .ap-head:has(.ap-story:not([hidden])) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 2.5rem; align-items: start; }
+  .ap-story { margin-top: 0; }
+}
+@media (max-width: 520px) { .ap-story.has-motif { padding-right: 4.6rem; } .ap-story-flower { width: 4.8rem; right: .2rem; } .ap-story-seeds { right: 1.6rem; width: 4rem; } }

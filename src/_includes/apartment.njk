@@ -10,11 +10,20 @@ layout: base.njk
     </div>
   </div>
   <div class="wrap ap-head">
+    <div class="ap-info">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>
     <h1>{{ name }}</h1>
     <p class="ap-sub">{{ capacity }} · {{ roomType }}{% if metaExtra %} · {{ metaExtra }}{% endif %}</p>
     {% if reviewScore %}<a class="apt-rev" href="#recenzii"><span class="apt-score">{{ reviewScore }}</span><span class="apt-rev-t"><b>{{ reviewWord_ro if lang == "ro" else reviewWord_en }}</b><small>{{ reviewCount }} {{ "recenzii pe Booking" if lang == "ro" else "reviews on Booking" }}</small></span></a>{% endif %}
     <p class="ap-tag">{{ tagline }}</p>
+    </div>
+    {% if story %}
+    <aside class="ap-story{% if storyMotif %} has-motif{% endif %}">
+      {% if storyMotif %}<img class="ap-story-flower" src="/assets/img/brand/papadie.svg" alt="" loading="lazy"><img class="ap-story-seeds" src="/assets/img/brand/seminte.svg" alt="" loading="lazy">{% endif %}
+      <span class="eyebrow">{{ "Povestea acestui loc" if lang == "ro" else "The story of this place" }}</span>
+      {% for p in story %}<p>{{ p }}</p>{% endfor %}
+    </aside>
+    {% endif %}
   </div>
 </main>
 

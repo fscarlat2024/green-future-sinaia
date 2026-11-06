@@ -26,6 +26,7 @@ module.exports = {
     metaExtra: (data) => (data.lang === "ro" ? data.metaExtra_ro : data.metaExtra_en),
     amenities: (data) => (data.lang === "ro" ? data.amenities_ro : data.amenities_en),
     desc: (data) => (data.lang === "ro" ? data.desc_ro : data.desc_en),
+    story: (data) => (data.lang === "ro" ? data.story_ro : data.story_en),
     priceUnit: (data) => (data.lang === "ro" ? data.priceUnit_ro : data.priceUnit_en),
     ogImage: (data) => data.hero
   }

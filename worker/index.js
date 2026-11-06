@@ -298,7 +298,7 @@ const adminProperty = (p, env) => ({
   ...publicProperty(p), active: !!p.active, basePrice: p.base_price, ownerEmail: p.owner_email, ownerPhone: p.owner_phone,
   icalImportUrl: p.ical_import_url, icalExportUrl: `${env.SITE_URL}/ical/${p.ical_token}.ics`,
   icalSyncedAt: p.ical_synced_at, icalError: p.ical_error, icalPaused: !!p.ical_paused,
-  dynamic: !!p.dynamic, status: p.status, roomType: p.room_type, tagline: p.tagline, description: p.description, amenities: JSON.parse(p.amenities || "[]"),
+  dynamic: !!p.dynamic, status: p.status, roomType: p.room_type, tagline: p.tagline, description: p.description, story: p.story, amenities: JSON.parse(p.amenities || "[]"),
 });
 
 async function updateProperty(env, p, b) {
@@ -747,15 +747,15 @@ function cleanListing(b) {
   const capacity = Number(b.capacity);
   if (!Number.isInteger(capacity) || capacity < 1 || capacity > 30) fail(400, "invalid_value");
   const amenities = (Array.isArray(b.amenities) ? b.amenities : []).map((a) => String(a).trim().slice(0, 80)).filter(Boolean).slice(0, 40);
-  return { name, capacity, amenities, roomType: String(b.roomType || "").trim().slice(0, 60) || null, tagline: String(b.tagline || "").trim().slice(0, 160) || null, description: String(b.description || "").trim().slice(0, 4000) || null };
+  return { name, capacity, amenities, roomType: String(b.roomType || "").trim().slice(0, 60) || null, tagline: String(b.tagline || "").trim().slice(0, 160) || null, description: String(b.description || "").trim().slice(0, 4000) || null, story: String(b.story || "").trim().slice(0, 1200) || null };
 }
 async function createListing(env, a, b) {
   const l = cleanListing(b);
   let slug = slugFrom(l.name);
   for (let i = 2; await getProperty(env, slug); i++) slug = `${slugFrom(l.name)}-${i}`;
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO properties (slug, name, capacity, ical_token, status, dynamic, room_type, tagline, description, amenities) VALUES (?,?,?,?, 'draft', 1, ?,?,?,?)`)
-      .bind(slug, l.name, l.capacity, randomHex(20), l.roomType, l.tagline, l.description, JSON.stringify(l.amenities)),
+    env.DB.prepare(`INSERT INTO properties (slug, name, capacity, ical_token, status, dynamic, room_type, tagline, description, amenities, story) VALUES (?,?,?,?, 'draft', 1, ?,?,?,?,?)`)
+      .bind(slug, l.name, l.capacity, randomHex(20), l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), l.story),
     ...(a.role === "admin" ? [] : [env.DB.prepare("INSERT INTO admin_properties (admin_id, property_slug) VALUES (?,?)").bind(a.id, slug)]),
   ]);
   return slug;
@@ -764,8 +764,8 @@ async function listingRoutes(req, env, ctx, a, p, action) {
   if (!p.dynamic) fail(409, "static_property");
   if (action === "listing" && req.method === "PATCH") {
     const l = cleanListing(await readJson(req));
-    await env.DB.prepare("UPDATE properties SET name=?, capacity=?, room_type=?, tagline=?, description=?, amenities=? WHERE slug=?")
-      .bind(l.name, l.capacity, l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), p.slug).run();
+    await env.DB.prepare("UPDATE properties SET name=?, capacity=?, room_type=?, tagline=?, description=?, amenities=?, story=? WHERE slug=?")
+      .bind(l.name, l.capacity, l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), l.story, p.slug).run();
     return json({ ok: true });
   }
   if (action === "photos" && req.method === "GET") {
@@ -1254,7 +1254,7 @@ async function api(req, env, ctx, url) {
       const p = await getProperty(env, second);
       if (!p || !p.dynamic || p.status !== "published") fail(404, "not_found");
       return json({
-        slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, description: p.description,
+        slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, description: p.description, story: p.story,
         amenities: JSON.parse(p.amenities || "[]"), photos: (await photoIds(env, p.slug)).map(photoUrl),
       });
     }
