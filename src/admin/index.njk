@@ -10,7 +10,7 @@ eleventyExcludeFromCollections: true
   <meta name="robots" content="noindex, nofollow">
   <title>Panou rezervări - Green Future Sinaia</title>
   <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/style.css?v={{ build }}">
 </head>
 <body class="adm">
   <header class="nav">
@@ -25,6 +25,6 @@ eleventyExcludeFromCollections: true
     </div>
   </header>
   <main class="wrap adm-main" id="adm"></main>
-  <script src="/assets/js/admin.js" defer></script>
+  <script src="/assets/js/admin.js?v={{ build }}" defer></script>
 </body>
 </html>
