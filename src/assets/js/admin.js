@@ -51,6 +51,7 @@
   }
 
   function renderLogin(message) {
+    if (window.GF_NATIVE) { location.replace("/cont/"); return; } // in aplicatie exista un singur ecran de cont
     const err = h("p", { class: "bk-err", role: "alert", hidden: !message }, message || "");
     root.replaceChildren(h("form", { class: "adm-card adm-login", on: { submit: async (ev) => {
       ev.preventDefault();
@@ -66,9 +67,7 @@
         start();
       } catch (e) { err.textContent = e.message; err.hidden = false; }
     } } },
-      window.GF_NATIVE ? h("span", { class: "gf-mark", "aria-hidden": "true" }) : null,
-      h("h1", null, window.GF_NATIVE ? "Intră în cont" : "Intră în panou"),
-      window.GF_NATIVE ? h("p", { class: "gf-login-sub" }, "Contul pentru proprietari și administratori.") : null,
+      h("h1", null, "Intră în panou"),
       h("label", { class: "bk-field" }, h("span", null, "Email"), h("input", { name: "email", type: "email", required: true, autocomplete: "username" })),
       h("label", { class: "bk-field" }, h("span", null, "Parolă"), h("input", { name: "password", type: "password", required: true, autocomplete: "current-password" })),
       err,
@@ -88,7 +87,7 @@
       h("div", { class: "adm-head" }, h("h1", null, "Rezervări"), h("p", null, pending ? `${pending} de confirmat. Cererile fără răspuns expiră după 24 de ore.` : "Nimic de confirmat.")),
       bookings.length ? h("div", { class: "adm-list" }, bookings.map((b) => h("article", { class: "adm-card adm-booking" },
         h("div", { class: "adm-bk-top" }, h("b", null, b.guest_name), h("span", { class: `mg-status is-${b.status}` }, STATUS[b.status] || b.status)),
-        h("p", null, `${b.property_name} · ${date(b.checkin)} – ${date(b.checkout)} · ${b.adults + b.children} oaspeți · ${b.total} lei`),
+        h("p", null, `${b.property_name} · ${date(b.checkin)} – ${date(b.checkout)} · ${b.adults + b.children} oaspeți · ${b.total} lei${b.discount ? ` (reducere club ${b.discount} lei)` : ""}`),
         h("p", null, h("a", { href: `tel:${b.guest_phone.replace(/[^+\d]/g, "")}` }, b.guest_phone), " · ", h("a", { href: `mailto:${b.guest_email}` }, b.guest_email), ` · ${b.code}`),
         b.note ? h("p", { class: "adm-note" }, b.note) : null,
         h("div", { class: "adm-actions" },
@@ -145,12 +144,26 @@
       orders.length ? h("div", { class: "adm-list" }, orders.map((o) => h("article", { class: "adm-card adm-booking" },
         h("div", { class: "adm-bk-top" }, h("b", null, `Ap. ${o.apartment} · ${o.guest_name}`), h("span", { class: `mg-status is-${{ new: "pending", confirmed: "confirmed", delivered: "confirmed", cancelled: "cancelled" }[o.status]}` }, ORDER_STATUS[o.status] || o.status)),
         h("p", null, o.items.map((i) => `${i.qty} × ${i.name}`).join(", ")),
-        h("p", null, h("b", null, `${o.total} lei`), " pe nota camerei · ", h("a", { href: `tel:${o.guest_phone.replace(/[^+\d]/g, "")}` }, o.guest_phone), ` · ${o.code}${o.demo ? " · TEST" : ""}`),
+        h("p", null, h("b", null, `${o.total} lei`), `${o.discount ? ` (reducere club ${o.discount} lei)` : ""} pe nota camerei · `, h("a", { href: `tel:${o.guest_phone.replace(/[^+\d]/g, "")}` }, o.guest_phone), ` · ${o.code}${o.demo ? " · TEST" : ""}`),
         o.note ? h("p", { class: "adm-note" }, o.note) : null,
         h("div", { class: "adm-actions" },
           o.status === "new" ? act(o, "confirm", "Confirmă", "btn-primary") : null,
           o.status === "confirmed" ? act(o, "deliver", "Marchează livrată", "btn-primary") : null,
           o.status === "new" || o.status === "confirmed" ? act(o, "cancel", "Anulează", "btn-ghost") : null)))) : h("p", { class: "adm-card" }, "Nu există comenzi încă."));
+  }
+
+  // ---------- oaspeti cu cont ----------
+  const LEVEL = { member: "Membru", silver: "Silver", gold: "Gold" };
+  async function renderGuests() {
+    const { guests } = await api("guests");
+    root.replaceChildren(
+      h("div", { class: "adm-head" }, h("h1", null, "Oaspeți"), h("p", null, `${guests.length} conturi în Green Future Club.`)),
+      guests.length ? h("div", { class: "adm-list" }, guests.map((g) => h("article", { class: "adm-card adm-booking" },
+        h("div", { class: "adm-bk-top" }, h("b", null, g.name), h("span", { class: "mg-status" }, LEVEL[g.level])),
+        h("p", null, h("a", { href: `mailto:${g.email}` }, g.email), " · ", h("a", { href: `tel:${g.phone.replace(/[^+\d]/g, "")}` }, g.phone)),
+        h("p", null, `${g.stays} sejururi încheiate · ${g.orders} comenzi livrate`),
+        h("label", { class: "bk-field" }, h("span", null, "Nivel"), h("select", { on: { change: guarded(async (e) => { await api(`guests/${g.id}`, "POST", { level: e.target.value }); renderGuests(); }) } },
+          [["auto", "Automat"], ["member", "Membru"], ["silver", "Silver"], ["gold", "Gold"]].map(([v, t]) => h("option", { value: v, selected: (g.level_override || "auto") === v }, t))))))) : h("p", { class: "adm-card" }, "Nu există conturi încă."));
   }
 
   // ---------- apartamente ----------
@@ -168,7 +181,7 @@
       ev.preventDefault();
       const f = new FormData(ev.currentTarget);
       await api(`properties/${slug}`, "PATCH", {
-        active: f.get("active") === "on", instantBook: f.get("instantBook") === "on",
+        active: f.get("active") === "on", instantBook: f.get("instantBook") === "on", loyalty: f.get("loyalty") === "on",
         basePrice: f.get("basePrice") === "" ? null : Number(f.get("basePrice")), cleaningFee: Number(f.get("cleaningFee") || 0),
         capacity: Number(f.get("capacity")), minNights: Number(f.get("minNights")), freeCancelDays: Number(f.get("freeCancelDays")),
         checkinTime: f.get("checkinTime"), checkoutTime: f.get("checkoutTime"),
@@ -179,6 +192,7 @@
       h("h2", null, "Setări"),
       check("Rezervările sunt active pe site", "active", p.active),
       check("Confirmare pe loc, fără aprobarea proprietarului", "instantBook", p.instantBook),
+      check("Particip la Green Future Club: oaspeții Silver primesc 5%, iar cei Gold 10% din prețul nopților, din încasarea proprietarului", "loyalty", p.loyalty),
       h("div", { class: "adm-row" },
         input("Preț pe noapte (lei)", "basePrice", p.basePrice, { type: "number", min: "1" }),
         input("Curățenie (lei)", "cleaningFee", p.cleaningFee, { type: "number", min: "0" }),
@@ -225,7 +239,7 @@
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush };
+  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests };
   function openTab(name) {
     nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
     guarded(TABS[name])();
@@ -237,6 +251,7 @@
     const me = await api("me");
     nav.querySelector('[data-tab="orders"]').hidden = me.role !== "admin";
     nav.querySelector('[data-tab="push"]').hidden = me.role !== "admin";
+    nav.querySelector('[data-tab="guests"]').hidden = me.role !== "admin";
     nav.hidden = false;
     openTab("bookings");
   });

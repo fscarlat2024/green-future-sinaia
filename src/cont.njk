@@ -1,0 +1,17 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/cont/index.html' if lang == 'ro' else '/en/account/index.html' }}"
+layout: base.njk
+noindex: true
+scripts: ["/assets/js/account.js"]
+eleventyComputed:
+  title: "{{ 'Contul meu' if lang == 'ro' else 'My account' }} - {{ site.name }}"
+  urlRo: "/cont/"
+  urlEn: "/en/account/"
+---
+<main class="block acc-page">
+  <div class="wrap"><div id="acc" data-lang="{{ lang }}"></div></div>
+</main>

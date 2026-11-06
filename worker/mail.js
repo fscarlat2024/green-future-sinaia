@@ -34,13 +34,13 @@ const wrap = (title, body) => `<div style="font-family:Arial,sans-serif;max-widt
 
 const details = (p, b, lang) => {
   const L = lang === "en"
-    ? { code: "Booking code", apt: "Apartment", in: "Check-in", out: "Check-out", guests: "Guests", total: "Total", pay: "pay at the property" }
-    : { code: "Cod rezervare", apt: "Apartament", in: "Sosire", out: "Plecare", guests: "Oaspeți", total: "Total", pay: "plată la proprietate" };
+    ? { code: "Booking code", apt: "Apartment", in: "Check-in", out: "Check-out", guests: "Guests", discount: "Green Future Club discount", total: "Total", pay: "pay at the property" }
+    : { code: "Cod rezervare", apt: "Apartament", in: "Sosire", out: "Plecare", guests: "Oaspeți", discount: "Reducere Green Future Club", total: "Total", pay: "plată la proprietate" };
   const row = (k, v) => `<tr><td style="padding:5px 12px 5px 0;color:#7B7A69">${k}</td><td style="padding:5px 0"><b>${esc(v)}</b></td></tr>`;
   return `<table style="border-collapse:collapse;font-size:15px">
     ${row(L.code, b.code)}${row(L.apt, p.name)}
     ${row(L.in, `${fmt(b.checkin, lang)}, ${p.checkin_time}`)}${row(L.out, `${fmt(b.checkout, lang)}, ${p.checkout_time}`)}
-    ${row(L.guests, b.adults + b.children)}${row(L.total, `${b.total} lei (${L.pay})`)}</table>`;
+    ${row(L.guests, b.adults + b.children)}${b.discount ? row(L.discount, `-${b.discount} lei`) : ""}${row(L.total, `${b.total} lei (${L.pay})`)}</table>`;
 };
 
 // Fara email de proprietar, rezervarea ajunge la adresa site-ului, redirectionata catre administrator.
@@ -97,9 +97,19 @@ export function mailOrder(env, o) {
   const body = `${o.demo ? "<p><b>Comandă de test: nu se prepară.</b></p>" : ""}
     <p><b>Apartament ${esc(o.apartment)}</b><br>${esc(o.guest_name)}, ${esc(o.guest_phone)}</p>
     <table style="border-collapse:collapse;font-size:15px">${rows}
+      ${o.discount ? `<tr><td style="padding:4px 12px 0 0">Reducere Green Future Club</td><td style="padding:4px 0 0;text-align:right">-${o.discount} lei</td></tr>` : ""}
       <tr><td style="padding:8px 12px 0 0"><b>Total, pe nota camerei</b></td><td style="padding:8px 0 0;text-align:right"><b>${o.total} lei</b></td></tr></table>
     ${o.note ? `<p><i>${esc(o.note)}</i></p>` : ""}<p>Cod: ${esc(o.code)}. <a href="${esc(env.SITE_URL)}/admin/">Deschide panoul</a></p>`;
   return send(env, env.RESTAURANT_EMAIL || env.MAIL_FROM, title, wrap(esc(title), body));
+}
+
+export function mailGuestReset(env, g, token) {
+  const en = g.lang === "en";
+  const title = en ? "Reset your password" : "Schimbă parola contului";
+  const link = `${esc(env.SITE_URL)}${en ? "/en/account/" : "/cont/"}?reset=${esc(token)}`;
+  const body = `<p>${en ? "Use this link within one hour to choose a new password. If you did not ask for it, ignore this email." : "Folosește linkul în cel mult o oră ca să alegi o parolă nouă. Dacă nu ai cerut asta, ignoră emailul."}</p>
+    <p style="margin-top:18px"><a href="${link}" style="background:#2E6B47;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${title}</a></p>`;
+  return send(env, g.email, title, wrap(esc(title), body));
 }
 
 export function mailConflict(env, p, b, event) {

@@ -55,6 +55,7 @@
         <a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a>
         <a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a>
         <a href="{{ home }}#sinaia" class="hide-sm">{{ t.nav_sinaia }}</a>
+        <a href="{{ '/cont/' if lang == 'ro' else '/en/account/' }}">{{ "Cont" if lang == "ro" else "Account" }}</a>
         {% if urlRo and urlEn %}
         <span class="lang-switch">
           <a href="{{ urlRo }}"{% if lang == "ro" %} class="on"{% endif %}>RO</a>
@@ -70,6 +71,7 @@
       <a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a>
       <a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a>
       <a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a>
+      <a href="{{ '/cont/' if lang == 'ro' else '/en/account/' }}">{{ "Cont" if lang == "ro" else "Account" }}</a>
     </nav>
   </header>
 

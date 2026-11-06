@@ -2,13 +2,14 @@
 // Auth panou: parola PBKDF2 + token Bearer (merge si in site, si in viitoarea aplicatie mobila).
 // Disponibilitatea e verificata in aceeasi instructiune SQL cu rezervarea, ca doi oaspeti
 // sa nu poata prinde aceeasi perioada.
-import { mailOwnerNew, mailGuest, mailConflict, mailOrder, brevoKeepAlive } from "./mail.js";
+import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, brevoKeepAlive } from "./mail.js";
 import restaurant from "../src/_data/restaurant.json";
 import { parseIcal, buildIcal } from "./ical.js";
 import { pushEnabled, validPushToken, pushTo, pushToStaff, guestBookingMessage, guestOrderMessage } from "./push.js";
 
 const enc = new TextEncoder();
 const SESSION_DAYS = 30;
+const GUEST_SESSION_DAYS = 180;
 const MAX_NIGHTS = 60;
 const MAX_ADVANCE_DAYS = 400;
 const PENDING_HOURS = 24;
@@ -16,6 +17,9 @@ const ICAL_MAX_AGE_MS = 30 * 60000;
 const ICAL_BOOKING_AGE_MS = 2 * 60000; // inainte de o rezervare sau confirmare, calendarul trebuie sa fie aproape la zi
 const ICAL_WAIT_MS = 3000;
 const ACTIVE = "('pending','confirmed')";
+// Green Future Club: un sejur incheiat conteaza 1, iar 5 comenzi livrate la bistro conteaza cat un sejur.
+const LEVELS = [{ key: "gold", min: 5, pct: 10 }, { key: "silver", min: 2, pct: 5 }, { key: "member", min: 0, pct: 0 }];
+const ORDERS_PER_STAY = 5;
 
 class Fail extends Error {
   constructor(status, code, extra) { super(code); this.status = status; this.code = code; this.extra = extra; }
@@ -56,6 +60,10 @@ async function verifyPassword(pw, stored) {
   for (let i = 0; i < hash.length; i++) diff |= again.charCodeAt(i) ^ hash.charCodeAt(i);
   return diff === 0;
 }
+async function makePassword(pw) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return `pbkdf2$100000$${b64(salt)}$${await hashPassword(pw, salt)}`;
+}
 const randomHex = (n = 32) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
 async function sha256(s) {
   const d = await crypto.subtle.digest("SHA-256", enc.encode(s));
@@ -90,7 +98,7 @@ async function bookableProperty(env, slug) {
 const publicProperty = (p) => ({
   slug: p.slug, name: p.name, capacity: p.capacity, basePrice: p.base_price, cleaningFee: p.cleaning_fee,
   minNights: p.min_nights, instantBook: !!p.instant_book, freeCancelDays: p.free_cancel_days,
-  checkinTime: p.checkin_time, checkoutTime: p.checkout_time, currency: "lei",
+  checkinTime: p.checkin_time, checkoutTime: p.checkout_time, currency: "lei", loyalty: !!p.loyalty_enabled,
 });
 
 async function loadRates(env, slug, from, to) {
@@ -115,7 +123,7 @@ async function isFree(env, slug, checkin, checkout) {
 }
 
 // Toate regulile de pret si sejur; aceeasi functie e folosita la afisare si la rezervare.
-async function quote(env, p, checkin, checkout, guests) {
+async function quote(env, p, checkin, checkout, guests, level) {
   if (!isDate(checkin) || !isDate(checkout)) fail(400, "invalid_dates");
   const nights = diffDays(checkin, checkout);
   if (nights < 1 || nights > MAX_NIGHTS) fail(400, "invalid_dates");
@@ -133,9 +141,12 @@ async function quote(env, p, checkin, checkout, guests) {
     nightly.push({ date: d, price: rateFor(rates, d)?.price ?? p.base_price });
   }
   const subtotal = nightly.reduce((sum, n) => sum + n.price, 0);
+  // reducerea se aplica pe nopti, nu si pe curatenie, si doar daca proprietarul participa
+  const pct = p.loyalty_enabled && level ? level.pct : 0;
+  const discount = Math.round(subtotal * pct / 100);
   return {
-    checkin, checkout, nights, guests, nightly, subtotal,
-    cleaningFee: p.cleaning_fee, total: subtotal + p.cleaning_fee, currency: "lei",
+    checkin, checkout, nights, guests, nightly, subtotal, discount, discountPct: pct, level: discount ? level.key : undefined,
+    cleaningFee: p.cleaning_fee, total: subtotal - discount + p.cleaning_fee, currency: "lei",
     available: await isFree(env, p.slug, checkin, checkout),
   };
 }
@@ -174,7 +185,7 @@ function cleanGuest(b) {
 const publicBooking = (b, p) => ({
   code: b.code, property: b.property_slug, propertyName: p?.name, checkin: b.checkin, checkout: b.checkout,
   nights: diffDays(b.checkin, b.checkout), adults: b.adults, children: b.children, guestName: b.guest_name,
-  subtotal: b.subtotal, cleaningFee: b.cleaning_fee, total: b.total, currency: "lei", status: b.status, lang: b.lang,
+  subtotal: b.subtotal, discount: b.discount, cleaningFee: b.cleaning_fee, total: b.total, currency: "lei", status: b.status, lang: b.lang,
   checkinTime: p?.checkin_time, checkoutTime: p?.checkout_time, freeCancelDays: p?.free_cancel_days,
   ownerPhone: b.status === "confirmed" ? p?.owner_phone : undefined,
   canCancel: guestCanCancel(b, p),
@@ -194,7 +205,8 @@ async function createBooking(req, env, ctx) {
   if (adults < 1 || children < 0) fail(400, "invalid_guests");
   const guest = cleanGuest(b);
   await freshen(env, ctx, p, ICAL_BOOKING_AGE_MS);
-  const q = await quote(env, p, b.checkin, b.checkout, adults + children);
+  const account = await optionalGuest(req, env);
+  const q = await quote(env, p, b.checkin, b.checkout, adults + children, account ? await guestLevel(env, account) : null);
   if (!q.available) fail(409, "unavailable");
   // dupa validari, ca o greseala de tastare sa nu consume din limita
   await rateLimit(env, `book:${clientIp(req)}`, 5, 3600000);
@@ -206,12 +218,12 @@ async function createBooking(req, env, ctx) {
   const lang = b.lang === "en" ? "en" : "ro";
   const res = await env.DB.prepare(
     `INSERT INTO bookings (code, token_hash, property_slug, checkin, checkout, adults, children, guest_name,
-       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at, push_token)
-     SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18
+       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at, push_token, guest_id, discount)
+     SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18,?19,?20
      WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE property_slug = ?3 AND status IN ${ACTIVE} AND checkin < ?5 AND checkout > ?4)
        AND NOT EXISTS (SELECT 1 FROM blocks WHERE property_slug = ?3 AND date_from < ?5 AND date_to > ?4)`
   ).bind(code, await sha256(token), p.slug, q.checkin, q.checkout, adults, children, guest.name, guest.email,
-    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now, validPushToken(b.pushToken)).run();
+    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now, validPushToken(b.pushToken), account ? account.id : null, q.discount).run();
   if (!res.meta.changes) fail(409, "unavailable");
 
   const booking = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
@@ -299,10 +311,10 @@ async function updateProperty(env, p, b) {
   if (b.active && !basePrice) fail(400, "price_required");
   await env.DB.prepare(
     `UPDATE properties SET active=?, capacity=?, base_price=?, cleaning_fee=?, min_nights=?, instant_book=?,
-       free_cancel_days=?, checkin_time=?, checkout_time=?, owner_email=?, owner_phone=?, ical_import_url=? WHERE slug=?`
+       free_cancel_days=?, checkin_time=?, checkout_time=?, owner_email=?, owner_phone=?, ical_import_url=?, loyalty_enabled=? WHERE slug=?`
   ).bind(b.active ? 1 : 0, int(b.capacity, 1, 30), basePrice, int(b.cleaningFee || 0, 0, 100000), int(b.minNights, 1, 30),
     b.instantBook ? 1 : 0, int(b.freeCancelDays, 0, 60), time(b.checkinTime), time(b.checkoutTime),
-    String(b.ownerEmail || "").trim() || null, String(b.ownerPhone || "").trim() || null, icalUrl || null, p.slug).run();
+    String(b.ownerEmail || "").trim() || null, String(b.ownerPhone || "").trim() || null, icalUrl || null, b.loyalty ? 1 : 0, p.slug).run();
 }
 
 async function adminRoutes(req, env, ctx, parts) {
@@ -372,6 +384,27 @@ async function adminRoutes(req, env, ctx, parts) {
       await env.DB.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").bind(next[1], Date.now(), Number(second)).run();
       ctx.waitUntil(pushTo(env, [o.push_token], guestOrderMessage(o, next[1])));
       return json({ ok: true, status: next[1] });
+    }
+  }
+
+  if (first === "guests") {
+    if (a.role !== "admin") fail(403, "forbidden");
+    if (!second && req.method === "GET") {
+      const { results } = await env.DB.prepare(
+        `SELECT g.id, g.name, g.email, g.phone, g.level_override, g.created_at,
+           (SELECT COUNT(*) FROM bookings b WHERE b.guest_id = g.id AND b.status = 'confirmed' AND b.checkout <= ?1) AS stays,
+           (SELECT COUNT(*) FROM orders o WHERE o.guest_id = g.id AND o.status = 'delivered' AND o.demo = 0) AS orders
+         FROM guests g ORDER BY g.created_at DESC LIMIT 300`
+      ).bind(today()).all();
+      return json({ guests: results.map((g) => ({ ...g, level: levelFrom(g.stays, g.orders, g.level_override).key })) });
+    }
+    if (second && req.method === "POST") {
+      const b = await readJson(req);
+      const override = b.level === "auto" ? null : b.level;
+      if (override !== null && !LEVELS.some((l) => l.key === override)) fail(400, "invalid_value");
+      const r = await env.DB.prepare("UPDATE guests SET level_override = ? WHERE id = ?").bind(override, Number(second)).run();
+      if (!r.meta.changes) fail(404, "not_found");
+      return json({ ok: true });
     }
   }
 
@@ -531,21 +564,174 @@ async function createOrder(req, env, ctx) {
     if (!item || !Number.isInteger(qty) || qty < 1 || qty > 20) fail(400, "invalid_items");
     return { id: item.id, name: item.ro.name, price: item.price, qty };
   });
-  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const account = await optionalGuest(req, env);
+  const level = account ? await guestLevel(env, account) : null;
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const discount = level ? Math.round(subtotal * level.pct / 100) : 0;
+  const total = subtotal - discount;
   await rateLimit(env, `order:${clientIp(req)}`, 5, 3600000);
   const now = Date.now();
   const demo = restaurant.demo ? 1 : 0;
   const code = orderCode();
   const note = String(b.note || "").trim().slice(0, 500);
   await env.DB.prepare(
-    `INSERT INTO orders (code, apartment, guest_name, guest_phone, note, items, total, status, demo, lang, created_at, updated_at, push_token)
-     VALUES (?,?,?,?,?,?,?, 'new', ?,?,?,?,?)`
-  ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now, validPushToken(b.pushToken)).run();
+    `INSERT INTO orders (code, apartment, guest_name, guest_phone, note, items, total, status, demo, lang, created_at, updated_at, push_token, guest_id, discount)
+     VALUES (?,?,?,?,?,?,?, 'new', ?,?,?,?,?,?,?)`
+  ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now, validPushToken(b.pushToken), account ? account.id : null, discount).run();
   ctx.waitUntil(Promise.allSettled([
-    mailOrder(env, { code, apartment, guest_name: name, guest_phone: phone, note, items, total, demo }),
+    mailOrder(env, { code, apartment, guest_name: name, guest_phone: phone, note, items, total, discount, demo }),
     pushToStaff(env, null, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
   ]));
-  return json({ code, total, demo: !!demo }, 201);
+  return json({ code, total, discount, demo: !!demo }, 201);
+}
+
+// ---------- conturi de oaspeti si Green Future Club ----------
+function levelFrom(stays, orders, override) {
+  const score = stays + Math.floor(orders / ORDERS_PER_STAY);
+  const auto = LEVELS.find((l) => score >= l.min);
+  const current = LEVELS.find((l) => l.key === override) || auto;
+  const next = [...LEVELS].reverse().find((l) => l.pct > current.pct);
+  return { key: current.key, pct: current.pct, stays, orders, nextKey: next?.key, nextPct: next?.pct, staysToNext: next ? Math.max(next.min - score, 0) : 0 };
+}
+async function guestLevel(env, g) {
+  const r = await env.DB.prepare(
+    `SELECT (SELECT COUNT(*) FROM bookings WHERE guest_id = ?1 AND status = 'confirmed' AND checkout <= ?2) AS stays,
+       (SELECT COUNT(*) FROM orders WHERE guest_id = ?1 AND status = 'delivered' AND demo = 0) AS orders`
+  ).bind(g.id, today()).first();
+  return levelFrom(r.stays, r.orders, g.level_override);
+}
+async function optionalGuest(req, env) {
+  const m = (req.headers.get("authorization") || "").match(/^Bearer ([a-f0-9]{64})$/);
+  if (!m) return null;
+  return env.DB.prepare(
+    `SELECT g.* FROM guest_sessions s JOIN guests g ON g.id = s.guest_id WHERE s.token_hash = ? AND s.expires_at > ?`
+  ).bind(await sha256(m[1]), Date.now()).first();
+}
+async function requireGuest(req, env) {
+  const g = await optionalGuest(req, env);
+  if (!g) fail(401, "unauthorized");
+  return g;
+}
+async function guestSession(env, id) {
+  const token = randomHex();
+  await env.DB.prepare("INSERT INTO guest_sessions (token_hash, guest_id, expires_at) VALUES (?,?,?)")
+    .bind(await sha256(token), id, Date.now() + GUEST_SESSION_DAYS * 86400000).run();
+  return token;
+}
+const cleanEmail = (v) => {
+  const email = String(v || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) fail(400, "invalid_email");
+  return email;
+};
+const cleanPassword = (v) => {
+  const pw = String(v || "");
+  if (pw.length < 8 || pw.length > 200) fail(400, "weak_password");
+  return pw;
+};
+
+async function guestRoutes(req, env, ctx, parts) {
+  const [first] = parts;
+  if (first === "register" && req.method === "POST") {
+    const b = await readJson(req);
+    if (b.website) return json({ ok: true }, 201); // capcana pentru boti
+    if (b.accept !== true) fail(400, "accept_required");
+    const email = cleanEmail(b.email);
+    const name = String(b.name || "").trim();
+    const phone = String(b.phone || "").trim();
+    if (name.length < 2 || name.length > 100) fail(400, "invalid_name");
+    if (phone.replace(/\D/g, "").length < 6 || phone.length > 30) fail(400, "invalid_phone");
+    const pw = cleanPassword(b.password);
+    await rateLimit(env, `register:${clientIp(req)}`, 10, 3600000);
+    if (await env.DB.prepare("SELECT 1 FROM admins WHERE email = ?").bind(email).first()) fail(409, "email_taken");
+    const res = await env.DB.prepare(
+      "INSERT OR IGNORE INTO guests (email, pass_hash, name, phone, lang, created_at) VALUES (?,?,?,?,?,?)"
+    ).bind(email, await makePassword(pw), name, phone, b.lang === "en" ? "en" : "ro", Date.now()).run();
+    if (!res.meta.changes) fail(409, "email_taken");
+    return json({ token: await guestSession(env, res.meta.last_row_id) }, 201);
+  }
+  if (first === "login" && req.method === "POST") {
+    const b = await readJson(req);
+    const email = String(b.email || "").trim().toLowerCase();
+    const pw = String(b.password || "");
+    const lock = await env.DB.prepare("SELECT until FROM login_fails WHERE email = ?").bind(email).first();
+    if (lock && lock.until > Date.now()) fail(429, "too_many_requests");
+    const g = await env.DB.prepare("SELECT id, pass_hash FROM guests WHERE email = ?").bind(email).first();
+    const a = g ? null : await env.DB.prepare("SELECT id, email, role, pass_hash FROM admins WHERE email = ?").bind(email).first();
+    const who = g || a;
+    if (!who || !(await verifyPassword(pw, who.pass_hash))) {
+      await env.DB.prepare(
+        `INSERT INTO login_fails (email, count, until) VALUES (?1, 1, 0)
+         ON CONFLICT(email) DO UPDATE SET count = count + 1, until = CASE WHEN count + 1 >= 8 THEN ?2 ELSE 0 END`
+      ).bind(email, Date.now() + 15 * 60000).run();
+      fail(401, "bad_login");
+    }
+    await env.DB.prepare("DELETE FROM login_fails WHERE email = ?").bind(email).run();
+    if (g) return json({ token: await guestSession(env, g.id) });
+    // acelasi ecran de cont pentru toti: proprietarii si administratorii ajung in panou
+    const token = randomHex();
+    await env.DB.prepare("INSERT INTO admin_sessions (token_hash, admin_id, expires_at) VALUES (?,?,?)")
+      .bind(await sha256(token), a.id, Date.now() + SESSION_DAYS * 86400000).run();
+    return json({ token, admin: true });
+  }
+  if (first === "forgot" && req.method === "POST") {
+    const b = await readJson(req);
+    const email = cleanEmail(b.email);
+    await rateLimit(env, `forgot:${clientIp(req)}`, 5, 3600000);
+    await rateLimit(env, `forgot:${email}`, 3, 3600000);
+    const g = await env.DB.prepare("SELECT * FROM guests WHERE email = ?").bind(email).first();
+    if (g) {
+      const token = randomHex();
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM guest_resets WHERE guest_id = ? OR expires_at < ?").bind(g.id, Date.now()),
+        env.DB.prepare("INSERT INTO guest_resets (token_hash, guest_id, expires_at) VALUES (?,?,?)").bind(await sha256(token), g.id, Date.now() + 3600000),
+      ]);
+      ctx.waitUntil(mailGuestReset(env, g, token));
+    }
+    return json({ ok: true }); // acelasi raspuns, ca sa nu se afle cine are cont
+  }
+  if (first === "reset" && req.method === "POST") {
+    const b = await readJson(req);
+    await rateLimit(env, `reset:${clientIp(req)}`, 20, 3600000);
+    const pw = cleanPassword(b.password);
+    const row = await env.DB.prepare("SELECT guest_id FROM guest_resets WHERE token_hash = ? AND expires_at > ?")
+      .bind(await sha256(String(b.token || "")), Date.now()).first();
+    if (!row) fail(400, "reset_expired");
+    await env.DB.batch([
+      env.DB.prepare("UPDATE guests SET pass_hash = ? WHERE id = ?").bind(await makePassword(pw), row.guest_id),
+      env.DB.prepare("DELETE FROM guest_resets WHERE guest_id = ?").bind(row.guest_id),
+      env.DB.prepare("DELETE FROM guest_sessions WHERE guest_id = ?").bind(row.guest_id),
+    ]);
+    return json({ ok: true });
+  }
+
+  const g = await requireGuest(req, env);
+  if (first === "logout" && req.method === "POST") {
+    const m = req.headers.get("authorization").match(/^Bearer (.+)$/);
+    await env.DB.prepare("DELETE FROM guest_sessions WHERE token_hash = ?").bind(await sha256(m[1])).run();
+    return json({ ok: true });
+  }
+  if (first === "me" && req.method === "GET") {
+    const { results } = await env.DB.prepare(
+      `SELECT b.code, b.checkin, b.checkout, b.status, b.total, b.discount, p.name AS property_name
+       FROM bookings b JOIN properties p ON p.slug = b.property_slug WHERE b.guest_id = ? ORDER BY b.checkin DESC LIMIT 50`
+    ).bind(g.id).all();
+    return json({ name: g.name, email: g.email, phone: g.phone, level: await guestLevel(env, g), bookings: results });
+  }
+  if (first === "me" && req.method === "DELETE") {
+    const b = await readJson(req);
+    await rateLimit(env, `delete:${g.id}`, 8, 3600000);
+    if (!(await verifyPassword(String(b.password || ""), g.pass_hash))) fail(401, "bad_login");
+    // rezervarile raman pentru evidenta proprietarului, fara legatura cu contul
+    await env.DB.batch([
+      env.DB.prepare("UPDATE bookings SET guest_id = NULL WHERE guest_id = ?").bind(g.id),
+      env.DB.prepare("UPDATE orders SET guest_id = NULL WHERE guest_id = ?").bind(g.id),
+      env.DB.prepare("DELETE FROM guest_sessions WHERE guest_id = ?").bind(g.id),
+      env.DB.prepare("DELETE FROM guest_resets WHERE guest_id = ?").bind(g.id),
+      env.DB.prepare("DELETE FROM guests WHERE id = ?").bind(g.id),
+    ]);
+    return json({ ok: true });
+  }
+  fail(404, "not_found");
 }
 
 // ---------- intretinere fara cron ----------
@@ -584,6 +770,7 @@ async function api(req, env, ctx, url) {
   await maintain(env, ctx);
 
   if (first === "admin") return adminRoutes(req, env, ctx, parts.slice(1));
+  if (first === "guest") return guestRoutes(req, env, ctx, parts.slice(1));
 
   if (first === "properties" && req.method === "GET") {
     if (!second) {
@@ -601,7 +788,8 @@ async function api(req, env, ctx, url) {
     await rateLimit(env, `quote:${clientIp(req)}`, 300, 3600000);
     const b = await readJson(req);
     const p = await bookableProperty(env, String(b.slug || ""));
-    return json(await quote(env, p, b.checkin, b.checkout, Math.trunc(Number(b.guests)) || 0));
+    const account = await optionalGuest(req, env);
+    return json(await quote(env, p, b.checkin, b.checkout, Math.trunc(Number(b.guests)) || 0, account ? await guestLevel(env, account) : null));
   }
 
   if (first === "search" && req.method === "GET") {

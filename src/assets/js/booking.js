@@ -8,7 +8,8 @@
     ro: {
       checkin: "Sosire", checkout: "Plecare", pick: "Alege data", adults: "Adulți", children: "Copii",
       pickDates: "Alege data sosirii și a plecării în calendar.", pickOut: "Alege acum data plecării.",
-      nights: (n) => (n === 1 ? "1 noapte" : `${n} nopți`), cleaning: "Curățenie", total: "Total",
+      nights: (n) => (n === 1 ? "1 noapte" : `${n} nopți`), cleaning: "Curățenie", total: "Total", club: (l, p) => `Reducere ${l} (${p}%)`,
+      joinHint: "Cu un cont Green Future Club, rezervarea îți aduce reduceri la sejururile viitoare.", join: "Creează cont",
       perNight: "lei / noapte", from: "de la", minStay: (n) => `Sejur minim: ${n} nopți`,
       next: "Continuă", bookNow: "Rezervă acum", request: "Trimite cererea de rezervare", back: "Înapoi",
       name: "Nume și prenume", email: "Email", phone: "Telefon", note: "Mesaj pentru gazdă (opțional)",
@@ -33,7 +34,8 @@
     en: {
       checkin: "Check-in", checkout: "Check-out", pick: "Select date", adults: "Adults", children: "Children",
       pickDates: "Select your check-in and check-out dates in the calendar.", pickOut: "Now select your check-out date.",
-      nights: (n) => (n === 1 ? "1 night" : `${n} nights`), cleaning: "Cleaning", total: "Total",
+      nights: (n) => (n === 1 ? "1 night" : `${n} nights`), cleaning: "Cleaning", total: "Total", club: (l, p) => `${l} discount (${p}%)`,
+      joinHint: "With a Green Future Club account, this booking earns you discounts on future stays.", join: "Create account",
       perNight: "lei / night", from: "from", minStay: (n) => `Minimum stay: ${n} nights`,
       next: "Continue", bookNow: "Book now", request: "Send booking request", back: "Back",
       name: "Full name", email: "Email", phone: "Phone", note: "Message for the host (optional)",
@@ -57,6 +59,11 @@
     },
   }[lang];
   const locale = lang === "en" ? "en-GB" : "ro-RO";
+  let guestToken = null;
+  try { guestToken = localStorage.getItem("gf_guest_token"); } catch {}
+  const authHeader = () => (guestToken ? { authorization: `Bearer ${guestToken}` } : {});
+  let member = null;
+  if (guestToken) fetch("/api/guest/me", { headers: authHeader() }).then((r) => (r.ok ? r.json() : null)).then((m) => { member = m; }).catch(() => {});
 
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -171,7 +178,7 @@
 
   async function loadQuote() {
     const r = await fetch("/api/quote", {
-      method: "POST", headers: { "content-type": "application/json" },
+      method: "POST", headers: { "content-type": "application/json", ...authHeader() },
       body: JSON.stringify({ slug: root.dataset.slug, checkin: state.checkin, checkout: state.checkout, guests: state.adults + state.children }),
     }).catch(() => null);
     const data = r ? await r.json().catch(() => ({})) : {};
@@ -185,6 +192,7 @@
     if (!q) return null;
     return h("div", { class: "bk-lines" },
       h("div", null, h("span", null, T.nights(q.nights)), h("span", null, `${q.subtotal} lei`)),
+      q.discount ? h("div", { class: "bk-discount" }, h("span", null, T.club(q.level === "gold" ? "Gold" : "Silver", q.discountPct)), h("span", null, `-${q.discount} lei`)) : null,
       q.cleaningFee ? h("div", null, h("span", null, T.cleaning), h("span", null, `${q.cleaningFee} lei`)) : null,
       h("div", { class: "bk-total" }, h("span", null, T.total), h("b", null, `${q.total} lei`)));
   }
@@ -221,9 +229,10 @@
     const form = h("form", { class: "bk-form", on: { submit } },
       h("button", { type: "button", class: "bk-back", on: { click: () => { state.step = "dates"; state.error = ""; renderSide(); } } }, `‹ ${T.back}`),
       h("p", { class: "bk-sum" }, `${longDate(state.checkin)} – ${longDate(state.checkout)}`), priceLines(),
-      field(T.name, "name", { autocomplete: "name", maxlength: "100" }),
-      field(T.email, "email", { type: "email", autocomplete: "email", maxlength: "200" }),
-      field(T.phone, "phone", { type: "tel", autocomplete: "tel", maxlength: "30" }),
+      guestToken ? null : h("p", { class: "bk-join" }, T.joinHint, " ", h("a", { href: lang === "en" ? "/en/account/" : "/cont/" }, T.join)),
+      field(T.name, "name", { autocomplete: "name", maxlength: "100", value: member?.name }),
+      field(T.email, "email", { type: "email", autocomplete: "email", maxlength: "200", value: member?.email }),
+      field(T.phone, "phone", { type: "tel", autocomplete: "tel", maxlength: "30", value: member?.phone }),
       h("label", { class: "bk-field" }, h("span", null, T.note), h("textarea", { name: "note", rows: "3", maxlength: "1000" })),
       h("input", { class: "bk-trap", name: "website", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" }),
       h("label", { class: "bk-check" }, h("input", { type: "checkbox", name: "accept", required: true }), h("span", null, T.accept)),
@@ -241,7 +250,7 @@
     btn.disabled = true;
     btn.textContent = T.sending;
     const r = await fetch("/api/bookings", {
-      method: "POST", headers: { "content-type": "application/json" },
+      method: "POST", headers: { "content-type": "application/json", ...authHeader() },
       body: JSON.stringify({
         slug: root.dataset.slug, checkin: state.checkin, checkout: state.checkout, adults: state.adults, children: state.children, lang,
         name: f.get("name"), email: f.get("email"), phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token,

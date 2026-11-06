@@ -5,7 +5,7 @@
   const lang = root.dataset.lang === "en" ? "en" : "ro";
   const T = {
     ro: {
-      title: "Comanda ta", empty: "Alege ceva din meniu.", total: "Total", next: "Continuă", back: "Înapoi",
+      club: (l, p) => `Reducere ${l} (${p}%)`, title: "Comanda ta", empty: "Alege ceva din meniu.", total: "Total", next: "Continuă", back: "Înapoi",
       apartment: "Apartament", name: "Nume", phone: "Telefon", note: "Mențiuni (opțional)", notePh: "Ora dorită, alergii, alte preferințe",
       room: "Sunt de acord ca suma să fie trecută pe nota apartamentului.", send: "Trimite comanda", sending: "Se trimite...",
       remove: "Scoate", add: "Adaugă", bar: (n, t) => `Comanda ta · ${n} ${n === 1 ? "produs" : "produse"} · ${t} lei`,
@@ -16,7 +16,7 @@
       generic: "Comanda nu a putut fi trimisă. Te rugăm să încerci din nou.",
     },
     en: {
-      title: "Your order", empty: "Choose something from the menu.", total: "Total", next: "Continue", back: "Back",
+      club: (l, p) => `${l} discount (${p}%)`, title: "Your order", empty: "Choose something from the menu.", total: "Total", next: "Continue", back: "Back",
       apartment: "Apartment", name: "Name", phone: "Phone", note: "Notes (optional)", notePh: "Preferred time, allergies, other wishes",
       room: "I agree that the amount is added to the apartment bill.", send: "Send order", sending: "Sending...",
       remove: "Remove", add: "Add", bar: (n, t) => `Your order · ${n} ${n === 1 ? "item" : "items"} · ${t} lei`,
@@ -39,6 +39,12 @@
     return el;
   };
 
+  let guestToken = null;
+  try { guestToken = localStorage.getItem("gf_guest_token"); } catch {}
+  const authHeader = () => (guestToken ? { authorization: `Bearer ${guestToken}` } : {});
+  let member = null;
+  if (guestToken) fetch("/api/guest/me", { headers: authHeader() }).then((r) => (r.ok ? r.json() : null)).then((m) => { member = m; render(); }).catch(() => {});
+
   const cartEl = document.getElementById("cart");
   const barEl = document.getElementById("cart-bar");
   const KEY = "gf_cart";
@@ -54,7 +60,9 @@
   const totals = () => {
     let count = 0, total = 0;
     for (const [id, qty] of cart) { count += qty; total += qty * catalog.get(id).price; }
-    return { count, total };
+    // afisare; suma finala o calculeaza serverul
+    const discount = member ? Math.round(total * member.level.pct / 100) : 0;
+    return { count, total: total - discount, discount };
   };
   function change(id, n) {
     const qty = (cart.get(id) || 0) + n;
@@ -64,7 +72,12 @@
     render();
   }
 
-  const totalLine = () => h("div", { class: "cart-total" }, h("span", null, T.total), h("b", null, `${totals().total} lei`));
+  const totalLine = () => {
+    const t = totals();
+    return h("div", null,
+      t.discount ? h("div", { class: "cart-total bk-discount" }, h("span", null, T.club(member.level.key === "gold" ? "Gold" : "Silver", member.level.pct)), h("span", null, `-${t.discount} lei`)) : null,
+      h("div", { class: "cart-total" }, h("span", null, T.total), h("b", null, `${t.total} lei`)));
+  };
   const lines = () => h("ul", { class: "cart-lines" }, [...cart].map(([id, qty]) => {
     const item = catalog.get(id);
     return h("li", null,
@@ -89,8 +102,8 @@
       h("button", { type: "button", class: "bk-back", on: { click: () => { step = "items"; error = ""; render(); } } }, `‹ ${T.back}`),
       totalLine(),
       field(T.apartment, "apartment", { maxlength: "20", autocomplete: "off" }),
-      field(T.name, "name", { maxlength: "100", autocomplete: "name" }),
-      field(T.phone, "phone", { type: "tel", maxlength: "30", autocomplete: "tel" }),
+      field(T.name, "name", { maxlength: "100", autocomplete: "name", value: member?.name }),
+      field(T.phone, "phone", { type: "tel", maxlength: "30", autocomplete: "tel", value: member?.phone }),
       h("label", { class: "bk-field" }, h("span", null, T.note), h("textarea", { name: "note", rows: "2", maxlength: "500", placeholder: T.notePh })),
       h("input", { class: "bk-trap", name: "website", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" }),
       h("label", { class: "bk-check" }, h("input", { type: "checkbox", name: "accept", required: true }), h("span", null, T.room)),
@@ -107,7 +120,7 @@
     btn.disabled = true;
     btn.textContent = T.sending;
     const r = await fetch("/api/orders", {
-      method: "POST", headers: { "content-type": "application/json" },
+      method: "POST", headers: { "content-type": "application/json", ...authHeader() },
       body: JSON.stringify({
         lang, items: [...cart].map(([id, qty]) => ({ id, qty })), apartment: f.get("apartment"), name: f.get("name"),
         phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token,

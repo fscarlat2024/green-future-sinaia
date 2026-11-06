@@ -28,15 +28,15 @@
     user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-4 4-6 7.5-6s6.500 2 7.500 6"/>',
   };
   const tabs = en
-    ? [["home", "Home", "/en/"], ["apt", "Apartments", "/en/#apartamente"], ["food", "Bistro", "/en/restaurant/"], ["pass", "Passes", "/en/passes/"], ["user", "Account", "/admin/"]]
-    : [["home", "Acasă", "/"], ["apt", "Apartamente", "/#apartamente"], ["food", "Bistro", "/restaurant/"], ["pass", "Abonamente", "/abonamente/"], ["user", "Cont", "/admin/"]];
+    ? [["home", "Home", "/en/"], ["apt", "Apartments", "/en/#apartamente"], ["food", "Bistro", "/en/restaurant/"], ["pass", "Passes", "/en/passes/"], ["user", "Account", "/en/account/"]]
+    : [["home", "Acasă", "/"], ["apt", "Apartamente", "/#apartamente"], ["food", "Bistro", "/restaurant/"], ["pass", "Abonamente", "/abonamente/"], ["user", "Cont", "/cont/"]];
   const bar = document.createElement("nav");
   bar.className = "gf-tabs";
   bar.setAttribute("aria-label", en ? "Main menu" : "Meniu principal");
   for (const [icon, label, href] of tabs) {
     const a = document.createElement("a");
     a.href = href;
-    if (!href.includes("#") && location.pathname === href) a.className = "on";
+    if ((!href.includes("#") && location.pathname === href) || (icon === "user" && location.pathname.startsWith("/admin"))) a.className = "on";
     a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[icon]}</svg>`;
     a.append(label);
     bar.append(a);
