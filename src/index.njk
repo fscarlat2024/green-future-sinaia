@@ -47,14 +47,17 @@ eleventyComputed:
 </div>
 
 <section class="block" id="despre">
-  <div class="wrap split">
+  <div class="wrap split about-split">
     <div class="copy">
       <span class="eyebrow">{{ t.about_eyebrow }}</span>
-      <h2 style="font-size:clamp(1.9rem,4vw,2.7rem);font-weight:600;margin-top:.7rem">{{ site[lang].about_title }}</h2>
+      <h2>{{ site[lang].about_title }}</h2>
       <p>{{ site[lang].about_p1 }}</p>
       <p>{{ site[lang].about_p2 }}</p>
+      <p class="about-note">{{ site[lang].about_note }}</p>
     </div>
-    <div class="photo"><img src="{{ site.exteriorImage }}" alt="{{ site.name }}" loading="lazy"></div>
+    <div class="collage" role="img" aria-label="{{ 'Piscina, bistroul și apartamentele din Green Future Sinaia' if lang == 'ro' else 'The pool, the bistro and the apartments at Green Future Sinaia' }}" data-collage='[{% for src in site.collage %}{% if loop.index > 3 %}"{{ src }}"{% if not loop.last %},{% endif %}{% endif %}{% endfor %}]'>
+      {% for src in site.collage %}{% if loop.index <= 3 %}<div class="collage-tile"><img class="on" src="{{ src }}" alt="" loading="lazy"></div>{% endif %}{% endfor %}
+    </div>
   </div>
 </section>
 

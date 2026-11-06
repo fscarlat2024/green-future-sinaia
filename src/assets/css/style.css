@@ -846,3 +846,14 @@ button.pn-kpi { cursor: pointer; }
 .pn-photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
 .pn-photos figcaption { display: flex; justify-content: space-between; gap: .4rem; font-size: .76rem; color: var(--accent); }
 .pn-photos button { padding: 0; background: none; border: 0; font: inherit; color: var(--ink-soft); text-decoration: underline; cursor: pointer; }
+/* despre complex: text mai asezat si colaj */
+.about-split { align-items: center; }
+.about-split h2 { font-size: clamp(1.6rem, 2.6vw, 2.15rem) !important; line-height: 1.15; margin-top: .6rem; }
+.about-split .copy p { font-size: 1rem; line-height: 1.7; }
+.about-split .copy { max-width: 30rem; }
+.about-note { margin-top: 1.1rem; font-size: .82rem !important; letter-spacing: .02em; opacity: .7; }
+.collage { display: grid; grid-template-columns: 3fr 2fr; grid-template-rows: 1fr 1fr; gap: .6rem; aspect-ratio: 5 / 4; }
+.collage-tile { position: relative; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+.collage-tile:first-child { grid-row: span 2; }
+.collage-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s ease; }
+.collage-tile img.on { opacity: 1; }
