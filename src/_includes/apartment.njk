@@ -29,21 +29,6 @@ layout: base.njk
 </section>
 {% endif %}
 
-<section class="block wellness" id="facilitati">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">{{ t.fac_eyebrow }}</span>
-      <h2>{{ t.ap_fac_title }}</h2>
-      <p>{{ t.ap_fac_sub }}</p>
-    </div>
-    <div class="well-grid">
-      {% for w in site.wellness %}
-      <div class="well"><div class="ph"><img src="{{ w.img }}" alt="{{ w[lang].title }}" loading="lazy"></div><div class="cap"><b>{{ w[lang].title }}</b><span>{{ w[lang].note }}</span></div></div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
 {% if reviewScore %}
 <section class="block" id="recenzii" style="background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
   <div class="wrap">
