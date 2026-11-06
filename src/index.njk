@@ -25,7 +25,7 @@ eleventyComputed:
     <p class="lead">{{ site[lang].intro }}</p>
     <div class="hero-cta">
       <a href="#apartamente" class="btn btn-ochre btn-lg">{{ t.hero_cta_apts }}</a>
-      <a href="#facilitati" class="btn btn-ghost btn-lg">{{ t.hero_cta_fac }}</a>
+      <a href="#experiente" class="btn btn-ghost btn-lg">{{ t.hero_cta_fac }}</a>
     </div>
     <form class="search" id="search" data-lang="{{ lang }}" hidden>
       <label><span>{{ t.bk_checkin }}</span><input type="date" name="checkin" required></label>
@@ -119,21 +119,6 @@ eleventyComputed:
         <span>{{ "Abonamente lunare și intrări de o zi." if lang == "ro" else "Monthly passes and day entries." }}</span>
         <em>{{ "Vezi tarifele" if lang == "ro" else "See the prices" }} →</em>
       </a>
-    </div>
-  </div>
-</section>
-
-<section class="block wellness" id="facilitati">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">{{ t.fac_eyebrow }}</span>
-      <h2>{{ t.fac_title }}</h2>
-      <p>{{ t.fac_sub }}</p>
-    </div>
-    <div class="well-grid">
-      {% for w in site.wellness %}
-      <div class="well"><div class="ph"><img src="{{ w.img }}" alt="{{ w[lang].title }}" loading="lazy"></div><div class="cap"><b>{{ w[lang].title }}</b><span>{{ w[lang].note }}</span></div></div>
-      {% endfor %}
     </div>
   </div>
 </section>
