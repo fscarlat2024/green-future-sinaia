@@ -1,0 +1,113 @@
+{
+  "demo": true,
+  "ro": {
+    "eyebrow": "Attitude Bistro",
+    "title": "Bistro-ul complexului, la ușa ta",
+    "lead": "Alege din meniu, iar comanda ajunge la apartament. Plata se trece pe nota camerei.",
+    "demoNote": "Comanda la cameră este în pregătire: comenzile trimise acum sunt de test și nu ajung la bistro.",
+    "allergens": "Alergeni"
+  },
+  "en": {
+    "eyebrow": "Attitude Bistro",
+    "title": "The complex's bistro, at your door",
+    "lead": "Choose from the menu and your order comes to your apartment. Payment is added to your room bill.",
+    "demoNote": "Room ordering is being prepared: orders sent now are tests and do not reach the bistro.",
+    "allergens": "Allergens"
+  },
+  "categories": [
+    {
+      "id": "mic-dejun", "ro": "Mic dejun", "en": "Breakfast",
+      "items": [
+        { "id": "omleta", "price": 35, "ro": { "name": "Omletă țărănească", "desc": "bacon, telemea de vacă, legume, pâine prăjită", "allergens": "gluten, ou, lactoză" }, "en": { "name": "Traditional omelette", "desc": "bacon, cheese, vegetables, toast", "allergens": "gluten, egg, lactose" } },
+        { "id": "scrambled-somon", "price": 56, "ro": { "name": "Scrambled eggs cu somon și avocado", "desc": "somon afumat, avocado, pâine prăjită", "allergens": "ou, gluten, lactoză, sulfiți, pește" }, "en": { "name": "Scrambled eggs with salmon and avocado", "desc": "smoked salmon, avocado, toast", "allergens": "egg, gluten, lactose, sulphites, fish" } },
+        { "id": "benedict", "price": 45, "ro": { "name": "Eggs Benedict", "desc": "ouă poșate, șuncă, sos olandez", "allergens": "ou, gluten, lactoză, sulfiți" }, "en": { "name": "Eggs Benedict", "desc": "poached eggs, ham, hollandaise", "allergens": "egg, gluten, lactose, sulphites" } },
+        { "id": "florentine", "price": 60, "ro": { "name": "Eggs Florentine", "desc": "ouă poșate, spanac, somon afumat, sos olandez", "allergens": "ou, lactoză, gluten, sulfiți, pește" }, "en": { "name": "Eggs Florentine", "desc": "poached eggs, spinach, smoked salmon, hollandaise", "allergens": "egg, lactose, gluten, sulphites, fish" } },
+        { "id": "shakshuka", "price": 60, "ro": { "name": "Shakshuka cu roșii", "desc": "ouă coapte în sos de roșii, ardei kapia, pâine prăjită", "allergens": "ou, sulfiți, gluten" }, "en": { "name": "Shakshuka with tomatoes", "desc": "eggs baked in tomato sauce, kapia pepper, toast", "allergens": "egg, sulphites, gluten" } },
+        { "id": "club-sandwich", "price": 45, "ro": { "name": "Club sandwich", "desc": "piept de pui, bacon, ou, salată, cartofi prăjiți", "allergens": "gluten, lactoză, ou, sulfiți" }, "en": { "name": "Club sandwich", "desc": "chicken breast, bacon, egg, salad, French fries", "allergens": "gluten, lactose, egg, sulphites" } },
+        { "id": "croque", "price": 35, "ro": { "name": "Croque monsieur", "desc": "șuncă, cașcaval, béchamel, cartofi prăjiți", "allergens": "gluten, ou, lactoză" }, "en": { "name": "Croque monsieur", "desc": "ham, cheese, béchamel, French fries", "allergens": "gluten, egg, lactose" } }
+      ]
+    },
+    {
+      "id": "supe", "ro": "Supe și ciorbe", "en": "Soups",
+      "items": [
+        { "id": "supa-pui", "price": 25, "ro": { "name": "Supă de pui cu tăiței de casă", "desc": "piept de pui, tăiței, legume", "allergens": "ou, lapte, gluten, țelină, sulfiți" }, "en": { "name": "Chicken soup with homemade noodles", "desc": "chicken breast, noodles, vegetables", "allergens": "egg, milk, gluten, celery, sulphites" } },
+        { "id": "ciorba-fasole", "price": 35, "ro": { "name": "Ciorbă de fasole cu afumătură", "desc": "fasole, ciolan afumat, leuștean", "allergens": "țelină, sulfiți" }, "en": { "name": "Bean soup with smoked meat", "desc": "beans, smoked pork hock, lovage", "allergens": "celery, sulphites" } }
+      ]
+    },
+    {
+      "id": "principale", "ro": "Feluri principale", "en": "Main courses",
+      "items": [
+        { "id": "burger", "price": 60, "ro": { "name": "Burger de vită", "desc": "vită, dulceață de ceapă, cheddar, bacon, ou", "allergens": "gluten, lapte, ou, muștar, susan, sulfiți" }, "en": { "name": "Beef burger", "desc": "beef, onion jam, cheddar, bacon, egg", "allergens": "gluten, milk, egg, mustard, sesame, sulphites" } },
+        { "id": "gulas", "price": 60, "ro": { "name": "Gulaș de vită cu couscous", "desc": "vită, ardei kapia, boia, legume, couscous", "allergens": "gluten, soia, țelină, sulfiți" }, "en": { "name": "Beef goulash with couscous", "desc": "beef, kapia pepper, paprika, vegetables, couscous", "allergens": "gluten, soy, celery, sulphites" } },
+        { "id": "coasta", "price": 70, "ro": { "name": "Coastă de porc BBQ", "desc": "gătită lent, sos BBQ, susan", "allergens": "soia, susan, sulfiți, muștar" }, "en": { "name": "BBQ pork ribs", "desc": "slow-cooked, BBQ sauce, sesame", "allergens": "soy, sesame, sulphites, mustard" } },
+        { "id": "ciolan", "price": 60, "ro": { "name": "Ciolan de porc cu cartofi zdrobiți", "desc": "rozmarin, usturoi, cartofi", "allergens": "gluten, țelină, soia, sulfiți" }, "en": { "name": "Pork knuckle with crushed potatoes", "desc": "rosemary, garlic, potatoes", "allergens": "gluten, celery, soy, sulphites" } },
+        { "id": "snitel", "price": 40, "ro": { "name": "Șnițel de pui cu cartofi prăjiți", "desc": "piept de pui în panko, cartofi", "allergens": "gluten, lapte, muștar, ou, sulfiți" }, "en": { "name": "Chicken schnitzel with French fries", "desc": "panko chicken breast, fries", "allergens": "gluten, milk, mustard, egg, sulphites" } },
+        { "id": "pui-gratar", "price": 28, "ro": { "name": "Piept de pui la grătar", "desc": "250 g", "allergens": "" }, "en": { "name": "Grilled chicken breast", "desc": "250 g", "allergens": "" } },
+        { "id": "paste-trufe", "price": 55, "ro": { "name": "Paste cu pui și trufe", "desc": "penne, pastă de trufe, parmezan", "allergens": "gluten, lapte, sulfiți, muștar, ou" }, "en": { "name": "Chicken and truffle pasta", "desc": "penne, truffle paste, parmesan", "allergens": "gluten, milk, sulphites, mustard, egg" } },
+        { "id": "paste-marinara", "price": 50, "ro": { "name": "Paste cu pui în sos marinara", "desc": "penne, sos de roșii, parmezan", "allergens": "gluten, lapte, sulfiți" }, "en": { "name": "Chicken marinara pasta", "desc": "penne, tomato sauce, parmesan", "allergens": "gluten, milk, sulphites" } }
+      ]
+    },
+    {
+      "id": "salate", "ro": "Salate", "en": "Salads",
+      "items": [
+        { "id": "caesar", "price": 35, "ro": { "name": "Salată Caesar", "desc": "piept de pui, crutoane, parmezan", "allergens": "muștar, pește, ou, lapte, gluten, sulfiți" }, "en": { "name": "Caesar salad", "desc": "chicken breast, croutons, parmesan", "allergens": "mustard, fish, egg, milk, gluten, sulphites" } },
+        { "id": "ton-avocado", "price": 45, "ro": { "name": "Salată cu ton și avocado", "desc": "ton, avocado, dressing de lămâie", "allergens": "pește, sulfiți" }, "en": { "name": "Tuna and avocado salad", "desc": "tuna, avocado, lemon dressing", "allergens": "fish, sulphites" } },
+        { "id": "greceasca", "price": 30, "ro": { "name": "Salată grecească", "desc": "roșii, castraveți, măsline Kalamata, feta", "allergens": "lactoză, sulfiți" }, "en": { "name": "Greek salad", "desc": "tomatoes, cucumbers, Kalamata olives, feta", "allergens": "lactose, sulphites" } },
+        { "id": "mixta", "price": 20, "ro": { "name": "Salată mixtă", "desc": "legume de sezon, dressing de lămâie", "allergens": "" }, "en": { "name": "Mixed salad", "desc": "seasonal vegetables, lemon dressing", "allergens": "" } },
+        { "id": "vara", "price": 20, "ro": { "name": "Salată de vară", "desc": "roșii, castraveți, ardei kapia, telemea", "allergens": "lactoză" }, "en": { "name": "Summer salad", "desc": "tomatoes, cucumbers, kapia pepper, white cheese", "allergens": "lactose" } }
+      ]
+    },
+    {
+      "id": "garnituri", "ro": "Garnituri", "en": "Side dishes",
+      "items": [
+        { "id": "cartofi-prajiti", "price": 25, "ro": { "name": "Cartofi prăjiți", "desc": "200 g", "allergens": "gluten" }, "en": { "name": "French fries", "desc": "200 g", "allergens": "gluten" } },
+        { "id": "cartofi-usturoi", "price": 25, "ro": { "name": "Cartofi zdrobiți cu usturoi", "desc": "300 g", "allergens": "gluten" }, "en": { "name": "Garlic crushed potatoes", "desc": "300 g", "allergens": "gluten" } },
+        { "id": "cartofi-rozmarin", "price": 25, "ro": { "name": "Cartofi cu rozmarin", "desc": "400 g", "allergens": "gluten" }, "en": { "name": "Rosemary potatoes", "desc": "400 g", "allergens": "gluten" } },
+        { "id": "legume-grill", "price": 30, "ro": { "name": "Legume grill", "desc": "200 g", "allergens": "" }, "en": { "name": "Grilled vegetables", "desc": "200 g", "allergens": "" } },
+        { "id": "piure", "price": 37, "ro": { "name": "Piure de cartofi", "desc": "cu unt și lapte", "allergens": "lapte, gluten" }, "en": { "name": "Mashed potatoes", "desc": "with butter and milk", "allergens": "milk, gluten" } },
+        { "id": "orez", "price": 20, "ro": { "name": "Orez basmati", "desc": "100 g", "allergens": "gluten" }, "en": { "name": "Basmati rice", "desc": "100 g", "allergens": "gluten" } },
+        { "id": "couscous", "price": 20, "ro": { "name": "Couscous", "desc": "100 g", "allergens": "gluten" }, "en": { "name": "Couscous", "desc": "100 g", "allergens": "gluten" } }
+      ]
+    },
+    {
+      "id": "desert", "ro": "Desert", "en": "Dessert",
+      "items": [
+        { "id": "suzette", "price": 45, "ro": { "name": "Crêpes Suzette", "desc": "Grand Marnier, portocale, mascarpone", "allergens": "lapte, gluten, ou, sulfiți" }, "en": { "name": "Crêpes Suzette", "desc": "Grand Marnier, orange, mascarpone", "allergens": "milk, gluten, egg, sulphites" } },
+        { "id": "clatite", "price": 35, "ro": { "name": "Clătite cu ciocolată", "desc": "umplute cu ciocolată", "allergens": "lapte, gluten, ou, alune" }, "en": { "name": "Chocolate crêpes", "desc": "filled with chocolate", "allergens": "milk, gluten, egg, nuts" } }
+      ]
+    },
+    {
+      "id": "racoritoare", "ro": "Răcoritoare", "en": "Soft drinks",
+      "items": [
+        { "id": "apa-500", "price": 12, "ro": { "name": "Apă Dorna", "desc": "plată sau minerală, 500 ml", "allergens": "" }, "en": { "name": "Dorna water", "desc": "still or sparkling, 500 ml", "allergens": "" } },
+        { "id": "cola-500", "price": 17, "ro": { "name": "Coca-Cola / Coca-Cola Zero", "desc": "500 ml", "allergens": "" }, "en": { "name": "Coca-Cola / Coca-Cola Zero", "desc": "500 ml", "allergens": "" } },
+        { "id": "fuzetea-500", "price": 15, "ro": { "name": "Fuzetea", "desc": "lămâie sau piersici, 500 ml", "allergens": "" }, "en": { "name": "Fuzetea", "desc": "lemon or peach, 500 ml", "allergens": "" } },
+        { "id": "limonada", "price": 25, "ro": { "name": "Limonadă clasică", "desc": "250 ml", "allergens": "" }, "en": { "name": "Classic lemonade", "desc": "250 ml", "allergens": "" } },
+        { "id": "limonada-fructe", "price": 29, "ro": { "name": "Limonadă cu fructe", "desc": "mango, căpșuni sau fructul pasiunii, 250 ml", "allergens": "" }, "en": { "name": "Fruit lemonade", "desc": "mango, strawberry or passion fruit, 250 ml", "allergens": "" } }
+      ]
+    },
+    {
+      "id": "cafea", "ro": "Cafea și ceai", "en": "Coffee and tea",
+      "items": [
+        { "id": "espresso", "price": 11, "ro": { "name": "Espresso", "desc": "30 ml", "allergens": "" }, "en": { "name": "Espresso", "desc": "30 ml", "allergens": "" } },
+        { "id": "cappuccino", "price": 20, "ro": { "name": "Cappuccino", "desc": "150 ml", "allergens": "" }, "en": { "name": "Cappuccino", "desc": "150 ml", "allergens": "" } },
+        { "id": "flat-white", "price": 22, "ro": { "name": "Flat white", "desc": "130 ml", "allergens": "" }, "en": { "name": "Flat white", "desc": "130 ml", "allergens": "" } },
+        { "id": "latte", "price": 23, "ro": { "name": "Caffè latte", "desc": "180 ml", "allergens": "" }, "en": { "name": "Caffè latte", "desc": "180 ml", "allergens": "" } },
+        { "id": "ciocolata", "price": 22, "ro": { "name": "Ciocolată caldă", "desc": "200 ml", "allergens": "" }, "en": { "name": "Hot chocolate", "desc": "200 ml", "allergens": "" } },
+        { "id": "ceai", "price": 13, "ro": { "name": "Ceai de fructe", "desc": "250 ml", "allergens": "" }, "en": { "name": "Fruit tea", "desc": "250 ml", "allergens": "" } }
+      ]
+    },
+    {
+      "id": "vin-cocktail", "ro": "Vin, bere și cocktailuri", "en": "Wine, beer and cocktails",
+      "items": [
+        { "id": "heineken", "price": 16, "ro": { "name": "Heineken", "desc": "330 ml", "allergens": "" }, "en": { "name": "Heineken", "desc": "330 ml", "allergens": "" } },
+        { "id": "vin-pahar", "price": 25, "ro": { "name": "Vin Recaș la pahar", "desc": "alb sau rosé, 187 ml", "allergens": "" }, "en": { "name": "Recaș wine by the glass", "desc": "white or rosé, 187 ml", "allergens": "" } },
+        { "id": "prosecco", "price": 25, "ro": { "name": "Prosecco Grande Vento", "desc": "200 ml", "allergens": "" }, "en": { "name": "Prosecco Grande Vento", "desc": "200 ml", "allergens": "" } },
+        { "id": "vin-sticla", "price": 120, "ro": { "name": "Bojan Clasic Merlot și Cabernet", "desc": "sec, 750 ml", "allergens": "" }, "en": { "name": "Bojan Clasic Merlot and Cabernet", "desc": "dry, 750 ml", "allergens": "" } },
+        { "id": "aperol", "price": 38, "ro": { "name": "Aperol Spritz", "desc": "250 ml", "allergens": "" }, "en": { "name": "Aperol Spritz", "desc": "250 ml", "allergens": "" } },
+        { "id": "mojito", "price": 38, "ro": { "name": "Mojito", "desc": "180 ml", "allergens": "" }, "en": { "name": "Mojito", "desc": "180 ml", "allergens": "" } },
+        { "id": "gin-tonic", "price": 32, "ro": { "name": "Gin tonic", "desc": "200 ml", "allergens": "" }, "en": { "name": "Gin tonic", "desc": "200 ml", "allergens": "" } }
+      ]
+    }
+  ]
+}

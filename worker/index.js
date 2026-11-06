@@ -2,7 +2,8 @@
 // Auth panou: parola PBKDF2 + token Bearer (merge si in site, si in viitoarea aplicatie mobila).
 // Disponibilitatea e verificata in aceeasi instructiune SQL cu rezervarea, ca doi oaspeti
 // sa nu poata prinde aceeasi perioada.
-import { mailOwnerNew, mailGuest, mailConflict, brevoKeepAlive } from "./mail.js";
+import { mailOwnerNew, mailGuest, mailConflict, mailOrder, brevoKeepAlive } from "./mail.js";
+import restaurant from "../src/_data/restaurant.json";
 import { parseIcal, buildIcal } from "./ical.js";
 
 const enc = new TextEncoder();
@@ -347,6 +348,25 @@ async function adminRoutes(req, env, ctx, parts) {
     return json({ ok: true, status: updated.status });
   }
 
+  if (first === "orders") {
+    if (a.role !== "admin") fail(403, "forbidden");
+    if (!second && req.method === "GET") {
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM orders ORDER BY status = 'new' DESC, status = 'confirmed' DESC, created_at DESC LIMIT 200"
+      ).all();
+      return json({ orders: results.map((o) => ({ ...o, items: JSON.parse(o.items) })) });
+    }
+    if (second && req.method === "POST") {
+      const next = { confirm: ["new", "confirmed"], deliver: ["confirmed", "delivered"], cancel: [null, "cancelled"] }[third];
+      if (!next) fail(404, "not_found");
+      const o = await env.DB.prepare("SELECT status FROM orders WHERE id = ?").bind(Number(second)).first();
+      if (!o) fail(404, "not_found");
+      if (next[0] ? o.status !== next[0] : !["new", "confirmed"].includes(o.status)) fail(409, "wrong_status");
+      await env.DB.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").bind(next[1], Date.now(), Number(second)).run();
+      return json({ ok: true, status: next[1] });
+    }
+  }
+
   if (first === "properties" && second) {
     const p = await ownedProperty(env, a, second);
     if (!third && req.method === "GET") {
@@ -454,6 +474,46 @@ async function expirePending(env) {
   }
 }
 
+// ---------- comenzi restaurant ----------
+const MENU = new Map(restaurant.categories.flatMap((c) => c.items).map((i) => [i.id, i]));
+function orderCode() {
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return "CMD-" + [...crypto.getRandomValues(new Uint8Array(6))].map((b) => abc[b % abc.length]).join("");
+}
+
+// Numele si pretul vin din meniul de pe server, nu din browser.
+async function createOrder(req, env, ctx) {
+  const b = await readJson(req);
+  if (b.website) return json({ code: "CMD-000000", demo: true }, 201); // capcana pentru boti
+  if (b.accept !== true) fail(400, "accept_required");
+  const apartment = String(b.apartment || "").trim();
+  const name = String(b.name || "").trim();
+  const phone = String(b.phone || "").trim();
+  if (!apartment || apartment.length > 20) fail(400, "invalid_apartment");
+  if (name.length < 2 || name.length > 100) fail(400, "invalid_name");
+  if (phone.replace(/\D/g, "").length < 6 || phone.length > 30) fail(400, "invalid_phone");
+  if (!Array.isArray(b.items) || !b.items.length || b.items.length > 40) fail(400, "invalid_items");
+  const lang = b.lang === "en" ? "en" : "ro";
+  const items = b.items.map((line) => {
+    const item = MENU.get(String(line?.id));
+    const qty = Number(line?.qty);
+    if (!item || !Number.isInteger(qty) || qty < 1 || qty > 20) fail(400, "invalid_items");
+    return { id: item.id, name: item.ro.name, price: item.price, qty };
+  });
+  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  await rateLimit(env, `order:${clientIp(req)}`, 5, 3600000);
+  const now = Date.now();
+  const demo = restaurant.demo ? 1 : 0;
+  const code = orderCode();
+  const note = String(b.note || "").trim().slice(0, 500);
+  await env.DB.prepare(
+    `INSERT INTO orders (code, apartment, guest_name, guest_phone, note, items, total, status, demo, lang, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?, 'new', ?,?,?,?)`
+  ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now).run();
+  ctx.waitUntil(mailOrder(env, { code, apartment, guest_name: name, guest_phone: phone, note, items, total, demo }));
+  return json({ code, total, demo: !!demo }, 201);
+}
+
 // ---------- intretinere fara cron ----------
 // Contul Cloudflare a atins limita gratuita de 5 cron-uri, asa ca lucrarile periodice pornesc la cererile primite.
 // Fiecare lucrare e revendicata atomic, ca cererile simultane sa nu o porneasca de doua ori.
@@ -530,6 +590,8 @@ async function api(req, env, ctx, url) {
     }
     return json({ results: out });
   }
+
+  if (first === "orders" && !second && req.method === "POST") return createOrder(req, env, ctx);
 
   if (first === "bookings") {
     if (!second && req.method === "POST") return createBooking(req, env, ctx);

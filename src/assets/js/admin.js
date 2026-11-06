@@ -93,6 +93,28 @@
           b.status === "confirmed" ? act(b, "cancel", "Anulează", "btn-ghost", "Anulezi această rezervare confirmată? Oaspetele primește un email.") : null)))) : h("p", { class: "adm-card" }, "Nu există rezervări încă."));
   }
 
+  // ---------- comenzi restaurant ----------
+  const ORDER_STATUS = { new: "Nouă", confirmed: "Confirmată", delivered: "Livrată", cancelled: "Anulată" };
+  async function renderOrders() {
+    const { orders } = await api("orders");
+    const act = (o, action, label, cls) => h("button", { type: "button", class: `btn ${cls}`, on: { click: guarded(async () => {
+      await api(`orders/${o.id}/${action}`, "POST");
+      renderOrders();
+    }) } }, label);
+    const open = orders.filter((o) => o.status === "new").length;
+    root.replaceChildren(
+      h("div", { class: "adm-head" }, h("h1", null, "Comenzi la cameră"), h("p", null, open ? `${open} comenzi noi.` : "Nicio comandă nouă.")),
+      orders.length ? h("div", { class: "adm-list" }, orders.map((o) => h("article", { class: "adm-card adm-booking" },
+        h("div", { class: "adm-bk-top" }, h("b", null, `Ap. ${o.apartment} · ${o.guest_name}`), h("span", { class: `mg-status is-${{ new: "pending", confirmed: "confirmed", delivered: "confirmed", cancelled: "cancelled" }[o.status]}` }, ORDER_STATUS[o.status] || o.status)),
+        h("p", null, o.items.map((i) => `${i.qty} × ${i.name}`).join(", ")),
+        h("p", null, h("b", null, `${o.total} lei`), " pe nota camerei · ", h("a", { href: `tel:${o.guest_phone.replace(/[^+\d]/g, "")}` }, o.guest_phone), ` · ${o.code}${o.demo ? " · TEST" : ""}`),
+        o.note ? h("p", { class: "adm-note" }, o.note) : null,
+        h("div", { class: "adm-actions" },
+          o.status === "new" ? act(o, "confirm", "Confirmă", "btn-primary") : null,
+          o.status === "confirmed" ? act(o, "deliver", "Marchează livrată", "btn-primary") : null,
+          o.status === "new" || o.status === "confirmed" ? act(o, "cancel", "Anulează", "btn-ghost") : null)))) : h("p", { class: "adm-card" }, "Nu există comenzi încă."));
+  }
+
   // ---------- apartamente ----------
   async function renderSettings(slug) {
     const me = await api("me");
@@ -165,7 +187,7 @@
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, settings: () => renderSettings() };
+  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings() };
   function openTab(name) {
     nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
     guarded(TABS[name])();
@@ -173,6 +195,11 @@
   nav.querySelectorAll(".adm-tab").forEach((b) => b.addEventListener("click", () => openTab(b.dataset.tab)));
   document.getElementById("adm-logout").addEventListener("click", guarded(async () => { await api("logout", "POST"); logout(); }));
 
-  function start() { nav.hidden = false; openTab("bookings"); }
+  const start = guarded(async () => {
+    const me = await api("me");
+    nav.querySelector('[data-tab="orders"]').hidden = me.role !== "admin";
+    nav.hidden = false;
+    openTab("bookings");
+  });
   if (token) start(); else renderLogin();
 })();

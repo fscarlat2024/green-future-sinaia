@@ -19,11 +19,11 @@
   <meta property="og:description" content="{{ description or site[lang].intro }}">
   <meta property="og:image" content="{{ site.url }}{{ ogImage or site.heroImage }}">
   <meta property="og:url" content="{{ site.url }}{{ page.url }}">
-  <meta name="theme-color" content="#2E6B47">
+  <meta name="theme-color" content="#0C110D">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C7 8 6 13 8 17c1.2 2.4 3 3.5 4 4 1-.5 2.8-1.6 4-4 2-4 1-9-4-15Z' fill='%232E6B47'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
   <script type="application/ld+json">
   {
@@ -52,7 +52,8 @@
       <nav class="nav-links">
         {% if backLink %}<a href="{{ backLink }}" class="back-pill">&larr; <span class="hide-sm">{{ t.back_apts }}</span></a>{% endif %}
         <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a>
-        <a href="{{ home }}#facilitati">{{ t.nav_facilities }}</a>
+        <a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a>
+        <a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a>
         <a href="{{ home }}#sinaia" class="hide-sm">{{ t.nav_sinaia }}</a>
         {% if urlRo and urlEn %}
         <span class="lang-switch">
@@ -64,6 +65,12 @@
         <a href="{{ home }}#apartamente" class="btn btn-primary nav-book">{{ t.nav_book }}</a>
       </nav>
     </div>
+    <nav class="m-nav" aria-label="Meniu">
+      <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a>
+      <a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a>
+      <a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a>
+      <a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a>
+    </nav>
   </header>
 
   {{ content | safe }}
@@ -73,10 +80,10 @@
       <div class="foot-grid">
         <div class="brand">
           <span class="lm" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C7 8 6 13 8 17c1.2 2.4 3 3.5 4 4 1-.5 2.8-1.6 4-4 2-4 1-9-4-15Z" fill="currentColor"/></svg></span>
-          <span><b style="font-family:'Spectral',serif;font-size:1.05rem">{{ site.name }}</b><small style="display:block;font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)">{{ site.address }}</small></span>
+          <span><b style="font-family:'Cormorant Garamond',serif;font-size:1.05rem">{{ site.name }}</b><small style="display:block;font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)">{{ site.address }}</small></span>
         </div>
         <nav style="display:flex;gap:1.3rem;flex-wrap:wrap">
-          <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a><a href="{{ home }}#facilitati">{{ t.nav_facilities }}</a><a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a><a href="{{ home }}#proprietari">{{ t.nav_owners }}</a>
+          <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a><a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a><a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a><a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a><a href="{{ home }}#proprietari">{{ t.nav_owners }}</a>
         </nav>
       </div>
     </div>

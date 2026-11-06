@@ -90,6 +90,18 @@ export function mailOwnerNew(env, p, b, cancelled = false) {
   return send(env, ownerAddress(env, p), title, wrap(esc(title), body), b.guest_email);
 }
 
+export function mailOrder(env, o) {
+  const prefix = o.demo ? "[TEST] " : "";
+  const title = `${prefix}Comandă la cameră: ap. ${o.apartment}, ${o.total} lei`;
+  const rows = o.items.map((i) => `<tr><td style="padding:4px 12px 4px 0">${i.qty} × ${esc(i.name)}</td><td style="padding:4px 0;text-align:right">${i.qty * i.price} lei</td></tr>`).join("");
+  const body = `${o.demo ? "<p><b>Comandă de test: nu se prepară.</b></p>" : ""}
+    <p><b>Apartament ${esc(o.apartment)}</b><br>${esc(o.guest_name)}, ${esc(o.guest_phone)}</p>
+    <table style="border-collapse:collapse;font-size:15px">${rows}
+      <tr><td style="padding:8px 12px 0 0"><b>Total, pe nota camerei</b></td><td style="padding:8px 0 0;text-align:right"><b>${o.total} lei</b></td></tr></table>
+    ${o.note ? `<p><i>${esc(o.note)}</i></p>` : ""}<p>Cod: ${esc(o.code)}. <a href="${esc(env.SITE_URL)}/admin/">Deschide panoul</a></p>`;
+  return send(env, env.RESTAURANT_EMAIL || env.MAIL_FROM, title, wrap(esc(title), body));
+}
+
 export function mailConflict(env, p, b, event) {
   const title = `Suprapunere în calendar: ${p.name}, ${b.code}`;
   const body = `<p>Calendarul extern arată o perioadă ocupată (${fmt(event.from, "ro")} - ${fmt(event.to, "ro")}) peste rezervarea directă de mai jos. Verifică și rezolvă manual.</p>

@@ -4,7 +4,7 @@
   tt.addEventListener('click', function () {
     var root = document.documentElement;
     var now = root.getAttribute('data-theme');
-    if (!now) { now = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+    if (!now) { now = 'dark'; }
     root.setAttribute('data-theme', now === 'dark' ? 'light' : 'dark');
   });
 })();

@@ -6,6 +6,10 @@ eleventyExcludeFromCollections: true
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>{{ site.url }}/</loc></url>
   <url><loc>{{ site.url }}/en/</loc></url>
+  <url><loc>{{ site.url }}/restaurant/</loc></url>
+  <url><loc>{{ site.url }}/en/restaurant/</loc></url>
+  <url><loc>{{ site.url }}/abonamente/</loc></url>
+  <url><loc>{{ site.url }}/en/passes/</loc></url>
   {% for apt in collections.apartmentsRo %}<url><loc>{{ site.url }}{{ apt.url }}</loc></url>
   {% endfor %}{% for apt in collections.apartmentsEn %}<url><loc>{{ site.url }}{{ apt.url }}</loc></url>
   {% endfor %}

@@ -22,7 +22,7 @@ module.exports = {
     soon_name: "Apartament 2 camere", soon_cap: "4 persoane",
     soon_desc: "Pagina se pregătește. Pozele și detaliile vor fi adăugate în curând.",
     fac_eyebrow: "Facilități în complex",
-    fac_title: "Wellness cu vedere la munte",
+    fac_title: "Wellness în complex",
     fac_sub: "Zona de relaxare a complexului, disponibilă oaspeților tuturor apartamentelor.",
     sinaia_eyebrow: "Locația",
     sinaia_sub: "Orașul regilor, al munților și al eleganței naturale. Obiective de neratat, la câțiva pași de complex.",

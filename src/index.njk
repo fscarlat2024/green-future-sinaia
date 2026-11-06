@@ -82,7 +82,7 @@ eleventyComputed:
       {% endfor %}
 
       <article class="apt">
-        <div class="ph" style="background:linear-gradient(140deg,#6FA07A,#2E5E42);display:grid;place-items:center;color:#fff;font-family:'Spectral',serif;font-size:1.1rem">{{ t.soon }}</div>
+        <div class="ph" style="background:radial-gradient(120% 90% at 20% 10%,#2a3a2a 0%,#0f1610 70%);display:grid;place-items:center;color:#E2C88F;font-family:'Cormorant Garamond',serif;font-size:1.3rem">{{ t.soon }}</div>
         <div class="body">
           <h3>{{ t.soon_name }}</h3>
           <div class="meta"><span>{{ t.soon_cap }}</span></div>
@@ -90,6 +90,35 @@ eleventyComputed:
           <div class="foot"><div class="price"><small>—</small></div><span class="btn btn-ghost" style="pointer-events:none;opacity:.6">{{ t.soon }}</span></div>
         </div>
       </article>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="experiente" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ "În complex" if lang == "ro" else "In the complex" }}</span>
+      <h2>{{ "Totul, la câțiva pași de apartament" if lang == "ro" else "Everything, steps from your apartment" }}</h2>
+    </div>
+    <div class="exp">
+      <a class="exp-card exp-bistro" href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">
+        <span class="exp-kicker">Attitude Bistro</span>
+        <b>{{ "Meniu și comandă la cameră" if lang == "ro" else "Menu and room orders" }}</b>
+        <span>{{ "Vezi preparatele și comanzi la apartament, cu plata pe nota camerei." if lang == "ro" else "See the dishes and order to your apartment, added to your room bill." }}</span>
+        <em>{{ "Deschide meniul" if lang == "ro" else "Open the menu" }} →</em>
+      </a>
+      <a class="exp-card" href="{{ '/abonamente/#spa' if lang == 'ro' else '/en/passes/#spa' }}" style="background-image:url('/assets/img/complex/pool.jpg')">
+        <span class="exp-kicker">Spa</span>
+        <b>{{ "Piscină, saune, jacuzzi" if lang == "ro" else "Pool, saunas, jacuzzi" }}</b>
+        <span>{{ "Intrări și abonamente." if lang == "ro" else "Single entries and passes." }}</span>
+        <em>{{ "Vezi tarifele" if lang == "ro" else "See the prices" }} →</em>
+      </a>
+      <a class="exp-card" href="{{ '/abonamente/#sala' if lang == 'ro' else '/en/passes/#sala' }}" style="background-image:url('/assets/img/complex/gym.jpg')">
+        <span class="exp-kicker">Fitness</span>
+        <b>{{ "Sală deschisă zilnic" if lang == "ro" else "Gym open daily" }}</b>
+        <span>{{ "Abonamente lunare și intrări de o zi." if lang == "ro" else "Monthly passes and day entries." }}</span>
+        <em>{{ "Vezi tarifele" if lang == "ro" else "See the prices" }} →</em>
+      </a>
     </div>
   </div>
 </section>

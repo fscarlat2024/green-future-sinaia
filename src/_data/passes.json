@@ -1,0 +1,73 @@
+{
+  "phone": "0726 251 778",
+  "phoneTel": "+40726251778",
+  "email": "contact@attitudesinaia.ro",
+  "ro": {
+    "eyebrow": "Attitude Wellness · Abonamente",
+    "title": "Piscină, saune și sală, în ritmul tău",
+    "lead": "Spa-ul și sala de fitness din complex, deschise oaspeților și vizitatorilor.",
+    "pay": "Plătește cu cardul",
+    "soon": "În curând",
+    "soonNote": "Plata online cu cardul va fi disponibilă în curând. Până atunci, abonamentele se cumpără de la recepție.",
+    "contact": "Sună la Attitude Wellness",
+    "adults": "adulți",
+    "children": "copii",
+    "students": "elevi",
+    "unit": "lei",
+    "extrasTitle": "Masaj și închirieri",
+    "massageNote": "Programare cu cel puțin 24 de ore înainte.",
+    "childNote": "Copiii peste 4 ani au acces însoțiți de un adult."
+  },
+  "en": {
+    "eyebrow": "Attitude Wellness · Passes",
+    "title": "Pool, saunas and gym, at your own pace",
+    "lead": "The spa and fitness room in the complex, open to guests and visitors.",
+    "pay": "Pay by card",
+    "soon": "Coming soon",
+    "soonNote": "Online card payment is coming soon. Until then, passes are sold at the reception.",
+    "contact": "Call Attitude Wellness",
+    "adults": "adults",
+    "children": "children",
+    "students": "students",
+    "unit": "lei",
+    "extrasTitle": "Massage and rentals",
+    "massageNote": "Book at least 24 hours in advance.",
+    "childNote": "Children over 4 have access with an adult."
+  },
+  "groups": [
+    {
+      "id": "spa",
+      "img": "/assets/img/complex/pool.jpg",
+      "second": "children",
+      "ro": { "name": "Piscină și spa", "desc": "Piscină interioară de 140 m², cu apa la 29–30 °C, saună umedă și uscată, jacuzzi și fântână de gheață.", "status": "Spa-ul este închis temporar pentru reparații." },
+      "en": { "name": "Pool and spa", "desc": "A 140 m² indoor pool with water at 29–30 °C, wet and dry saunas, jacuzzi and an ice fountain.", "status": "The spa is temporarily closed for repairs." },
+      "plans": [
+        { "id": "spa-zi", "adult": 90, "other": 60, "ro": { "name": "Intrare", "period": "luni – joi" }, "en": { "name": "Single entry", "period": "Monday – Thursday" } },
+        { "id": "spa-weekend", "adult": 120, "other": 80, "ro": { "name": "Intrare", "period": "vineri – duminică" }, "en": { "name": "Single entry", "period": "Friday – Sunday" } },
+        { "id": "spa-8-lj", "adult": 550, "other": 480, "ro": { "name": "Abonament 8 intrări", "period": "pe lună, luni – joi" }, "en": { "name": "8-entry pass", "period": "per month, Monday – Thursday" } },
+        { "id": "spa-8", "adult": 800, "other": 700, "featured": true, "ro": { "name": "Abonament 8 intrări", "period": "pe lună, luni – duminică" }, "en": { "name": "8-entry pass", "period": "per month, Monday – Sunday" } }
+      ]
+    },
+    {
+      "id": "sala",
+      "img": "/assets/img/complex/gym.jpg",
+      "second": "students",
+      "ro": { "name": "Sală de fitness", "desc": "Zonă de greutăți libere, aparate pentru toate grupele musculare și zonă cardio. Deschisă zilnic, între 8 și 21.", "status": "" },
+      "en": { "name": "Fitness room", "desc": "Free weights, machines for every muscle group and a cardio area. Open daily, from 8 to 21.", "status": "" },
+      "plans": [
+        { "id": "sala-zi", "adult": 50, "other": 40, "ro": { "name": "Intrare o zi", "period": "acces pentru o zi" }, "en": { "name": "Day entry", "period": "one day of access" } },
+        { "id": "sala-luna", "adult": 300, "other": 250, "featured": true, "ro": { "name": "Abonament fitness", "period": "pe lună" }, "en": { "name": "Fitness pass", "period": "per month" } },
+        { "id": "combo-lj", "adult": 800, "other": 750, "ro": { "name": "Fitness + spa", "period": "abonament, luni – joi" }, "en": { "name": "Fitness + spa", "period": "pass, Monday – Thursday" } },
+        { "id": "combo", "adult": 1050, "other": 1000, "ro": { "name": "Fitness + spa", "period": "abonament, luni – duminică" }, "en": { "name": "Fitness + spa", "period": "pass, Monday – Sunday" } }
+      ]
+    }
+  ],
+  "extras": [
+    { "price": 250, "ro": "Masaj de relaxare, 50 min", "en": "Relaxation massage, 50 min" },
+    { "price": 300, "ro": "Masaj terapeutic, 1 h 30 min", "en": "Therapeutic massage, 1 h 30 min" },
+    { "price": 10, "ro": "Prosop", "en": "Towel" },
+    { "price": 20, "ro": "Halat", "en": "Bathrobe" },
+    { "price": 35, "ro": "Ochelari de înot", "en": "Swimming goggles" },
+    { "price": 10, "ro": "Cască de înot", "en": "Swim cap" }
+  ]
+}

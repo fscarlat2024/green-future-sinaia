@@ -1,0 +1,53 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/restaurant/index.html' if lang == 'ro' else '/en/restaurant/index.html' }}"
+layout: base.njk
+scripts: ["/assets/js/restaurant.js"]
+eleventyComputed:
+  title: "{{ restaurant[lang].eyebrow }} - {{ site.name }}"
+  description: "{{ restaurant[lang].lead }}"
+  urlRo: "/restaurant/"
+  urlEn: "/en/restaurant/"
+---
+{% set r = restaurant[lang] %}
+<main class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">{{ r.eyebrow }}</span>
+    <h1>{{ r.title }}</h1>
+    <p class="lead">{{ r.lead }}</p>
+    {% if restaurant.demo %}<p class="demo-note">{{ r.demoNote }}</p>{% endif %}
+  </div>
+</main>
+
+<section class="block menu-section">
+  <div class="wrap menu-layout" id="menu" data-lang="{{ lang }}">
+    <div class="menu-list">
+      <nav class="menu-cats" aria-label="{{ r.eyebrow }}">
+        {% for c in restaurant.categories %}<a href="#{{ c.id }}">{{ c[lang] }}</a>{% endfor %}
+      </nav>
+      {% for c in restaurant.categories %}
+      <section class="menu-cat" id="{{ c.id }}">
+        <h2>{{ c[lang] }}</h2>
+        {% for i in c.items %}
+        <article class="menu-item">
+          <div class="mi-text">
+            <h3>{{ i[lang].name }}</h3>
+            <p>{{ i[lang].desc }}</p>
+            {% if i[lang].allergens %}<p class="mi-allergens">{{ r.allergens }}: {{ i[lang].allergens }}</p>{% endif %}
+          </div>
+          <div class="mi-buy">
+            <span class="mi-price">{{ i.price }} lei</span>
+            <button type="button" class="mi-add" data-id="{{ i.id }}" data-name="{{ i[lang].name }}" data-price="{{ i.price }}" aria-label="{{ 'Adaugă' if lang == 'ro' else 'Add' }} {{ i[lang].name }}">+</button>
+          </div>
+        </article>
+        {% endfor %}
+      </section>
+      {% endfor %}
+    </div>
+    <aside class="cart" id="cart" aria-live="polite"></aside>
+  </div>
+  <a href="#cart" class="cart-bar" id="cart-bar" hidden></a>
+</section>

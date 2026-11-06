@@ -1,0 +1,62 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/abonamente/index.html' if lang == 'ro' else '/en/passes/index.html' }}"
+layout: base.njk
+eleventyComputed:
+  title: "{{ 'Abonamente' if lang == 'ro' else 'Passes' }} - {{ site.name }}"
+  description: "{{ passes[lang].lead }}"
+  urlRo: "/abonamente/"
+  urlEn: "/en/passes/"
+---
+{% set p = passes[lang] %}
+<main class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">{{ p.eyebrow }}</span>
+    <h1>{{ p.title }}</h1>
+    <p class="lead">{{ p.lead }}</p>
+  </div>
+</main>
+
+{% for g in passes.groups %}
+<section class="block pass-group" id="{{ g.id }}">
+  <div class="wrap">
+    <div class="pass-head">
+      <div class="pass-photo"><img src="{{ g.img }}" alt="{{ g[lang].name }}" loading="lazy"></div>
+      <div class="sec-head">
+        <h2>{{ g[lang].name }}</h2>
+        <p>{{ g[lang].desc }}</p>
+        {% if g[lang].status %}<p class="status-note">{{ g[lang].status }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="plans">
+      {% for plan in g.plans %}
+      <article class="plan{% if plan.featured %} is-featured{% endif %}">
+        <h3>{{ plan[lang].name }}</h3>
+        <span class="plan-period">{{ plan[lang].period }}</span>
+        <div class="plan-price"><b>{{ plan.adult }}</b> {{ p.unit }} <small>{{ p.adults }}</small></div>
+        <div class="plan-other">{{ plan.other }} {{ p.unit }} {{ p[g.second] }}</div>
+        <button type="button" class="btn btn-pay" disabled aria-describedby="soon-{{ g.id }}">
+          <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true"><rect x=".6" y=".6" width="16.8" height="12.8" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M.6 4.5h16.8" stroke="currentColor" stroke-width="1.2"/></svg>
+          {{ p.pay }}
+        </button>
+        <span class="plan-soon">{{ p.soon }}</span>
+      </article>
+      {% endfor %}
+    </div>
+    <p class="plans-note" id="soon-{{ g.id }}">{{ p.soonNote }}{% if g.id == "spa" %} {{ p.childNote }}{% endif %}</p>
+  </div>
+</section>
+{% endfor %}
+
+<section class="block extras">
+  <div class="wrap">
+    <div class="sec-head"><h2>{{ p.extrasTitle }}</h2><p>{{ p.massageNote }}</p></div>
+    <ul class="extras-list">
+      {% for e in passes.extras %}<li><span>{{ e[lang] }}</span><b>{{ e.price }} {{ p.unit }}</b></li>{% endfor %}
+    </ul>
+    <p class="extras-cta"><a class="btn btn-ghost" href="tel:{{ passes.phoneTel }}">{{ p.contact }} · {{ passes.phone }}</a></p>
+  </div>
+</section>
