@@ -5,7 +5,7 @@ pagination:
   alias: lang
 permalink: "{{ '/restaurant/index.html' if lang == 'ro' else '/en/restaurant/index.html' }}"
 layout: base.njk
-scripts: ["/assets/js/menu-book.js", "/assets/js/restaurant.js"]
+scripts: ["/assets/js/menu-view.js", "/assets/js/restaurant.js"]
 eleventyComputed:
   title: "{{ restaurant[lang].eyebrow }} - {{ site.name }}"
   description: "{{ restaurant[lang].lead }}"
@@ -32,7 +32,7 @@ eleventyComputed:
       <section class="menu-cat" id="{{ c.id }}">
         <h2>{{ c[lang] }}</h2>
         {% for i in c.items %}
-        <article class="menu-item">
+        <article class="menu-item" data-allergens="{{ i.ro.allergens }}">
           <div class="mi-text">
             <h3>{{ i[lang].name }}</h3>
             <p>{{ i[lang].desc }}</p>
@@ -40,6 +40,8 @@ eleventyComputed:
           </div>
           <div class="mi-buy">
             <span class="mi-price">{{ i.price }} lei</span>
+            <button type="button" class="mi-sub" data-id="{{ i.id }}" aria-label="{{ 'Scoate' if lang == 'ro' else 'Remove' }} {{ i[lang].name }}" hidden>−</button>
+            <output class="mi-qty" hidden></output>
             <button type="button" class="mi-add" data-id="{{ i.id }}" data-name="{{ i[lang].name }}" data-price="{{ i.price }}" aria-label="{{ 'Adaugă' if lang == 'ro' else 'Add' }} {{ i[lang].name }}">+</button>
           </div>
         </article>

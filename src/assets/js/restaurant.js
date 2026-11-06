@@ -119,7 +119,11 @@
       save();
       step = "items";
       barEl.hidden = true;
-      root.querySelectorAll(".mi-add").forEach((b) => { b.textContent = "+"; b.classList.remove("has-qty"); });
+      root.querySelectorAll(".mi-add").forEach((b) => {
+        b.classList.remove("has-qty");
+        b.previousElementSibling.hidden = true;
+        b.previousElementSibling.previousElementSibling.hidden = true;
+      });
       cartEl.replaceChildren(h("div", { class: "bk-done" }, h("div", { class: "bk-tick", "aria-hidden": "true" }, "✓"),
         h("h3", null, T.okTitle), h("p", null, data.demo ? T.okDemo : T.okReal),
         h("div", { class: "bk-code" }, h("small", null, T.code), h("b", null, data.code)),
@@ -142,11 +146,14 @@
     barEl.textContent = count ? T.bar(count, total) : "";
     root.querySelectorAll(".mi-add").forEach((b) => {
       const qty = cart.get(b.dataset.id) || 0;
-      b.textContent = qty ? String(qty) : "+";
       b.classList.toggle("has-qty", qty > 0);
+      b.previousElementSibling.textContent = String(qty);
+      b.previousElementSibling.hidden = !qty;
+      b.previousElementSibling.previousElementSibling.hidden = !qty;
     });
   }
 
   root.querySelectorAll(".mi-add").forEach((b) => b.addEventListener("click", () => { if (step === "form") step = "items"; change(b.dataset.id, 1); }));
+  root.querySelectorAll(".mi-sub").forEach((b) => b.addEventListener("click", () => { if (step === "form") step = "items"; change(b.dataset.id, -1); }));
   render();
 })();
