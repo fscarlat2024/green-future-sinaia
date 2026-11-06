@@ -296,7 +296,7 @@ async function login(req, env) {
 const adminProperty = (p, env) => ({
   ...publicProperty(p), active: !!p.active, basePrice: p.base_price, ownerEmail: p.owner_email, ownerPhone: p.owner_phone,
   icalImportUrl: p.ical_import_url, icalExportUrl: `${env.SITE_URL}/ical/${p.ical_token}.ics`,
-  icalSyncedAt: p.ical_synced_at, icalError: p.ical_error,
+  icalSyncedAt: p.ical_synced_at, icalError: p.ical_error, icalPaused: !!p.ical_paused,
 });
 
 async function updateProperty(env, p, b) {
@@ -312,10 +312,10 @@ async function updateProperty(env, p, b) {
   if (b.active && !basePrice) fail(400, "price_required");
   await env.DB.prepare(
     `UPDATE properties SET active=?, capacity=?, base_price=?, cleaning_fee=?, min_nights=?, instant_book=?,
-       free_cancel_days=?, checkin_time=?, checkout_time=?, owner_email=?, owner_phone=?, ical_import_url=?, loyalty_enabled=? WHERE slug=?`
+       free_cancel_days=?, checkin_time=?, checkout_time=?, owner_email=?, owner_phone=?, ical_import_url=?, loyalty_enabled=?, ical_paused=? WHERE slug=?`
   ).bind(b.active ? 1 : 0, int(b.capacity, 1, 30), basePrice, int(b.cleaningFee || 0, 0, 100000), int(b.minNights, 1, 30),
     b.instantBook ? 1 : 0, int(b.freeCancelDays, 0, 60), time(b.checkinTime), time(b.checkoutTime),
-    String(b.ownerEmail || "").trim() || null, String(b.ownerPhone || "").trim() || null, icalUrl || null, b.loyalty ? 1 : 0, p.slug).run();
+    String(b.ownerEmail || "").trim() || null, String(b.ownerPhone || "").trim() || null, icalUrl || null, b.loyalty ? 1 : 0, b.icalPaused ? 1 : 0, p.slug).run();
 }
 
 async function adminRoutes(req, env, ctx, parts) {
@@ -615,6 +615,7 @@ const blocksFree = async (env, b) => !(await env.DB.prepare(
 // ---------- calendar Booking.com / Airbnb ----------
 async function syncIcal(env, p) {
   if (!p.ical_import_url) return { ok: false, error: "no_url" };
+  if (p.ical_paused) return { ok: false, error: "paused" };
   try {
     const r = await fetch(p.ical_import_url, { headers: { "user-agent": "GreenFutureSinaia/1.0" } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1067,7 +1068,7 @@ async function claim(env, key, everyMs) {
 // Aduce calendarul extern daca e mai vechi decat maxAgeMs. Asteapta putin, ca vizitatorul sa vada deja datele noi;
 // daca Booking raspunde greu, cererea continua si sincronizarea se termina in fundal.
 async function freshen(env, ctx, p, maxAgeMs) {
-  if (!p.ical_import_url || !(await claim(env, `ical:${p.slug}`, maxAgeMs))) return;
+  if (!p.ical_import_url || p.ical_paused || !(await claim(env, `ical:${p.slug}`, maxAgeMs))) return;
   const job = syncIcal(env, p);
   ctx.waitUntil(job);
   await Promise.race([job, new Promise((resolve) => setTimeout(resolve, ICAL_WAIT_MS))]);

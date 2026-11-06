@@ -353,7 +353,7 @@
       ev.preventDefault();
       const f = new FormData(ev.currentTarget);
       await api(`properties/${slug}`, "PATCH", {
-        active: f.get("active") === "on", instantBook: f.get("instantBook") === "on", loyalty: f.get("loyalty") === "on",
+        active: f.get("active") === "on", instantBook: f.get("instantBook") === "on", loyalty: f.get("loyalty") === "on", icalPaused: f.get("icalPaused") === "on",
         basePrice: f.get("basePrice") === "" ? null : Number(f.get("basePrice")), cleaningFee: Number(f.get("cleaningFee") || 0),
         capacity: Number(f.get("capacity")), minNights: Number(f.get("minNights")), freeCancelDays: Number(f.get("freeCancelDays")),
         checkinTime: f.get("checkinTime"), checkoutTime: f.get("checkoutTime"),
@@ -377,14 +377,16 @@
         input("Email proprietar (primește rezervările)", "ownerEmail", p.ownerEmail, { type: "email" }),
         input("Telefon proprietar (îl vede oaspetele confirmat)", "ownerPhone", p.ownerPhone, { type: "tel" })),
       input("Calendar Booking.com / Airbnb (link iCal)", "icalImportUrl", p.icalImportUrl, { type: "url", placeholder: "https://..." }),
+      check("Pune pe pauză preluarea din Booking / Airbnb. Atenție: rezervările noi de acolo nu mai închid perioada aici.", "icalPaused", p.icalPaused),
       h("button", { class: "btn btn-primary", type: "submit" }, "Salvează"));
 
     const cal = h("section", { class: "adm-card" },
       h("h2", null, "Calendare externe"),
       h("p", null, "Pune acest link în Booking.com sau Airbnb, ca rezervările de aici să închidă perioada și acolo:"),
       h("input", { class: "adm-copy", readonly: true, value: p.icalExportUrl, "aria-label": "Link calendar exportat", on: { focus: (e) => e.target.select() } }),
-      p.icalImportUrl ? h("p", null, p.icalError ? `Ultima sincronizare a eșuat: ${p.icalError}` : p.icalSyncedAt ? `Sincronizat: ${new Date(p.icalSyncedAt).toLocaleString("ro-RO")}. Se actualizează la 30 de minute.` : "Nu s-a sincronizat încă.") : null,
-      p.icalImportUrl ? h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => { await api(`properties/${slug}/sync`, "POST"); reload(); }) } }, "Sincronizează acum") : null);
+      p.icalPaused ? h("p", { class: "bk-err" }, "Preluarea din Booking / Airbnb e pe pauză. Perioadele deja preluate rămân închise.") : null,
+      p.icalImportUrl && !p.icalPaused ? h("p", null, p.icalError ? `Ultima sincronizare a eșuat: ${p.icalError}` : p.icalSyncedAt ? `Sincronizat: ${new Date(p.icalSyncedAt).toLocaleString("ro-RO")}. Se actualizează la 30 de minute.` : "Nu s-a sincronizat încă.") : null,
+      p.icalImportUrl && !p.icalPaused ? h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => { await api(`properties/${slug}/sync`, "POST"); reload(); }) } }, "Sincronizează acum") : null);
 
     const rangeForm = (path, extra, label) => h("form", { class: "adm-inline", on: { submit: guarded(async (ev) => {
       ev.preventDefault();
