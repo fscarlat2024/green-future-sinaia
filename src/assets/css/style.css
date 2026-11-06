@@ -613,3 +613,5 @@ section.menu-section { padding: 0 0 8rem; }
 .page-hero.has-photo .lead { color: rgba(241,237,227,.9); }
 .page-hero.has-photo .demo-note { color: rgba(241,237,227,.75); }
 :root[data-theme="light"] .page-hero.has-photo::before { background: linear-gradient(180deg, rgba(8,12,9,.62) 0%, rgba(8,12,9,.55) 60%, rgba(8,12,9,.7) 100%); }
+.foot-credit { margin: 1.2rem 0 0; font-size: .72rem; color: var(--muted); }
+.foot-credit a { text-decoration: underline; }

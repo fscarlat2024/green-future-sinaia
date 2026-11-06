@@ -86,6 +86,7 @@
           <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a><a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a><a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a><a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a><a href="{{ home }}#proprietari">{{ t.nav_owners }}</a>
         </nav>
       </div>
+      <p class="foot-credit">{{ "Foto:" if lang == "ro" else "Photo:" }} Castelul Peleș, <a href="{{ site.heroCredit.url }}" rel="noopener">{{ site.heroCredit.author }}, Wikimedia Commons</a>, {{ site.heroCredit.license }}</p>
     </div>
   </footer>
 

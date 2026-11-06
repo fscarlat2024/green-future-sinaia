@@ -5,7 +5,8 @@
   "email": "rezervari@greenfuturesinaia.com",
   "whatsapp": "40700000000",
   "url": "https://greenfuturesinaia.com",
-  "heroImage": "/assets/img/complex/hero-pool.jpg",
+  "heroImage": "/assets/img/complex/hero-toamna.jpg",
+  "heroCredit": { "author": "Magda Constantin", "license": "CC BY-SA 3.0 RO", "url": "https://commons.wikimedia.org/wiki/File:Castelul_Peles_in_culori_de_toamna.jpg" },
   "exteriorImage": "/assets/img/complex/exterior.jpg",
   "ro": {
     "tagline": "Apartamente cu wellness, la poalele Bucegilor.",
