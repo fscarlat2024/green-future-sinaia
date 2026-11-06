@@ -723,3 +723,4 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
   .apt-rev-t { text-align: left; }
   .apts .apt:not([data-slug]) { grid-template-columns: 112px minmax(0, 1fr); grid-template-areas: "ph body"; }
 }
+.has-search .facts, .has-search #despre { display: none; }

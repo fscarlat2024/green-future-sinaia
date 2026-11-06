@@ -44,6 +44,8 @@
     const r = await fetch(`/api/search?${qs}`).catch(() => null);
     const data = r && r.ok ? await r.json() : null;
     if (!data) { msg.textContent = lang === "en" ? "Search failed. Please try again." : "Căutarea nu a mers. Te rugăm să încerci din nou."; return; }
+    // dupa cautare, rezultatele vin imediat sub formular, fara prezentarea complexului
+    document.body.classList.add("has-search");
     let free = 0;
     for (const res of data.results) {
       const card = cards.get(res.slug);
