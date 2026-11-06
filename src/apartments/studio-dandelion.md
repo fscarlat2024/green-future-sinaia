@@ -55,9 +55,18 @@ amenities_en:
   - Linens & towels included
   - Warm, nature-inspired decor
 gallery:
+  - { src: /assets/img/apartments/studio-dandelion/living-cozy.jpg, alt_ro: "Zona de living cu canapea muștar și perete decorat cu păpădii", alt_en: "Living area with mustard sofa and dandelion-decorated wall" }
+  - { src: /assets/img/apartments/studio-dandelion/dandelion-detail.jpg, alt_ro: "Păpădie reală sub clopot de sticlă — simbolul studioului", alt_en: "A real dandelion under a glass dome — the studio's symbol" }
+  - { src: /assets/img/apartments/studio-dandelion/fireplace-hd.jpg, alt_ro: "Șemineu decorativ, Smart TV și vedere spre bucătărie", alt_en: "Decorative fireplace, Smart TV and view toward the kitchen" }
   - { src: /assets/img/apartments/studio-dandelion/bedroom-hd.jpg, alt_ro: "Dormitor cu perete decorat cu păpădii și separator din lemn", alt_en: "Bedroom with dandelion-decorated wall and wooden divider" }
   - { src: /assets/img/apartments/studio-dandelion/overview-1.jpg, alt_ro: "Vedere de ansamblu - bucătărie, bar și zona de zi", alt_en: "Overview - kitchen, bar and living area" }
+  - { src: /assets/img/apartments/studio-dandelion/bedroom-curtains.jpg, alt_ro: "Pat matrimonial cu lenjerie muștar și draperii calde", alt_en: "Double bed with mustard bedding and warm curtains" }
+  - { src: /assets/img/apartments/studio-dandelion/bathroom.jpg, alt_ro: "Baie modernă cu duș walk-in și oglindă cu LED", alt_en: "Modern bathroom with walk-in shower and LED mirror" }
+  - { src: /assets/img/apartments/studio-dandelion/kitchen-detail.jpg, alt_ro: "Bucătărie complet utilată - vase, pahare și espressor", alt_en: "Fully equipped kitchen - dishes, glasses and espresso machine" }
+  - { src: /assets/img/apartments/studio-dandelion/studio-wide.jpg, alt_ro: "Vedere completă a studioului - living, dormitor și bucătărie", alt_en: "Full view of the studio - living, bedroom and kitchen" }
   - { src: /assets/img/apartments/studio-dandelion/overview-2.jpg, alt_ro: "Studioul luminos, cu separator din lemn și candelabru păpădie", alt_en: "The bright studio, with wooden divider and dandelion chandelier" }
+  - { src: /assets/img/apartments/studio-dandelion/mountain-view.jpg, alt_ro: "Vedere spre munte de la Studio Dandelion", alt_en: "Mountain view from Studio Dandelion" }
+  - { src: /assets/img/apartments/studio-dandelion/overview-3.jpg, alt_ro: "Bucătărie utilată, bar cu scaune și zona de dormit", alt_en: "Equipped kitchen, bar with stools and sleeping area" }
   - { src: /assets/img/apartments/studio-dandelion/balcony.jpg, alt_ro: "Balcon cu vedere la munte", alt_en: "Balcony with a mountain view" }
 desc_ro:
   - "Dacă simți nevoia să respiri aer curat, să te trezești cu muntele în față și să te lași învăluit de liniște — Dandelion poate fi locul tău de evadare."

@@ -724,3 +724,23 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
   .apts .apt:not([data-slug]) { grid-template-columns: 112px minmax(0, 1fr); grid-template-areas: "ph body"; }
 }
 .has-search .facts, .has-search #despre { display: none; }
+/* pagina apartamentului: intai pozele, ca pe Booking */
+.ap-gallery { position: relative; height: min(56vh, 620px); min-height: 280px; background: var(--surface-2); overflow: hidden; }
+.ap-gallery .hero-slide { transition: opacity .25s ease; }
+.ap-head { display: grid; gap: .5rem; justify-items: start; padding-top: 1.4rem; padding-bottom: .4rem; }
+.ap-head h1 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: clamp(2.1rem, 6vw, 3.2rem); font-weight: 500; line-height: 1.05; }
+.ap-head .loc-tag { position: static; margin: 0; }
+.ap-sub { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+.ap-tag { margin: .3rem 0 0; color: var(--ink-soft); font-size: 1.02rem; max-width: 62ch; }
+.ap-head .apt-rev { justify-content: flex-start; margin-top: .2rem; }
+.ap-head .apt-score { order: 0; }
+.ap-head .apt-rev-t { text-align: left; }
+.ap-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem 1rem; background: var(--surface); border-top: 1px solid var(--line); transition: transform .2s ease; }
+.ap-sticky[hidden] { display: none; }
+.ap-sticky.is-away { transform: translateY(160%); }
+.ap-sticky-price { display: grid; line-height: 1.2; }
+.ap-sticky-price b { font-family: "Cormorant Garamond", serif; font-size: 1.35rem; font-weight: 600; }
+.ap-sticky-price small { color: var(--ink-soft); font-size: .76rem; }
+body:has(.ap-sticky:not([hidden])) { padding-bottom: 70px; }
+html.gf-app .ap-sticky { bottom: 58px; }
+html.gf-app body:has(.ap-sticky:not([hidden])) { padding-bottom: 136px; }

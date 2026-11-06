@@ -185,6 +185,16 @@
     state.quote = r && r.ok && data.available ? data : null;
     state.error = !r || !r.ok ? errText(data) : data.available ? "" : T.unavailable;
     renderSide();
+    stickyPrice();
+  }
+
+  // bara de jos: pretul de la care porneste, apoi totalul pentru datele alese
+  function stickyPrice() {
+    const q = state.quote;
+    const main = q ? `${q.total} lei` : `${T.from} ${state.property.basePrice} lei`;
+    const note = q ? T.nights(q.nights) : T.perNight.replace(/^lei \/ /, "/ ");
+    document.querySelectorAll("[data-ap-price]").forEach((el) => { el.textContent = main; });
+    document.querySelectorAll("[data-ap-note]").forEach((el) => { el.textContent = note; });
   }
 
   function priceLines() {
@@ -321,7 +331,12 @@
       if (outD > inD && outD <= lastCheckoutFor(inD) && diff(inD, outD) >= minNightsFor(inD)) state.checkout = outD;
     }
     render();
+    stickyPrice();
     if (state.checkout) loadQuote();
+    const bar = document.querySelector(".ap-sticky");
+    if (bar && "IntersectionObserver" in window) {
+      new IntersectionObserver(([e]) => bar.classList.toggle("is-away", e.isIntersecting)).observe(document.getElementById("rezervare"));
+    }
     // sectiunea era ascunsa cand browserul a sarit la ancora
     if (location.hash === "#rezervare") document.getElementById("rezervare").scrollIntoView();
   })();

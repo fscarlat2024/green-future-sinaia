@@ -5,6 +5,12 @@
   boxes.forEach(function (box) {
     var slides = Array.prototype.slice.call(box.querySelectorAll(".hero-slide"));
     if (slides.length < 2) return;
+    // pozele se incarca pe masura ce se ajunge la ele, nu toate deodata
+    function load(n) {
+      var s = slides[(n + slides.length) % slides.length];
+      if (s.dataset.bg) { s.style.backgroundImage = "url('" + s.dataset.bg + "')"; delete s.dataset.bg; }
+    }
+    load(1);
 
     var host = box.parentElement || box;
     var i = 0;
@@ -44,16 +50,28 @@
       slides[i].classList.remove("is-active");
       btns[i].classList.remove("on");
       i = (n + slides.length) % slides.length;
+      load(i);
+      load(i + 1);
       slides[i].classList.add("is-active");
       btns[i].classList.add("on");
     }
     function next() { go(i + 1); }
-    function start() { if (!reduce) timer = setInterval(next, DELAY); }
+    function start() { if (!reduce && !box.hasAttribute("data-noauto")) timer = setInterval(next, DELAY); }
     function stop() { if (timer) { clearInterval(timer); timer = null; } }
     function restart() { stop(); start(); }
 
     host.addEventListener("mouseenter", stop);
     host.addEventListener("mouseleave", start);
+
+    // glisare cu degetul
+    var startX = null;
+    host.addEventListener("touchstart", function (e) { startX = e.touches[0].clientX; }, { passive: true });
+    host.addEventListener("touchend", function (e) {
+      if (startX === null) return;
+      var dx = e.changedTouches[0].clientX - startX;
+      startX = null;
+      if (Math.abs(dx) > 40) { go(i + (dx < 0 ? 1 : -1)); restart(); }
+    }, { passive: true });
 
     start();
   });

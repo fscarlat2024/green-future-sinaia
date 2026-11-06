@@ -2,52 +2,28 @@
 layout: base.njk
 ---
 {% set t = i18n[lang] %}
-<main class="hero tall" id="top">
-  <div class="hero-slides" data-slideshow aria-hidden="true">
-    <div class="hero-slide is-active" style="background-image:url('{{ hero }}')"></div>
-    {% for g in gallery %}<div class="hero-slide" style="background-image:url('{{ g.src }}')"></div>{% endfor %}
+<main id="top" class="ap-top">
+  <div class="ap-gallery">
+    <div class="hero-slides" data-slideshow data-arrows data-noauto>
+      <div class="hero-slide is-active" style="background-image:url('{{ hero }}')" role="img" aria-label="{{ name }}"></div>
+      {% for g in gallery %}<div class="hero-slide" data-bg="{{ g.src }}" role="img" aria-label="{{ g['alt_' ~ lang] or name }}"></div>{% endfor %}
+    </div>
   </div>
-  <div class="hero-veil" aria-hidden="true"></div>
-  <div class="wrap hero-in">
+  <div class="wrap ap-head">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>
     <h1>{{ name }}</h1>
-    <p class="lead">{{ tagline }}</p>
-    <div class="hero-cta">
-      <a href="#rezervare" class="btn btn-ochre btn-lg">{{ t.ap_verify }}</a>
-      <a href="#galerie" class="btn btn-ghost btn-lg">{{ t.ap_see_gallery }}</a>
-    </div>
+    <p class="ap-sub">{{ capacity }} · {{ roomType }}{% if metaExtra %} · {{ metaExtra }}{% endif %}</p>
+    {% if reviewScore %}<a class="apt-rev" href="#recenzii"><span class="apt-score">{{ reviewScore }}</span><span class="apt-rev-t"><b>{{ reviewWord_ro if lang == "ro" else reviewWord_en }}</b><small>{{ reviewCount }} {{ "recenzii pe Booking" if lang == "ro" else "reviews on Booking" }}</small></span></a>{% endif %}
+    <p class="ap-tag">{{ tagline }}</p>
   </div>
 </main>
 
-<div class="wrap">
-  <div class="facts">
-    <div class="fact"><span class="fi">🏔️</span><div><b>{{ t.fact_view_t }}</b><span>{{ t.fact_view_n }}</span></div></div>
-    <div class="fact"><span class="fi">👥</span><div><b>{{ capacity }}</b><span>{{ roomType }}</span></div></div>
-    <div class="fact"><span class="fi">🍳</span><div><b>{{ "Bucătărie utilată" if lang == "ro" else "Equipped kitchen" }}</b><span>{{ "tot ce ai nevoie" if lang == "ro" else "everything you need" }}</span></div></div>
-    <div class="fact"><span class="fi">🛜</span><div><b>Wi-Fi & Smart TV</b><span>{{ "internet rapid" if lang == "ro" else "fast internet" }}</span></div></div>
-  </div>
-</div>
-
-<section class="block" id="despre">
-  <div class="wrap article-intro">
-    <span class="eyebrow">{{ t.ap_welcome }}</span>
-    <div class="rich">
-      {% for p in desc %}<p>{{ p }}</p>{% endfor %}
-    </div>
-  </div>
-</section>
-
-{% if gallery and gallery.length %}
-<section class="block" id="galerie" style="padding-top:1rem">
+{% if amenities and amenities.length %}
+<section class="block" id="dotari">
   <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">{{ t.ap_gallery_eyebrow }}</span>
-      <h2>{{ t.ap_gallery_title }}</h2>
-    </div>
-    <div class="gallery-show">
-      <div class="hero-slides" data-slideshow data-arrows>
-        {% for g in gallery %}<div class="hero-slide{% if loop.first %} is-active{% endif %}" style="background-image:url('{{ g.src }}')" role="img" aria-label="{{ g['alt_' ~ lang] or name }}"></div>{% endfor %}
-      </div>
+    <div class="sec-head"><span class="eyebrow">{{ t.ap_amen_eyebrow }}</span><h2>{{ t.ap_amen_title }}</h2></div>
+    <div class="amen">
+      {% for a in amenities %}<div><span class="ck">✓</span> {{ a }}</div>{% endfor %}
     </div>
   </div>
 </section>
@@ -67,17 +43,6 @@ layout: base.njk
     </div>
   </div>
 </section>
-
-{% if amenities and amenities.length %}
-<section class="block" id="dotari">
-  <div class="wrap">
-    <div class="sec-head"><span class="eyebrow">{{ t.ap_amen_eyebrow }}</span><h2>{{ t.ap_amen_title }}</h2></div>
-    <div class="amen">
-      {% for a in amenities %}<div><span class="ck">✓</span> {{ a }}</div>{% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
 
 {% if reviewScore %}
 <section class="block" id="recenzii" style="background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
@@ -101,6 +66,15 @@ layout: base.njk
   </div>
 </section>
 {% endif %}
+
+<section class="block" id="despre">
+  <div class="wrap article-intro">
+    <span class="eyebrow">{{ t.ap_welcome }}</span>
+    <div class="rich">
+      {% for p in desc %}<p>{{ p }}</p>{% endfor %}
+    </div>
+  </div>
+</section>
 
 <section class="block" id="rezervare" style="padding-top:1rem">
   <div class="wrap">
@@ -128,3 +102,8 @@ layout: base.njk
     </div>
   </div>
 </section>
+
+<div class="ap-sticky" data-direct-show hidden>
+  <div class="ap-sticky-price"><b data-ap-price></b><small data-ap-note></small></div>
+  <a href="#rezervare" class="btn btn-primary">{{ "Vezi datele" if lang == "ro" else "See dates" }}</a>
+</div>

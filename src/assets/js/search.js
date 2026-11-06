@@ -59,7 +59,7 @@
         : res.reason === "too_many_guests" ? T.cap(res.capacity) : T.busy;
       card.querySelectorAll("a.apt-link").forEach((a) => {
         const base = a.getAttribute("href").split("?")[0].split("#")[0];
-        a.setAttribute("href", `${base}?${qs}#rezervare`);
+        a.setAttribute("href", `${base}?${qs}`);
       });
       if (res.available) free++;
     }
