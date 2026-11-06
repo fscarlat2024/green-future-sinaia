@@ -5,7 +5,7 @@ pagination:
   alias: lang
 permalink: "{{ '/restaurant/index.html' if lang == 'ro' else '/en/restaurant/index.html' }}"
 layout: base.njk
-scripts: ["/assets/js/restaurant.js"]
+scripts: ["/assets/js/menu-book.js", "/assets/js/restaurant.js"]
 eleventyComputed:
   title: "{{ restaurant[lang].eyebrow }} - {{ site.name }}"
   description: "{{ restaurant[lang].lead }}"
@@ -13,7 +13,7 @@ eleventyComputed:
   urlEn: "/en/restaurant/"
 ---
 {% set r = restaurant[lang] %}
-<main class="page-hero">
+<main class="page-hero is-compact">
   <div class="wrap">
     <span class="eyebrow">{{ r.eyebrow }}</span>
     <h1>{{ r.title }}</h1>

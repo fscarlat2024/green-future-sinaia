@@ -119,6 +119,7 @@
       save();
       step = "items";
       barEl.hidden = true;
+      root.querySelectorAll(".mi-add").forEach((b) => { b.textContent = "+"; b.classList.remove("has-qty"); });
       cartEl.replaceChildren(h("div", { class: "bk-done" }, h("div", { class: "bk-tick", "aria-hidden": "true" }, "✓"),
         h("h3", null, T.okTitle), h("p", null, data.demo ? T.okDemo : T.okReal),
         h("div", { class: "bk-code" }, h("small", null, T.code), h("b", null, data.code)),
