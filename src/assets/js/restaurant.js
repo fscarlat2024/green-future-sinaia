@@ -11,7 +11,7 @@
       remove: "Scoate", add: "Adaugă", bar: (n, t) => `Comanda ta · ${n} ${n === 1 ? "produs" : "produse"} · ${t} lei`,
       okTitle: "Comanda a fost trimisă", okDemo: "Este o comandă de test și nu se prepară.", okReal: "Restaurantul o confirmă în scurt timp și o aduce la apartament.",
       code: "Cod comandă", again: "Comandă nouă", note24: "Plata se trece pe nota camerei.",
-      invalid_apartment: "Scrie numărul apartamentului.", invalid_name: "Scrie numele tău.", invalid_phone: "Numărul de telefon nu pare corect.",
+      choose: "Alege apartamentul", noList: "Lista nu s-a încărcat. Reîncarcă pagina.", invalid_apartment: "Alege apartamentul din listă.", invalid_name: "Scrie numele tău.", invalid_phone: "Numărul de telefon nu pare corect.",
       accept_required: "Bifează acordul pentru plata pe nota camerei.", too_many_requests: "Prea multe comenzi într-un timp scurt. Revino puțin mai târziu.",
       generic: "Comanda nu a putut fi trimisă. Te rugăm să încerci din nou.",
     },
@@ -22,7 +22,7 @@
       remove: "Remove", add: "Add", bar: (n, t) => `Your order · ${n} ${n === 1 ? "item" : "items"} · ${t} lei`,
       okTitle: "Your order has been sent", okDemo: "This is a test order and will not be prepared.", okReal: "The restaurant will confirm it shortly and bring it to your apartment.",
       code: "Order code", again: "New order", note24: "Payment is added to the room bill.",
-      invalid_apartment: "Please enter your apartment number.", invalid_name: "Please enter your name.", invalid_phone: "This phone number does not look right.",
+      choose: "Choose your apartment", noList: "The list did not load. Please reload the page.", invalid_apartment: "Please choose your apartment from the list.", invalid_name: "Please enter your name.", invalid_phone: "This phone number does not look right.",
       accept_required: "Please tick the room bill consent.", too_many_requests: "Too many orders in a short time. Please come back a little later.",
       generic: "Your order could not be sent. Please try again.",
     },
@@ -44,6 +44,17 @@
   const authHeader = () => (guestToken ? { authorization: `Bearer ${guestToken}` } : {});
   let member = null;
   if (guestToken) fetch("/api/guest/me", { headers: authHeader() }).then((r) => (r.ok ? r.json() : null)).then((m) => { member = m; render(); }).catch(() => {});
+
+  // lista apartamentelor pentru comanda
+  let apartments = null;
+  const aptOptions = () => {
+    if (!apartments) return [h("option", { value: "" }, apartments === false ? T.noList : "...")];
+    const only = apartments.length === 1;
+    return [only ? null : h("option", { value: "" }, T.choose), ...apartments.map((a) => h("option", { value: a, selected: only }, a))];
+  };
+  fetch("/api/apartments").then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => { apartments = d.apartments; }).catch(() => { apartments = false; }).then(() => {
+    document.querySelector('#cart select[name="apartment"]')?.replaceChildren(...aptOptions().filter(Boolean));
+  });
 
   const cartEl = document.getElementById("cart");
   const barEl = document.getElementById("cart-bar");
@@ -101,7 +112,7 @@
     const form = h("form", { class: "bk-form", on: { submit } },
       h("button", { type: "button", class: "bk-back", on: { click: () => { step = "items"; error = ""; render(); } } }, `‹ ${T.back}`),
       totalLine(),
-      field(T.apartment, "apartment", { maxlength: "20", autocomplete: "off" }),
+      h("label", { class: "bk-field" }, h("span", null, T.apartment), h("select", { name: "apartment", required: true }, aptOptions())),
       field(T.name, "name", { maxlength: "100", autocomplete: "name", value: member?.name }),
       field(T.phone, "phone", { type: "tel", maxlength: "30", autocomplete: "tel", value: member?.phone }),
       h("label", { class: "bk-field" }, h("span", null, T.note), h("textarea", { name: "note", rows: "2", maxlength: "500", placeholder: T.notePh })),

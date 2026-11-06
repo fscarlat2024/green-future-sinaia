@@ -699,7 +699,8 @@ async function createOrder(req, env, ctx) {
   const apartment = String(b.apartment || "").trim();
   const name = String(b.name || "").trim();
   const phone = String(b.phone || "").trim();
-  if (!apartment || apartment.length > 20) fail(400, "invalid_apartment");
+  // apartamentul se alege din lista, deci trebuie sa existe si sa fie publicat
+  if (!(await env.DB.prepare("SELECT 1 FROM properties WHERE name = ? AND status = 'published'").bind(apartment).first())) fail(400, "invalid_apartment");
   if (name.length < 2 || name.length > 100) fail(400, "invalid_name");
   if (phone.replace(/\D/g, "").length < 6 || phone.length > 30) fail(400, "invalid_phone");
   if (!Array.isArray(b.items) || !b.items.length || b.items.length > 40) fail(400, "invalid_items");
@@ -1214,6 +1215,10 @@ async function api(req, env, ctx, url) {
     const row = await env.DB.prepare("SELECT data FROM property_photos WHERE id = ?").bind(Number(second)).first();
     if (!row) return new Response("Not found", { status: 404, headers: CORS });
     return new Response(new Uint8Array(row.data), { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff", ...CORS } });
+  }
+  if (first === "apartments" && req.method === "GET") {
+    const { results } = await env.DB.prepare("SELECT name FROM properties WHERE status = 'published' ORDER BY name").all();
+    return json({ apartments: results.map((r) => r.name) });
   }
   if (first === "listings" && req.method === "GET") {
     const { results } = await env.DB.prepare(
