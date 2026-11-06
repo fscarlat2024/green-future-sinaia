@@ -1,0 +1,65 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/apartament/index.html' if lang == 'ro' else '/en/apartment/index.html' }}"
+layout: base.njk
+noindex: true
+scripts: ["/assets/js/apartment-view.js", "/assets/js/booking.js", "/assets/js/review.js"]
+eleventyComputed:
+  title: "{{ 'Apartament' if lang == 'ro' else 'Apartment' }} - {{ site.name }}"
+  urlRo: "/apartament/"
+  urlEn: "/en/apartment/"
+---
+{% set t = i18n[lang] %}
+<main id="top" class="ap-top" data-apartment data-lang="{{ lang }}" hidden>
+  <div class="ap-gallery"><div class="hero-slides" id="ap-slides" data-arrows data-noauto></div></div>
+  <div class="wrap ap-head">
+    <span class="loc-tag">{{ site.name }} · Sinaia</span>
+    <h1 id="ap-name"></h1>
+    <p class="ap-sub" id="ap-sub"></p>
+    <p class="ap-tag" id="ap-tagline"></p>
+  </div>
+</main>
+<p class="wrap chat-note" id="ap-missing" hidden>{{ "Apartamentul nu a fost găsit." if lang == "ro" else "This apartment was not found." }}</p>
+
+<section class="block" id="dotari" hidden>
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">{{ t.ap_amen_eyebrow }}</span><h2>{{ t.ap_amen_title }}</h2></div>
+    <div class="amen" id="ap-amenities"></div>
+  </div>
+</section>
+
+<section class="block" id="recenzii-directe" hidden>
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">{{ "Rezervări directe" if lang == "ro" else "Direct bookings" }}</span><h2>{{ "Recenzii de la oaspeții noștri" if lang == "ro" else "Reviews from our guests" }}</h2></div>
+    <div class="reviews-wrap">
+      <div class="review-score"><div class="rs-num"><span id="direct-reviews-score" style="font:inherit;color:inherit"></span><span>/10</span></div><div class="rs-meta"><span class="rs-count" id="direct-reviews-count"></span></div></div>
+      <div class="review-quotes" id="direct-reviews" data-lang="{{ lang }}"></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="despre" hidden>
+  <div class="wrap article-intro"><span class="eyebrow">{{ t.ap_welcome }}</span><div class="rich" id="ap-desc"></div></div>
+</section>
+
+<section class="block" id="rezervare" style="padding-top:1rem" hidden>
+  <div class="wrap">
+    <div class="bk-section" data-direct-show hidden>
+      <div class="sec-head"><span class="eyebrow">{{ t.ap_book_pill }}</span><h2>{{ t.bk_title }}</h2><p>{{ t.bk_sub }}</p></div>
+    </div>
+    <div class="bk" id="bk" data-lang="{{ lang }}" hidden></div>
+    <div class="band">
+      <h2>{{ t.bk_question }}</h2>
+      <p>{{ t.bk_question_text }}</p>
+      <div class="cta-row"><a id="ap-chat" class="btn btn-outline btn-lg">{{ "Scrie proprietarului" if lang == "ro" else "Message the owner" }}</a></div>
+    </div>
+  </div>
+</section>
+
+<div class="ap-sticky" data-direct-show hidden>
+  <div class="ap-sticky-price"><b data-ap-price></b><small data-ap-note></small></div>
+  <a href="#rezervare" class="btn btn-primary">{{ "Vezi datele" if lang == "ro" else "See dates" }}</a>
+</div>

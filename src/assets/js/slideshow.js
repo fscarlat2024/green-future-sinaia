@@ -2,7 +2,7 @@
   var boxes = document.querySelectorAll("[data-slideshow]");
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  boxes.forEach(function (box) {
+  function setup(box) {
     var slides = Array.prototype.slice.call(box.querySelectorAll(".hero-slide"));
     if (slides.length < 2) return;
     // pozele se incarca pe masura ce se ajunge la ele, nu toate deodata
@@ -74,5 +74,8 @@
     }, { passive: true });
 
     start();
-  });
+  }
+  // pagina apartamentelor din panou adauga pozele dupa incarcare
+  window.gfSlideshow = setup;
+  boxes.forEach(setup);
 })();

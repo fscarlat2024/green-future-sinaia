@@ -89,7 +89,8 @@ const clientIp = (req) => req.headers.get("cf-connecting-ip") || "local";
 
 // ---------- apartamente, preturi, disponibilitate ----------
 const getProperty = (env, slug) => env.DB.prepare("SELECT * FROM properties WHERE slug = ?").bind(slug).first();
-const isBookable = (p) => p && p.active === 1 && p.base_price > 0;
+// un apartament adaugat din panou se poate rezerva doar dupa aprobare
+const isBookable = (p) => p && p.status === "published" && p.active === 1 && p.base_price > 0;
 async function bookableProperty(env, slug) {
   const p = await getProperty(env, slug);
   if (!isBookable(p)) fail(404, "not_bookable");
@@ -297,6 +298,7 @@ const adminProperty = (p, env) => ({
   ...publicProperty(p), active: !!p.active, basePrice: p.base_price, ownerEmail: p.owner_email, ownerPhone: p.owner_phone,
   icalImportUrl: p.ical_import_url, icalExportUrl: `${env.SITE_URL}/ical/${p.ical_token}.ics`,
   icalSyncedAt: p.ical_synced_at, icalError: p.ical_error, icalPaused: !!p.ical_paused,
+  dynamic: !!p.dynamic, status: p.status, roomType: p.room_type, tagline: p.tagline, description: p.description, amenities: JSON.parse(p.amenities || "[]"),
 });
 
 async function updateProperty(env, p, b) {
@@ -330,7 +332,7 @@ async function adminRoutes(req, env, ctx, parts) {
   if (first === "me") {
     const slugs = await adminSlugs(env, a);
     const props = await Promise.all(slugs.map((s) => getProperty(env, s)));
-    return json({ email: a.email, role: a.role, properties: props.map((p) => ({ slug: p.slug, name: p.name, active: !!p.active })) });
+    return json({ email: a.email, role: a.role, properties: props.map((p) => ({ slug: p.slug, name: p.name, active: !!p.active, status: p.status })) });
   }
 
   if (first === "bookings" && !second && req.method === "GET") {
@@ -555,8 +557,25 @@ async function adminRoutes(req, env, ctx, parts) {
     }
   }
 
+  if (first === "properties" && !second && req.method === "POST") {
+    return json({ slug: await createListing(env, a, await readJson(req)) }, 201);
+  }
+  if (first === "photos" && second) {
+    const row = await env.DB.prepare("SELECT property_slug FROM property_photos WHERE id = ?").bind(Number(second)).first();
+    if (!row) fail(404, "not_found");
+    await ownedProperty(env, a, row.property_slug);
+    if (req.method === "DELETE") {
+      await env.DB.prepare("DELETE FROM property_photos WHERE id = ?").bind(Number(second)).run();
+      return json({ ok: true });
+    }
+    if (third === "first" && req.method === "POST") {
+      await env.DB.prepare("UPDATE property_photos SET position = (SELECT MIN(position) - 1 FROM property_photos WHERE property_slug = ?) WHERE id = ?").bind(row.property_slug, Number(second)).run();
+      return json({ ok: true });
+    }
+  }
   if (first === "properties" && second) {
     const p = await ownedProperty(env, a, second);
+    if (["listing", "photos", "submit", "approve", "unpublish"].includes(third)) return listingRoutes(req, env, ctx, a, p, third);
     if (!third && req.method === "GET") {
       const [rates, blocks, bookings] = await Promise.all([
         env.DB.prepare("SELECT * FROM rates WHERE property_slug = ? AND date_to > ? ORDER BY date_from").bind(p.slug, today()).all(),
@@ -710,6 +729,77 @@ async function createOrder(req, env, ctx) {
     pushToStaff(env, null, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
   ]));
   return json({ code, total, discount, demo: !!demo }, 201);
+}
+
+// ---------- apartamente adaugate din panou ----------
+const MIN_PHOTOS = 3, MAX_PHOTOS = 20, MAX_PHOTO_BYTES = 1500000;
+const photoUrl = (id) => `/api/photos/${id}`;
+async function photoIds(env, slug) {
+  return (await env.DB.prepare("SELECT id FROM property_photos WHERE property_slug = ? ORDER BY position, id").bind(slug).all()).results.map((r) => r.id);
+}
+function slugFrom(name) {
+  const clean = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+  return clean || "apartament";
+}
+function cleanListing(b) {
+  const name = String(b.name || "").trim();
+  if (name.length < 2 || name.length > 60) fail(400, "invalid_name");
+  const capacity = Number(b.capacity);
+  if (!Number.isInteger(capacity) || capacity < 1 || capacity > 30) fail(400, "invalid_value");
+  const amenities = (Array.isArray(b.amenities) ? b.amenities : []).map((a) => String(a).trim().slice(0, 80)).filter(Boolean).slice(0, 40);
+  return { name, capacity, amenities, roomType: String(b.roomType || "").trim().slice(0, 60) || null, tagline: String(b.tagline || "").trim().slice(0, 160) || null, description: String(b.description || "").trim().slice(0, 4000) || null };
+}
+async function createListing(env, a, b) {
+  const l = cleanListing(b);
+  let slug = slugFrom(l.name);
+  for (let i = 2; await getProperty(env, slug); i++) slug = `${slugFrom(l.name)}-${i}`;
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO properties (slug, name, capacity, ical_token, status, dynamic, room_type, tagline, description, amenities) VALUES (?,?,?,?, 'draft', 1, ?,?,?,?)`)
+      .bind(slug, l.name, l.capacity, randomHex(20), l.roomType, l.tagline, l.description, JSON.stringify(l.amenities)),
+    ...(a.role === "admin" ? [] : [env.DB.prepare("INSERT INTO admin_properties (admin_id, property_slug) VALUES (?,?)").bind(a.id, slug)]),
+  ]);
+  return slug;
+}
+async function listingRoutes(req, env, ctx, a, p, action) {
+  if (!p.dynamic) fail(409, "static_property");
+  if (action === "listing" && req.method === "PATCH") {
+    const l = cleanListing(await readJson(req));
+    await env.DB.prepare("UPDATE properties SET name=?, capacity=?, room_type=?, tagline=?, description=?, amenities=? WHERE slug=?")
+      .bind(l.name, l.capacity, l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), p.slug).run();
+    return json({ ok: true });
+  }
+  if (action === "photos" && req.method === "GET") {
+    return json({ photos: (await photoIds(env, p.slug)).map((id) => ({ id, url: photoUrl(id) })) });
+  }
+  if (action === "photos" && req.method === "POST") {
+    const data = new Uint8Array(await req.arrayBuffer());
+    if (data.length > MAX_PHOTO_BYTES) fail(413, "photo_too_large");
+    if (data.length < 500 || data[0] !== 0xff || data[1] !== 0xd8 || data[2] !== 0xff) fail(400, "invalid_photo");
+    const ids = await photoIds(env, p.slug);
+    if (ids.length >= MAX_PHOTOS) fail(409, "too_many_photos");
+    const r = await env.DB.prepare("INSERT INTO property_photos (property_slug, position, data, created_at) VALUES (?, COALESCE((SELECT MAX(position) + 1 FROM property_photos WHERE property_slug = ?), 0), ?, ?)")
+      .bind(p.slug, p.slug, data, Date.now()).run();
+    return json({ id: r.meta.last_row_id, url: photoUrl(r.meta.last_row_id) }, 201);
+  }
+  if (action === "submit" && req.method === "POST") {
+    if ((await photoIds(env, p.slug)).length < MIN_PHOTOS) fail(409, "need_photos", { min: MIN_PHOTOS });
+    if (!p.description) fail(409, "need_description");
+    if (!(p.base_price > 0)) fail(409, "price_required");
+    if (a.role === "admin") {
+      await env.DB.prepare("UPDATE properties SET status = 'published' WHERE slug = ?").bind(p.slug).run();
+      return json({ status: "published" });
+    }
+    await env.DB.prepare("UPDATE properties SET status = 'pending' WHERE slug = ?").bind(p.slug).run();
+    ctx.waitUntil(pushToStaff(env, null, { title: "Apartament de aprobat", body: p.name, url: "/admin/" }).catch(() => {}));
+    ctx.waitUntil(mailChat(env, env.MAIL_FROM, `Apartament de aprobat: ${p.name}`, `${a.email} a trimis apartamentul spre publicare.`, `${env.SITE_URL}/admin/`, "ro").catch(() => {}));
+    return json({ status: "pending" });
+  }
+  if ((action === "approve" || action === "unpublish") && req.method === "POST") {
+    if (a.role !== "admin") fail(403, "forbidden");
+    await env.DB.prepare("UPDATE properties SET status = ? WHERE slug = ?").bind(action === "approve" ? "published" : "draft", p.slug).run();
+    return json({ status: action === "approve" ? "published" : "draft" });
+  }
+  fail(404, "not_found");
 }
 
 // ---------- recenzii dupa sejur ----------
@@ -1120,6 +1210,20 @@ async function api(req, env, ctx, url) {
   if (first === "admin") return adminRoutes(req, env, ctx, parts.slice(1));
   if (first === "guest") return guestRoutes(req, env, ctx, parts.slice(1));
 
+  if (first === "photos" && second && req.method === "GET") {
+    const row = await env.DB.prepare("SELECT data FROM property_photos WHERE id = ?").bind(Number(second)).first();
+    if (!row) return new Response("Not found", { status: 404, headers: CORS });
+    return new Response(new Uint8Array(row.data), { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff", ...CORS } });
+  }
+  if (first === "listings" && req.method === "GET") {
+    const { results } = await env.DB.prepare(
+      `SELECT p.slug, p.name, p.capacity, p.room_type, p.tagline, p.base_price,
+         (SELECT id FROM property_photos f WHERE f.property_slug = p.slug ORDER BY position, id LIMIT 1) AS photo
+       FROM properties p WHERE p.status = 'published' AND p.dynamic = 1 ORDER BY p.name`
+    ).all();
+    return json({ listings: results.map((p) => ({ slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, basePrice: p.base_price, photo: p.photo ? photoUrl(p.photo) : null })) });
+  }
+
   if (first === "reviews" && second) {
     await rateLimit(env, `review:${clientIp(req)}`, 60, 3600000);
     const b = await reviewBooking(env, second, url.searchParams.get("t"));
@@ -1146,13 +1250,21 @@ async function api(req, env, ctx, url) {
   }
 
   if (first === "properties" && req.method === "GET") {
+    if (third === "details") {
+      const p = await getProperty(env, second);
+      if (!p || !p.dynamic || p.status !== "published") fail(404, "not_found");
+      return json({
+        slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, description: p.description,
+        amenities: JSON.parse(p.amenities || "[]"), photos: (await photoIds(env, p.slug)).map(photoUrl),
+      });
+    }
     if (third === "reviews") {
       const p = await getProperty(env, second);
       if (!p) fail(404, "not_found");
       return json(await publicReviews(env, p.slug));
     }
     if (!second) {
-      const { results } = await env.DB.prepare("SELECT * FROM properties WHERE active = 1 AND base_price > 0 ORDER BY name").all();
+      const { results } = await env.DB.prepare("SELECT * FROM properties WHERE status = 'published' AND active = 1 AND base_price > 0 ORDER BY name").all();
       return json({ properties: results.map(publicProperty) });
     }
     if (third === "calendar") {
@@ -1176,7 +1288,7 @@ async function api(req, env, ctx, url) {
     const checkout = url.searchParams.get("checkout");
     const guests = Math.trunc(Number(url.searchParams.get("guests"))) || 1;
     if (!isDate(checkin) || !isDate(checkout) || checkin >= checkout) fail(400, "invalid_dates");
-    const { results } = await env.DB.prepare("SELECT * FROM properties WHERE active = 1 AND base_price > 0").all();
+    const { results } = await env.DB.prepare("SELECT * FROM properties WHERE status = 'published' AND active = 1 AND base_price > 0").all();
     await Promise.all(results.map((p) => freshen(env, ctx, p, ICAL_MAX_AGE_MS)));
     const out = [];
     for (const p of results) {

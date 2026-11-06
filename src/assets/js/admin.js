@@ -9,6 +9,7 @@
   const ERR = {
     bad_login: "Email sau parolă greșită.", too_many_requests: "Prea multe încercări. Reîncearcă în 15 minute.",
     calendar_conflict: "Perioada se suprapune cu o rezervare sau cu un calendar extern.", wrong_status: "Rezervarea și-a schimbat deja starea.",
+    invalid_name: "Scrie numele apartamentului.", need_photos: "Adaugă cel puțin 3 poze.", need_description: "Scrie descrierea apartamentului și salveaz-o.", too_many_photos: "Poți avea cel mult 20 de poze.", invalid_photo: "Fișierul nu e o poză validă.", photo_too_large: "Poza e prea mare.",
     invalid_phone: "Numărul de telefon nu pare corect.", invalid_dates: "Verifică datele: sfârșitul trebuie să fie după început, iar oferta valabilă cel puțin azi.", invalid_value: "Verifică valorile introduse.",
     price_required: "Pune un preț pe noapte înainte de a activa rezervările.", invalid_ical_url: "Linkul calendarului trebuie să înceapă cu https://.",
     forbidden: "Nu ai acces la acest apartament.", push_off: "Cheia pentru notificări nu e pusă pe server.",
@@ -338,10 +339,81 @@
       })) : h("p", { class: "adm-card" }, "Nu există oferte încă."));
   }
 
+  // ---------- apartament nou si prezentare ----------
+  const listingFields = (p) => [
+    h("label", { class: "bk-field" }, h("span", null, "Numele apartamentului"), h("input", { name: "name", required: true, maxlength: 60, value: p?.name || "" })),
+    h("div", { class: "adm-row" },
+      h("label", { class: "bk-field" }, h("span", null, "Câte persoane"), h("input", { name: "capacity", type: "number", min: 1, max: 30, required: true, value: p?.capacity || 2 })),
+      h("label", { class: "bk-field" }, h("span", null, "Tip (ex. garsonieră, 2 camere)"), h("input", { name: "roomType", maxlength: 60, value: p?.roomType || "" }))),
+    h("label", { class: "bk-field" }, h("span", null, "O frază scurtă"), h("input", { name: "tagline", maxlength: 160, value: p?.tagline || "" })),
+    (() => { const t = h("textarea", { name: "description", rows: 6, maxlength: 4000 }); t.value = p?.description || ""; return h("label", { class: "bk-field" }, h("span", null, "Descriere"), t); })(),
+    (() => { const t = h("textarea", { name: "amenities", rows: 6, maxlength: 2000, placeholder: "Wi-Fi\nBucătărie utilată\nBalcon" }); t.value = (p?.amenities || []).join("\n"); return h("label", { class: "bk-field" }, h("span", null, "Facilități, câte una pe rând"), t); })(),
+  ];
+  const listingBody = (form) => {
+    const f = new FormData(form);
+    return { name: f.get("name"), capacity: Number(f.get("capacity")), roomType: f.get("roomType"), tagline: f.get("tagline"), description: f.get("description"), amenities: String(f.get("amenities")).split("\n") };
+  };
+  function renderNewListing() {
+    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, "Apartament nou")),
+      h("p", null, "Îl poți completa pe rând. Apare pe site abia după ce îl trimiți și e aprobat."),
+      h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+        ev.preventDefault();
+        const { slug } = await api("properties", "POST", listingBody(ev.currentTarget));
+        await renderSettings(slug);
+      }) } }, listingFields(), h("button", { class: "btn btn-primary", type: "submit" }, "Continuă cu pozele")));
+  }
+  // micsoreaza poza in browser, ca sa incapa si sa se incarce repede pe telefon
+  async function shrink(file) {
+    // data: e permis de CSP (img-src 'self' data:), blob: nu
+    const url = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.naturalWidth * scale);
+    c.height = Math.round(img.naturalHeight * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise((res) => c.toBlob(res, "image/jpeg", 0.82));
+  }
+  async function listingEditor(p, slug, reload) {
+    const { photos } = await api(`properties/${slug}/photos`);
+    const say = h("p", { role: "status" });
+    const input = h("input", { type: "file", accept: "image/*", multiple: true, "aria-label": "Alege poze", on: { change: guarded(async (ev) => {
+      const files = [...ev.target.files];
+      let done = 0;
+      for (const file of files) {
+        say.textContent = `Se încarcă ${done + 1} din ${files.length}...`;
+        const blob = await shrink(file).catch(() => null);
+        if (!blob) throw new Error(`Nu pot citi poza ${file.name}.`);
+        const r = await fetch(`/api/admin/properties/${slug}/photos`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "image/jpeg" }, body: blob });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(ERR[data.error] || "Poza nu a putut fi încărcată.");
+        done++;
+      }
+      await reload();
+    }) } });
+    const grid = h("div", { class: "pn-photos" }, photos.map((ph, i) => h("figure", null, h("img", { src: ph.url, alt: "", loading: "lazy" }),
+      h("figcaption", null,
+        i === 0 ? h("span", null, "Prima") : h("button", { type: "button", on: { click: guarded(async () => { await api(`photos/${ph.id}/first`, "POST"); await reload(); }) } }, "Prima"),
+        h("button", { type: "button", on: { click: guarded(async () => { if (confirm("Ștergi poza?")) { await api(`photos/${ph.id}`, "DELETE"); await reload(); } }) } }, "Șterge")))));
+    const details = h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+      ev.preventDefault();
+      await api(`properties/${slug}/listing`, "PATCH", listingBody(ev.currentTarget));
+      await reload();
+    }) } }, h("h2", null, "Prezentare"), listingFields(p), h("button", { class: "btn btn-primary", type: "submit" }, "Salvează prezentarea"));
+    const act = (path, label, cls) => h("button", { type: "button", class: `btn ${cls}`, on: { click: guarded(async () => { await api(`properties/${slug}/${path}`, "POST"); await reload(); }) } }, label);
+    const publish = h("section", { class: "adm-card" }, h("h2", null, "Publicare"),
+      h("p", null, "Ai nevoie de cel puțin 3 poze, descriere și preț pe noapte. Pentru rezervări, bifează și „Rezervările sunt active pe site”."),
+      h("div", { class: "adm-actions" },
+        p.status === "published" ? null : act("submit", isAdmin ? "Publică" : p.status === "pending" ? "Trimis, așteaptă aprobarea" : "Trimite spre aprobare", "btn-primary"),
+        isAdmin && p.status === "pending" ? act("approve", "Aprobă", "btn-primary") : null,
+        isAdmin && p.status === "published" ? act("unpublish", "Scoate de pe site", "btn-ghost") : null));
+    return h("div", { class: "adm-main pn-listing" }, h("section", { class: "adm-card" }, h("h2", null, `Poze (${photos.length}/20)`), h("p", null, "Prima poză apare în listă."), grid, input, say), details, publish);
+  }
+
   // ---------- apartamente ----------
   async function renderSettings(slug) {
     const me = await api("me");
-    if (!me.properties.length) { root.replaceChildren(h("p", { class: "adm-card" }, "Contul nu are apartamente atribuite.")); return; }
+    if (!me.properties.length) { renderNewListing(); return; }
     slug = slug || me.properties[0].slug;
     const data = await api(`properties/${slug}`);
     const p = data.property;
@@ -410,7 +482,12 @@
     const picker = me.properties.length > 1
       ? h("select", { "aria-label": "Apartament", on: { change: (e) => guarded(renderSettings)(e.target.value) } }, me.properties.map((x) => h("option", { value: x.slug, selected: x.slug === slug }, x.name)))
       : null;
-    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
+    const addBtn = h("button", { type: "button", class: "btn btn-ghost", on: { click: renderNewListing } }, "Adaugă apartament");
+    const presentation = p.dynamic ? await listingEditor(p, slug, reload) : null;
+    const STATUS_LABEL = { draft: "Ciornă, nu apare pe site", pending: "Așteaptă aprobarea", published: "Publicat" };
+    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker, addBtn),
+      p.dynamic ? h("p", null, h("span", { class: `mg-status ${p.status === "published" ? "is-confirmed" : "is-pending"}` }, STATUS_LABEL[p.status])) : null,
+      presentation, settings, rates, blocks, cal);
   }
 
   const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };

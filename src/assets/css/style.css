@@ -838,3 +838,10 @@ button.pn-kpi { cursor: pointer; }
 .score-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .review-mark { display: grid; place-items: center; width: 2rem; height: 2rem; margin-bottom: .5rem; border-radius: 7px 7px 7px 0; background: var(--accent); color: var(--on-accent); font-size: .85rem; font-weight: 700; }
 @media (min-width: 560px) { .score-row { grid-template-columns: repeat(10, minmax(0, 1fr)); } }
+/* poze apartament in panou */
+.pn-listing { padding: 0; max-width: none; margin: 0; }
+.pn-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .6rem; }
+.pn-photos figure { margin: 0; display: grid; gap: .3rem; }
+.pn-photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
+.pn-photos figcaption { display: flex; justify-content: space-between; gap: .4rem; font-size: .76rem; color: var(--accent); }
+.pn-photos button { padding: 0; background: none; border: 0; font: inherit; color: var(--ink-soft); text-decoration: underline; cursor: pointer; }

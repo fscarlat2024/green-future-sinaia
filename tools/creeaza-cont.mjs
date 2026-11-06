@@ -1,6 +1,7 @@
 // Creeaza un cont pentru panoul de rezervari si afiseaza parola o singura data.
 //   node tools/creeaza-cont.mjs email@firma.ro admin [--remote]
-//   node tools/creeaza-cont.mjs proprietar@firma.ro owner studio-dandelion [--remote]
+//   node tools/creeaza-cont.mjs proprietar@firma.ro owner [studio-dandelion] [--remote]
+//   fara apartament, proprietarul isi adauga singur apartamentul din panou
 import { webcrypto as crypto } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { writeFileSync, unlinkSync, mkdtempSync } from "node:fs";
@@ -10,7 +11,7 @@ import { join } from "node:path";
 const args = process.argv.slice(2);
 const remote = args.includes("--remote");
 const [email, role = "owner", slug] = args.filter((a) => a !== "--remote");
-if (!email || !["admin", "owner"].includes(role) || (role === "owner" && !slug)) {
+if (!email || !["admin", "owner"].includes(role)) {
   console.error("Folosire: node tools/creeaza-cont.mjs <email> <admin|owner> [slug] [--remote]");
   process.exit(1);
 }
