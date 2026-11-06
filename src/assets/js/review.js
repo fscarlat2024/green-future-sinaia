@@ -39,7 +39,9 @@
   const code = q.get("cod"), token = q.get("t");
   const url = `/api/reviews/${encodeURIComponent(code)}?t=${encodeURIComponent(token)}`;
   const day = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "ro-RO", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-  const note = (title, text) => root.replaceChildren(h("h1", null, title), text ? h("p", null, text) : null, h("a", { class: "btn btn-primary", href: T.site }, T.toSite));
+  // replaceChildren ar scrie "null" pe pagina pentru blocurile care lipsesc
+  const fill = (...kids) => root.replaceChildren(...kids.filter((c) => c != null && c !== false));
+  const note = (title, text) => fill(h("h1", null, title), text ? h("p", null, text) : null, h("a", { class: "btn btn-primary", href: T.site }, T.toSite));
 
   function form(b) {
     let score = 0;
@@ -50,7 +52,7 @@
     } } }, String(i + 1)));
     const text = h("textarea", { rows: 4, maxlength: 1000, name: "body" });
     const send = h("button", { type: "submit", class: "btn btn-primary btn-lg" }, T.send);
-    root.replaceChildren(h("h1", null, T.title), h("p", null, T.stay(b.propertyName, day(b.checkin), day(b.checkout))),
+    fill(h("h1", null, T.title), h("p", null, T.stay(b.propertyName, day(b.checkin), day(b.checkout))),
       h("form", { class: "bk-form", on: { submit: async (ev) => {
         ev.preventDefault();
         err.hidden = true;

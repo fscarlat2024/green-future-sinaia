@@ -69,6 +69,8 @@
     for (const c of kids.flat()) if (c != null && c !== false) el.append(c);
     return el;
   };
+  // replaceChildren ar scrie "null" pe pagina pentru blocurile care lipsesc
+  const fill = (...kids) => root.replaceChildren(...kids.filter((c) => c != null && c !== false));
   const field = (label, name, attrs) => h("label", { class: "bk-field" }, h("span", null, label), h("input", { name, required: true, ...attrs }));
   const day = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "ro-RO", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   const mark = () => h("span", { class: "gf-mark", "aria-hidden": "true" });
@@ -96,7 +98,7 @@
       try { await action(Object.fromEntries(new FormData(form).entries())); }
       catch (e) { err.textContent = e.message; err.hidden = false; btn.disabled = false; }
     } } }, mark(), h("h1", null, title), sub ? h("p", { class: "acc-sub" }, sub) : null, fields, err, btn, after);
-    root.replaceChildren(form);
+    fill(form);
   }
 
   function enter(data) {
@@ -154,7 +156,7 @@
     try { me = await call("me", "GET", null, token); }
     catch (e) {
       if (e.status === 401) { store.del(KEY); showLogin(); return; }
-      root.replaceChildren(h("p", { class: "bk-err", role: "alert" }, e.message));
+      fill(h("p", { class: "bk-err", role: "alert" }, e.message));
       return;
     }
     const chats = (await call("chats", "GET", null, token).catch(() => ({ chats: [] }))).chats;
@@ -176,7 +178,7 @@
     } } }, field(T.password, "password", { type: "password", autocomplete: "current-password" }), err,
       h("div", { class: "acc-row" }, h("button", { type: "submit", class: "btn btn-ghost" }, T.deleteConfirm), link(T.cancel, () => { danger.hidden = true; }))));
 
-    root.replaceChildren(
+    fill(
       h("section", { class: "club-card" }, h("small", null, T.club), h("h2", null, T.levels[lv.key]),
         h("p", null, T.hello(first), " ", T.perks(lv.pct)),
         h("p", null, lv.nextKey ? T.next(lv.staysToNext, T.levels[lv.nextKey], lv.nextPct) : T.top),

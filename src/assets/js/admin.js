@@ -26,6 +26,8 @@
     for (const c of kids.flat()) if (c != null && c !== false) el.append(c);
     return el;
   };
+  // replaceChildren ar scrie "null" pe pagina pentru blocurile care lipsesc
+  const fill = (...kids) => root.replaceChildren(...kids.filter((c) => c != null && c !== false));
   const date = (d) => new Date(d + "T00:00:00Z").toLocaleDateString("ro-RO", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
   async function api(path, method = "GET", body) {
@@ -54,7 +56,7 @@
   function renderLogin(message) {
     if (window.GF_NATIVE) { location.replace("/cont/"); return; } // in aplicatie exista un singur ecran de cont
     const err = h("p", { class: "bk-err", role: "alert", hidden: !message }, message || "");
-    root.replaceChildren(h("form", { class: "adm-card adm-login", on: { submit: async (ev) => {
+    fill(h("form", { class: "adm-card adm-login", on: { submit: async (ev) => {
       ev.preventDefault();
       const f = new FormData(ev.currentTarget);
       err.hidden = true;
@@ -100,7 +102,7 @@
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(p);
     }
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Acasă"), h("p", null, monthName)),
       h("div", { class: "pn-kpis" },
         kpi(`${occupancy}%`, "grad de ocupare"), kpi(lei(revenue), "venit din platformă"),
@@ -120,7 +122,7 @@
   // ---------- mai mult (telefon) ----------
   function renderMore() {
     const extra = TAB_LIST().filter((t) => !t.main);
-    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, "Mai mult")),
+    fill(h("div", { class: "adm-head" }, h("h1", null, "Mai mult")),
       h("div", { class: "pn-hub" }, extra.map((t) => h("button", { type: "button", on: { click: () => openTab(t.tab) } }, h("b", null, t.label), h("span", null, t.hint))),
         h("a", { href: "/" }, h("b", null, "Site-ul"), h("span", null, "Înapoi la Green Future")),
         h("button", { type: "button", on: { click: guarded(async () => { await api("logout", "POST"); logout(); }) } }, h("b", null, "Ieșire"), h("span", null, "Din panou"))));
@@ -131,7 +133,7 @@
     const { reviews } = await api("reviews");
     const shown = reviews.filter((r) => !r.hidden);
     const avg = shown.length ? (shown.reduce((sum, r) => sum + r.score, 0) / shown.length).toFixed(1) : null;
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Recenzii"), h("p", null, avg ? `Media ${avg} din ${shown.length} recenzii vizibile.` : "Nu există recenzii încă.")),
       h("p", { class: "pn-note" }, "Emailul pleacă a doua zi după plecare, pentru rezervările directe confirmate."),
       reviews.length ? h("div", { class: "adm-list" }, reviews.map((r) => h("article", { class: "adm-card adm-booking" },
@@ -146,7 +148,7 @@
     const { contacts } = await api("contacts");
     const say = h("p", { role: "status" });
     const field = (key, label) => h("label", { class: "bk-field" }, h("span", null, label), h("input", { name: key, type: "tel", value: contacts[key] || "", maxlength: 25, autocomplete: "off" }));
-    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, "Echipa"), h("p", null, "Numerele apar ca butoane de apel la toți proprietarii.")),
+    fill(h("div", { class: "adm-head" }, h("h1", null, "Echipa"), h("p", null, "Numerele apar ca butoane de apel la toți proprietarii.")),
       h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
         ev.preventDefault();
         await api("contacts", "POST", Object.fromEntries(new FormData(ev.currentTarget).entries()));
@@ -164,7 +166,7 @@
       renderBookings();
     }) } }, label);
     const pending = bookings.filter((b) => b.status === "pending").length;
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Rezervări"), h("p", null, pending ? `${pending} de confirmat. Cererile fără răspuns expiră după 24 de ore.` : "Nimic de confirmat.")),
       bookings.length ? h("div", { class: "adm-list" }, bookings.map((b) => h("article", { class: "adm-card adm-booking" },
         h("div", { class: "adm-bk-top" }, h("b", null, b.guest_name), h("span", { class: `mg-status is-${b.status}` }, STATUS[b.status] || b.status)),
@@ -200,7 +202,7 @@
       } catch (e) { status.textContent = e.message; }
       btn.disabled = false;
     };
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Anunț în aplicație"), h("p", null, `${devices} telefoane cu aplicația.`)),
       h("form", { class: "adm-card adm-login", on: { submit: send } },
         enabled ? null : h("p", { class: "bk-err" }, "Cheia pentru notificări nu e pusă pe server."),
@@ -220,7 +222,7 @@
       renderOrders();
     }) } }, label);
     const open = orders.filter((o) => o.status === "new").length;
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Comenzi la cameră"), h("p", null, open ? `${open} comenzi noi.` : "Nicio comandă nouă.")),
       orders.length ? h("div", { class: "adm-list" }, orders.map((o) => h("article", { class: "adm-card adm-booking" },
         h("div", { class: "adm-bk-top" }, h("b", null, `Ap. ${o.apartment} · ${o.guest_name}`), h("span", { class: `mg-status is-${{ new: "pending", confirmed: "confirmed", delivered: "confirmed", cancelled: "cancelled" }[o.status]}` }, ORDER_STATUS[o.status] || o.status)),
@@ -240,7 +242,7 @@
   async function renderChats() {
     stopChat();
     const { chats } = await api("chats");
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Mesaje"), h("p", null, chats.some((c) => c.unread) ? "Ai mesaje necitite." : "Nimic necitit.")),
       chats.length ? h("div", { class: "adm-list" }, chats.map((c) => h("button", { type: "button", class: "adm-card acc-chat adm-chat-row", on: { click: guarded(() => renderThread(c.id)) } },
         h("div", { class: "adm-bk-top" }, h("b", null, c.guest_name), c.unread ? h("span", { class: "chat-badge" }, `${c.unread} noi`) : null),
@@ -261,7 +263,7 @@
       list.scrollTop = list.scrollHeight;
     };
     const title = h("b");
-    root.replaceChildren(h("div", { class: "chat adm-thread" },
+    fill(h("div", { class: "chat adm-thread" },
       h("header", { class: "chat-head" }, h("button", { type: "button", class: "chat-back", "aria-label": "Înapoi", on: { click: guarded(renderChats) } }, "‹"), title),
       list, err,
       h("form", { class: "chat-form", on: { submit: async (ev) => {
@@ -280,7 +282,7 @@
   const LEVEL = { member: "Membru", silver: "Silver", gold: "Gold" };
   async function renderGuests() {
     const { guests } = await api("guests");
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Oaspeți"), h("p", null, `${guests.length} conturi în Green Future Club.`)),
       guests.length ? h("div", { class: "adm-list" }, guests.map((g) => h("article", { class: "adm-card adm-booking" },
         h("div", { class: "adm-bk-top" }, h("b", null, g.name), h("span", { class: "mg-status" }, LEVEL[g.level])),
@@ -323,7 +325,7 @@
         h("label", { class: "bk-field" }, h("span", null, "Reducere (%)"), h("input", { name: "pct", type: "number", min: 1, max: 50, value: 15 })),
         h("label", { class: "bk-field" }, h("span", null, "Valabilă până la"), h("input", { name: "validTo", type: "date", required: true, value: today }))),
       h("button", { class: "btn btn-primary", type: "submit" }, "Creează oferta"));
-    root.replaceChildren(
+    fill(
       h("div", { class: "adm-head" }, h("h1", null, "Oferte"), h("p", null, "Oaspeții le văd în tabul Cont.")),
       form, status,
       offers.length ? h("div", { class: "adm-list" }, offers.map((o) => {
@@ -355,7 +357,7 @@
     return { name: f.get("name"), capacity: Number(f.get("capacity")), roomType: f.get("roomType"), tagline: f.get("tagline"), description: f.get("description"), story: f.get("story"), amenities: String(f.get("amenities")).split("\n") };
   };
   function renderNewListing() {
-    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, "Apartament nou")),
+    fill(h("div", { class: "adm-head" }, h("h1", null, "Apartament nou")),
       h("p", null, "Îl poți completa pe rând. Apare pe site abia după ce îl trimiți și e aprobat."),
       h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
         ev.preventDefault();
@@ -486,7 +488,7 @@
     const addBtn = h("button", { type: "button", class: "btn btn-ghost", on: { click: renderNewListing } }, "Adaugă apartament");
     const presentation = p.dynamic ? await listingEditor(p, slug, reload) : null;
     const STATUS_LABEL = { draft: "Ciornă, nu apare pe site", pending: "Așteaptă aprobarea", published: "Publicat" };
-    root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker, addBtn),
+    fill(h("div", { class: "adm-head" }, h("h1", null, p.name), picker, addBtn),
       p.dynamic ? h("p", null, h("span", { class: `mg-status ${p.status === "published" ? "is-confirmed" : "is-pending"}` }, STATUS_LABEL[p.status])) : null,
       presentation, settings, rates, blocks, cal);
   }

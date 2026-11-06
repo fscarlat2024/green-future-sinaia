@@ -894,3 +894,7 @@ section.block#dotari { padding-top: clamp(1.75rem, 3vw, 2.5rem); }
 .mg-order-head, .mg-order-sum { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
 .mg-order-sum b { font-size: 1.1rem; }
 .mg-order-note { margin: 0; font-size: .85rem; color: var(--muted); }
+/* in aplicatie, continutul incepe sub bara telefonului (ora, baterie) */
+html.gf-app header.nav { padding-top: env(safe-area-inset-top); }
+html.gf-app .acc-page { padding-top: calc(1.5rem + env(safe-area-inset-top)); }
+html.gf-app .chat-head, html.gf-app .pn-top { padding-top: calc(.7rem + env(safe-area-inset-top)); }
