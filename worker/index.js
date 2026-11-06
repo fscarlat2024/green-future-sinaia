@@ -947,6 +947,36 @@ async function maintain(env, ctx) {
   if (env.BREVO_API_KEY && await claim(env, "brevo-keepalive", 30 * 86400000)) ctx.waitUntil(brevoKeepAlive(env));
 }
 
+// Cele mai putine apartamente in care incap toti oaspetii; la acelasi numar, cel mai mic pret.
+function bestCombo(pool, guests) {
+  const list = [...pool].sort((a, b) => a.total - b.total).slice(0, 12);
+  for (let size = 2; size <= Math.min(4, list.length); size++) {
+    let best = null;
+    const walk = (start, picked) => {
+      if (picked.length === size) {
+        const room = picked.reduce((sum, p) => sum + p.capacity, 0);
+        const total = picked.reduce((sum, p) => sum + p.total, 0);
+        if (room >= guests && (!best || total < best.total)) best = { items: picked, total };
+        return;
+      }
+      for (let i = start; i < list.length; i++) walk(i + 1, [...picked, list[i]]);
+    };
+    walk(0, []);
+    if (best) {
+      let left = guests;
+      return {
+        total: best.total, guests,
+        items: [...best.items].sort((a, b) => b.capacity - a.capacity).map((p) => {
+          const here = Math.min(left, p.capacity);
+          left -= here;
+          return { slug: p.slug, name: p.name, guests: here, total: p.total, nights: p.nights };
+        }),
+      };
+    }
+  }
+  return null;
+}
+
 // ---------- rute ----------
 async function api(req, env, ctx, url) {
   const parts = url.pathname.split("/").filter(Boolean).slice(1).map(decodeURIComponent);
@@ -995,7 +1025,19 @@ async function api(req, env, ctx, url) {
         out.push({ slug: p.slug, available: false, reason: e.code, ...e.extra });
       }
     }
-    return json({ results: out });
+    // niciun apartament nu e bun singur: recomandam cele mai putine apartamente care incap impreuna
+    let combo = null;
+    if (!out.some((r) => r.available)) {
+      const pool = [];
+      for (const p of results) {
+        try {
+          const q = await quote(env, p, checkin, checkout, Math.min(guests, p.capacity));
+          if (q.available) pool.push({ slug: p.slug, name: p.name, capacity: p.capacity, total: q.total, nights: q.nights });
+        } catch (e) { if (!(e instanceof Fail)) throw e; }
+      }
+      combo = bestCombo(pool, guests);
+    }
+    return json({ results: out, combo });
   }
 
   if (first === "orders" && !second && req.method === "POST") return createOrder(req, env, ctx);

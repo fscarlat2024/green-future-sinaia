@@ -767,3 +767,12 @@ html.gf-app .chat { height: 100dvh; }
 .acc-chat span:last-child:not(.chat-badge) { color: var(--ink-soft); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .adm-chat-row { width: 100%; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
 .adm-thread { height: min(70vh, 640px); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+/* recomandare pentru grupuri mari */
+.combo { display: grid; gap: .7rem; margin-bottom: 1rem; padding: 1.1rem 1.2rem; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
+.combo[hidden] { display: none; }
+.combo h3 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 1.45rem; font-weight: 500; }
+.combo p { margin: 0; color: var(--ink-soft); font-size: .85rem; }
+.combo-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .1rem .8rem; padding: .7rem 0; border-top: 1px solid var(--line); color: inherit; text-decoration: none; }
+.combo-item span { color: var(--ink-soft); font-size: .85rem; }
+.combo-item .combo-price { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--ink); font-size: 1rem; font-weight: 600; }
+.combo-total { display: flex; justify-content: space-between; padding-top: .7rem; border-top: 1px solid var(--line); font-weight: 600; }

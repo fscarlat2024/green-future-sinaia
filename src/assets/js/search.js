@@ -5,9 +5,11 @@
   const lang = form.dataset.lang === "en" ? "en" : "ro";
   const T = lang === "en"
     ? { free: "Available", busy: "Unavailable", total: (t, n) => [`${t} lei`, `for ${n} ${n === 1 ? "night" : "nights"}`], from: (p) => [`from ${p} lei`, "per night"],
-        min: (n) => `Minimum ${n} nights`, cap: (n) => `Up to ${n} guests`, dates: "Check-out must be after check-in.", soon: "Soon", none: "No apartment is available for these dates. Try other dates." }
+        min: (n) => `Minimum ${n} nights`, cap: (n) => `Up to ${n} guests`, dates: "Check-out must be after check-in.", soon: "Soon", none: "No apartment is available for these dates. Try other dates.",
+        noneFor: (g) => `We have no availability for ${g} guests on these dates. Try other dates or fewer guests.`, comboTitle: (g, n) => `For ${g} guests we recommend ${n} apartments`, comboGuests: (g) => `${g} ${g === 1 ? "guest" : "guests"}`, recommended: "Recommended", comboTotal: "Total", comboNote: "Each apartment is booked separately, with its own owner.", path: (s) => `/en/apartments/${s}/` }
     : { free: "Disponibil", busy: "Indisponibil", total: (t, n) => [`${t} lei`, `pentru ${n} ${n === 1 ? "noapte" : "nopți"}`], from: (p) => [`de la ${p} lei`, "pe noapte"],
-        min: (n) => `Minimum ${n} nopți`, cap: (n) => `Maximum ${n} persoane`, dates: "Plecarea trebuie să fie după sosire.", soon: "În curând", none: "Niciun apartament nu e liber în aceste date. Încearcă alte date." };
+        min: (n) => `Minimum ${n} nopți`, cap: (n) => `Maximum ${n} persoane`, dates: "Plecarea trebuie să fie după sosire.", soon: "În curând", none: "Niciun apartament nu e liber în aceste date. Încearcă alte date.",
+        noneFor: (g) => `Nu avem disponibilitate pentru ${g} persoane în aceste date. Încearcă alte date sau mai puține persoane.`, comboTitle: (g, n) => `Pentru ${g} persoane îți recomandăm ${n} apartamente`, comboGuests: (g) => `${g} ${g === 1 ? "persoană" : "persoane"}`, recommended: "Recomandat", comboTotal: "Total", comboNote: "Fiecare apartament se rezervă separat, la proprietarul lui.", path: (s) => `/apartamente/${s}/` };
   const msg = document.getElementById("search-msg");
   const local = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const todayStr = local(new Date());
@@ -63,7 +65,33 @@
       });
       if (res.available) free++;
     }
-    if (!free) msg.textContent = T.none;
+    const box = document.getElementById("combo");
+    box.hidden = !data.combo;
+    box.replaceChildren();
+    if (data.combo) {
+      const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+      box.append(el("h3", null, T.comboTitle(data.combo.guests, data.combo.items.length)));
+      for (const it of data.combo.items) {
+        // cardul din lista nu spune "indisponibil" despre un apartament recomandat
+        const own = cards.get(it.slug);
+        if (own) {
+          const pill = own.querySelector(".tagpill");
+          pill.textContent = T.recommended;
+          pill.classList.remove("is-busy");
+          setPrice(own.querySelector(".price"), T.total(it.total, it.nights));
+          own.querySelectorAll("a.apt-link").forEach((l) => l.setAttribute("href", `${T.path(it.slug)}?${new URLSearchParams({ checkin, checkout, guests: it.guests })}`));
+        }
+        const a = el("a", "combo-item");
+        a.href = `${T.path(it.slug)}?${new URLSearchParams({ checkin, checkout, guests: it.guests })}`;
+        a.append(el("b", null, it.name), el("span", null, T.comboGuests(it.guests)), el("span", "combo-price", `${it.total} lei`));
+        box.append(a);
+      }
+      const sum = el("div", "combo-total");
+      sum.append(el("span", null, T.comboTotal), el("b", null, `${data.combo.total} lei`));
+      box.append(sum, el("p", null, T.comboNote));
+    } else if (!free) {
+      msg.textContent = Number(guests) > 1 && data.results.some((r) => r.reason === "too_many_guests") ? T.noneFor(guests) : T.none;
+    }
     document.getElementById("apartamente").scrollIntoView({ behavior: "smooth" });
   });
 })();

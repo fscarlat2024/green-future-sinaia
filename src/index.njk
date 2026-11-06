@@ -65,6 +65,7 @@ eleventyComputed:
       <h2>{{ t.apts_title }}</h2>
       <p>{{ t.apts_sub }}</p>
     </div>
+    <div class="combo" id="combo" hidden></div>
     <div class="apts">
       {% for apt in apts %}
       <article class="apt" data-slug="{{ apt.page.fileSlug }}">
