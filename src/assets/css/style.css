@@ -700,6 +700,7 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
 .apt-rev-t b { font-size: .86rem; }
 .apt-rev-t small { color: var(--ink-soft); font-size: .72rem; }
 .apt-go { margin-top: auto; }
+.apt-side .apt-go { padding: .5rem .85rem; font-size: .68rem; letter-spacing: .1em; line-height: 1.2; white-space: nowrap; }
 .apt-soon { display: grid; place-items: center; background: radial-gradient(120% 90% at 20% 10%, #2a3a2a 0%, #0f1610 70%); color: #E2C88F; font-family: "Cormorant Garamond", serif; font-size: 1.2rem; }
 .apts .apt:not([data-slug]) { opacity: .75; grid-template-columns: 240px minmax(0, 1fr); }
 @media (max-width: 720px) {
