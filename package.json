@@ -9,6 +9,7 @@
   "license": "UNLICENSED",
   "private": true,
   "devDependencies": {
-    "@11ty/eleventy": "^3.0.0"
+    "@11ty/eleventy": "^3.0.0",
+    "wrangler": "^4.158.0"
   }
 }

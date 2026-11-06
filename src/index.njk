@@ -5,6 +5,7 @@ pagination:
   alias: lang
 permalink: "{{ '/index.html' if lang == 'ro' else '/en/index.html' }}"
 layout: base.njk
+scripts: ["/assets/js/search.js"]
 eleventyComputed:
   title: "{{ site.name }} - {{ site[lang].tagline }}"
   description: "{{ site[lang].intro }}"
@@ -26,6 +27,13 @@ eleventyComputed:
       <a href="#apartamente" class="btn btn-ochre btn-lg">{{ t.hero_cta_apts }}</a>
       <a href="#facilitati" class="btn btn-ghost btn-lg">{{ t.hero_cta_fac }}</a>
     </div>
+    <form class="search" id="search" data-lang="{{ lang }}" hidden>
+      <label><span>{{ t.bk_checkin }}</span><input type="date" name="checkin" required></label>
+      <label><span>{{ t.bk_checkout }}</span><input type="date" name="checkout" required></label>
+      <label><span>{{ t.bk_guests }}</span><select name="guests">{% for n in [1,2,3,4,5,6,7,8] %}<option value="{{ n }}"{% if n == 2 %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+      <button class="btn btn-ochre btn-lg" type="submit">{{ t.bk_search }}</button>
+      <p class="search-msg" id="search-msg" role="status"></p>
+    </form>
   </div>
 </main>
 
@@ -59,7 +67,7 @@ eleventyComputed:
     </div>
     <div class="apts">
       {% for apt in apts %}
-      <article class="apt">
+      <article class="apt" data-slug="{{ apt.page.fileSlug }}">
         <a href="{{ apt.url }}" class="ph" aria-label="{{ apt.data.name }}"><span class="tagpill">{{ t.available }}</span><img src="{{ apt.data.hero }}" alt="{{ apt.data.name }}" loading="lazy"></a>
         <div class="body">
           <h3>{{ apt.data.name }}</h3>

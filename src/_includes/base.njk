@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title or site.name }}</title>
   <meta name="description" content="{{ description or site[lang].intro }}">
+  {% if noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
   <link rel="canonical" href="{{ site.url }}{{ page.url }}">
   {% if urlRo and urlEn %}
   <link rel="alternate" hreflang="ro" href="{{ site.url }}{{ urlRo }}">
@@ -83,5 +84,6 @@
 
   <script src="/assets/js/theme.js" defer></script>
   <script src="/assets/js/slideshow.js" defer></script>
+  {% for s in scripts %}<script src="{{ s }}" defer></script>{% endfor %}
 </body>
 </html>

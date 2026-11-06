@@ -1,8 +1,27 @@
 {
-  // Config pentru deploy ca site static (Cloudflare Workers - static assets)
+  // Site static (_site) + API de rezervari (worker/). Worker-ul ruleaza doar pe /api si /ical.
   "name": "greenfuturesinaia",
+  "account_id": "78736e65e05040f02249d29ead996c64",
+  "main": "worker/index.js",
   "compatibility_date": "2025-01-01",
   "assets": {
-    "directory": "./_site"
-  }
+    "directory": "./_site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/ical/*"]
+  },
+  "vars": {
+    "SITE_URL": "https://greenfuturesinaia.com",
+    "MAIL_FROM": "contact@greenfuturesinaia.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "green-future",
+      "database_id": "601c475e-d6ee-43ba-9cae-cc9ba7c23629",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // calendarele Booking.com/Airbnb + expirarea cererilor fara raspuns
+  "triggers": { "crons": ["*/30 * * * *"] },
+  "observability": { "enabled": true }
 }

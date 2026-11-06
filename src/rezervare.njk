@@ -1,0 +1,20 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/rezervare/index.html' if lang == 'ro' else '/en/booking/index.html' }}"
+layout: base.njk
+noindex: true
+scripts: ["/assets/js/manage.js"]
+eleventyComputed:
+  title: "{{ 'Rezervarea ta' if lang == 'ro' else 'Your booking' }} - {{ site.name }}"
+  urlRo: "/rezervare/"
+  urlEn: "/en/booking/"
+---
+<main class="block manage-page">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">{{ site.name }}</span><h1>{{ "Rezervarea ta" if lang == "ro" else "Your booking" }}</h1></div>
+    <div class="manage-card" id="manage" data-lang="{{ lang }}"></div>
+  </div>
+</main>
