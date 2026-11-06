@@ -875,3 +875,5 @@ button.pn-kpi { cursor: pointer; }
 }
 @media (max-width: 520px) { .ap-story.has-motif { padding-right: 4.6rem; } .ap-story-flower { width: 4.8rem; right: .2rem; } .ap-story-seeds { right: 1.6rem; width: 4rem; } }
 section.block#dotari { padding-top: clamp(1.75rem, 3vw, 2.5rem); }
+/* pe telefon, dupa cautare urmeaza direct apartamentele */
+@media (max-width: 720px) { .home-about, .facts { display: none; } #apartamente { padding-top: 2rem !important; } }
