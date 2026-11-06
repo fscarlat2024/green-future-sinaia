@@ -615,3 +615,8 @@ section.menu-section { padding: 0 0 8rem; }
 :root[data-theme="light"] .page-hero.has-photo::before { background: linear-gradient(180deg, rgba(8,12,9,.62) 0%, rgba(8,12,9,.55) 60%, rgba(8,12,9,.7) 100%); }
 .foot-credit { margin: 1.2rem 0 0; font-size: .72rem; color: var(--muted); }
 .foot-credit a { text-decoration: underline; }
+/* margaretele de langa sigla */
+.brand small { display: flex; align-items: center; gap: .5rem; }
+.daisies { display: inline-flex; gap: 1px; color: #F1EDE3; }
+.daisy { width: 12px; height: 12px; display: block; }
+:root[data-theme="light"] .daisies { color: #FFFFFF; filter: drop-shadow(0 0 .5px #6B5220); }
