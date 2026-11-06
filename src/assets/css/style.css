@@ -675,3 +675,13 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
 .bk-discount { color: var(--accent); }
 .bk-join { margin: 0; font-size: .85rem; color: var(--ink-soft); }
 .bk-join a { color: var(--accent); }
+.offer { display: grid; gap: .45rem; padding: 1rem; border: 1px solid var(--accent); border-radius: var(--radius); }
+.offer small { color: var(--muted); }
+.offer .btn { justify-self: start; }
+.offer-pct { flex: none; color: var(--accent); font-weight: 600; font-size: .85rem; }
+.adm-row > * { min-width: 0; }
+.adm-row select { max-width: 100%; text-overflow: ellipsis; }
+.adm-form, .adm-row, .adm-row .bk-field { min-width: 0; }
+.adm-row .bk-field { grid-template-columns: minmax(0, 1fr); }
+.adm-row select { width: 100%; min-width: 0; }
+@media (max-width: 720px) { .adm-row { grid-template-columns: minmax(0, 1fr); } }

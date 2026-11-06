@@ -192,7 +192,7 @@
     if (!q) return null;
     return h("div", { class: "bk-lines" },
       h("div", null, h("span", null, T.nights(q.nights)), h("span", null, `${q.subtotal} lei`)),
-      q.discount ? h("div", { class: "bk-discount" }, h("span", null, T.club(q.level === "gold" ? "Gold" : "Silver", q.discountPct)), h("span", null, `-${q.discount} lei`)) : null,
+      q.discount ? h("div", { class: "bk-discount" }, h("span", null, q.offerTitle ? `${q.offerTitle} (${q.discountPct}%)` : T.club(q.level === "gold" ? "Gold" : "Silver", q.discountPct)), h("span", null, `-${q.discount} lei`)) : null,
       q.cleaningFee ? h("div", null, h("span", null, T.cleaning), h("span", null, `${q.cleaningFee} lei`)) : null,
       h("div", { class: "bk-total" }, h("span", null, T.total), h("b", null, `${q.total} lei`)));
   }

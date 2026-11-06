@@ -123,7 +123,7 @@ async function isFree(env, slug, checkin, checkout) {
 }
 
 // Toate regulile de pret si sejur; aceeasi functie e folosita la afisare si la rezervare.
-async function quote(env, p, checkin, checkout, guests, level) {
+async function quote(env, p, checkin, checkout, guests, deal) {
   if (!isDate(checkin) || !isDate(checkout)) fail(400, "invalid_dates");
   const nights = diffDays(checkin, checkout);
   if (nights < 1 || nights > MAX_NIGHTS) fail(400, "invalid_dates");
@@ -142,10 +142,11 @@ async function quote(env, p, checkin, checkout, guests, level) {
   }
   const subtotal = nightly.reduce((sum, n) => sum + n.price, 0);
   // reducerea se aplica pe nopti, nu si pe curatenie, si doar daca proprietarul participa
-  const pct = p.loyalty_enabled && level ? level.pct : 0;
+  const pct = p.loyalty_enabled && deal ? deal.pct : 0;
   const discount = Math.round(subtotal * pct / 100);
   return {
-    checkin, checkout, nights, guests, nightly, subtotal, discount, discountPct: pct, level: discount ? level.key : undefined,
+    checkin, checkout, nights, guests, nightly, subtotal, discount, discountPct: pct, level: discount ? deal.key : undefined,
+    offerId: discount ? deal.offerId : undefined, offerTitle: discount ? deal.title : undefined,
     cleaningFee: p.cleaning_fee, total: subtotal - discount + p.cleaning_fee, currency: "lei",
     available: await isFree(env, p.slug, checkin, checkout),
   };
@@ -206,7 +207,7 @@ async function createBooking(req, env, ctx) {
   const guest = cleanGuest(b);
   await freshen(env, ctx, p, ICAL_BOOKING_AGE_MS);
   const account = await optionalGuest(req, env);
-  const q = await quote(env, p, b.checkin, b.checkout, adults + children, account ? await guestLevel(env, account) : null);
+  const q = await quote(env, p, b.checkin, b.checkout, adults + children, await guestDeal(env, account, "stay"));
   if (!q.available) fail(409, "unavailable");
   // dupa validari, ca o greseala de tastare sa nu consume din limita
   await rateLimit(env, `book:${clientIp(req)}`, 5, 3600000);
@@ -218,12 +219,12 @@ async function createBooking(req, env, ctx) {
   const lang = b.lang === "en" ? "en" : "ro";
   const res = await env.DB.prepare(
     `INSERT INTO bookings (code, token_hash, property_slug, checkin, checkout, adults, children, guest_name,
-       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at, push_token, guest_id, discount)
-     SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18,?19,?20
+       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at, push_token, guest_id, discount, offer_id)
+     SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18,?19,?20,?21
      WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE property_slug = ?3 AND status IN ${ACTIVE} AND checkin < ?5 AND checkout > ?4)
        AND NOT EXISTS (SELECT 1 FROM blocks WHERE property_slug = ?3 AND date_from < ?5 AND date_to > ?4)`
   ).bind(code, await sha256(token), p.slug, q.checkin, q.checkout, adults, children, guest.name, guest.email,
-    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now, validPushToken(b.pushToken), account ? account.id : null, q.discount).run();
+    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now, validPushToken(b.pushToken), account ? account.id : null, q.discount, q.offerId || null).run();
   if (!res.meta.changes) fail(409, "unavailable");
 
   const booking = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
@@ -384,6 +385,53 @@ async function adminRoutes(req, env, ctx, parts) {
       await env.DB.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").bind(next[1], Date.now(), Number(second)).run();
       ctx.waitUntil(pushTo(env, [o.push_token], guestOrderMessage(o, next[1])));
       return json({ ok: true, status: next[1] });
+    }
+  }
+
+  if (first === "offers") {
+    if (a.role !== "admin") fail(403, "forbidden");
+    if (!second && req.method === "GET") {
+      const { results } = await env.DB.prepare(
+        `SELECT o.*, (SELECT COUNT(*) FROM bookings b WHERE b.offer_id = o.id AND b.status IN ${ACTIVE})
+           + (SELECT COUNT(*) FROM orders c WHERE c.offer_id = o.id AND c.status <> 'cancelled') AS used
+         FROM offers o ORDER BY o.created_at DESC LIMIT 100`
+      ).all();
+      const names = (await env.DB.prepare("SELECT id, name FROM guests").all()).results;
+      return json({ offers: results.map((o) => ({ ...o, guestName: o.audience.startsWith("guest:") ? names.find((n) => n.id === Number(o.audience.slice(6)))?.name : undefined })), push: pushEnabled(env) });
+    }
+    if (!second && req.method === "POST") {
+      const b = await readJson(req);
+      const title = String(b.title || "").trim();
+      const body = String(b.body || "").trim();
+      const audience = String(b.audience || "");
+      const pct = Number(b.pct || 0);
+      if (!title || title.length > 80 || !body || body.length > 400) fail(400, "invalid_value");
+      if (!isDate(b.validTo) || b.validTo < today()) fail(400, "invalid_dates");
+      if (!["stay", "bistro", "info"].includes(b.kind)) fail(400, "invalid_value");
+      if (!Number.isInteger(pct) || pct < 0 || pct > 50 || (b.kind === "info" ? pct !== 0 : pct < 1)) fail(400, "invalid_value");
+      const person = audience.match(/^guest:(\d+)$/);
+      if (!person && !["all", "member", "silver", "gold"].includes(audience)) fail(400, "invalid_value");
+      if (person && !(await env.DB.prepare("SELECT 1 FROM guests WHERE id = ?").bind(Number(person[1])).first())) fail(400, "invalid_value");
+      const r = await env.DB.prepare("INSERT INTO offers (title, body, audience, kind, pct, valid_to, created_at) VALUES (?,?,?,?,?,?,?)")
+        .bind(title, body, audience, b.kind, pct, b.validTo, Date.now()).run();
+      return json({ id: r.meta.last_row_id }, 201);
+    }
+    if (second && third === "stop" && req.method === "POST") {
+      await env.DB.prepare("UPDATE offers SET active = 0 WHERE id = ?").bind(Number(second)).run();
+      return json({ ok: true });
+    }
+    if (second && third === "notify" && req.method === "POST") {
+      const o = await env.DB.prepare("SELECT * FROM offers WHERE id = ? AND active = 1").bind(Number(second)).first();
+      if (!o) fail(404, "not_found");
+      if (!pushEnabled(env)) fail(409, "push_off");
+      const b = await readJson(req);
+      const after = String(b.after || "");
+      const tokens = (await offerTokens(env, o.audience)).filter((t) => t > after);
+      const batch = tokens.slice(0, 40);
+      // pe telefon nu stim numele fiecaruia aici, asa ca fara {nume} in notificare
+      const clean = (s) => s.replace(/\{nume\},?\s*/g, "").trim();
+      const r = await pushTo(env, batch, { title: clean(o.title), body: clean(o.body), url: "/cont/" });
+      return json({ ...r, next: tokens.length > 40 ? batch[39] : null, total: tokens.length });
     }
   }
 
@@ -565,9 +613,9 @@ async function createOrder(req, env, ctx) {
     return { id: item.id, name: item.ro.name, price: item.price, qty };
   });
   const account = await optionalGuest(req, env);
-  const level = account ? await guestLevel(env, account) : null;
+  const deal = await guestDeal(env, account, "bistro");
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const discount = level ? Math.round(subtotal * level.pct / 100) : 0;
+  const discount = deal ? Math.round(subtotal * deal.pct / 100) : 0;
   const total = subtotal - discount;
   await rateLimit(env, `order:${clientIp(req)}`, 5, 3600000);
   const now = Date.now();
@@ -575,9 +623,9 @@ async function createOrder(req, env, ctx) {
   const code = orderCode();
   const note = String(b.note || "").trim().slice(0, 500);
   await env.DB.prepare(
-    `INSERT INTO orders (code, apartment, guest_name, guest_phone, note, items, total, status, demo, lang, created_at, updated_at, push_token, guest_id, discount)
-     VALUES (?,?,?,?,?,?,?, 'new', ?,?,?,?,?,?,?)`
-  ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now, validPushToken(b.pushToken), account ? account.id : null, discount).run();
+    `INSERT INTO orders (code, apartment, guest_name, guest_phone, note, items, total, status, demo, lang, created_at, updated_at, push_token, guest_id, discount, offer_id)
+     VALUES (?,?,?,?,?,?,?, 'new', ?,?,?,?,?,?,?,?)`
+  ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now, validPushToken(b.pushToken), account ? account.id : null, discount, discount && deal.offerId ? deal.offerId : null).run();
   ctx.waitUntil(Promise.allSettled([
     mailOrder(env, { code, apartment, guest_name: name, guest_phone: phone, note, items, total, discount, demo }),
     pushToStaff(env, null, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
@@ -600,12 +648,44 @@ async function guestLevel(env, g) {
   ).bind(g.id, today()).first();
   return levelFrom(r.stays, r.orders, g.level_override);
 }
+const guestByToken = async (env, token) => env.DB.prepare(
+  `SELECT g.* FROM guest_sessions s JOIN guests g ON g.id = s.guest_id WHERE s.token_hash = ? AND s.expires_at > ?`
+).bind(await sha256(token), Date.now()).first();
 async function optionalGuest(req, env) {
   const m = (req.headers.get("authorization") || "").match(/^Bearer ([a-f0-9]{64})$/);
-  if (!m) return null;
-  return env.DB.prepare(
-    `SELECT g.* FROM guest_sessions s JOIN guests g ON g.id = s.guest_id WHERE s.token_hash = ? AND s.expires_at > ?`
-  ).bind(await sha256(m[1]), Date.now()).first();
+  return m ? guestByToken(env, m[1]) : null;
+}
+// ofertele valabile azi pentru oaspete; una deja folosita nu mai apare (o rezervare anulata o elibereaza)
+async function guestOffers(env, g, level) {
+  const { results } = await env.DB.prepare(
+    `SELECT o.* FROM offers o
+     WHERE o.active = 1 AND o.valid_to >= ?1 AND (o.audience = 'all' OR o.audience = ?2 OR o.audience = ?3)
+       AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.offer_id = o.id AND b.guest_id = ?4 AND b.status IN ${ACTIVE})
+       AND NOT EXISTS (SELECT 1 FROM orders c WHERE c.offer_id = o.id AND c.guest_id = ?4 AND c.status <> 'cancelled')
+     ORDER BY o.created_at DESC LIMIT 20`
+  ).bind(today(), level.key, `guest:${g.id}`, g.id).all();
+  return results;
+}
+// cea mai mare reducere dintre nivel si oferte; nu se aduna
+async function guestDeal(env, g, kind) {
+  if (!g) return null;
+  const level = await guestLevel(env, g);
+  const best = (await guestOffers(env, g, level)).filter((o) => o.kind === kind && o.pct > level.pct).sort((a, b) => b.pct - a.pct)[0];
+  return best ? { pct: best.pct, key: level.key, offerId: best.id, title: best.title } : { pct: level.pct, key: level.key };
+}
+const personal = (text, g) => text.replaceAll("{nume}", g.name.split(" ")[0]);
+// telefoanele cu oaspeti autentificati carora li se adreseaza oferta
+async function offerTokens(env, audience) {
+  if (audience.startsWith("guest:")) {
+    return (await env.DB.prepare("SELECT token FROM push_devices WHERE guest_id = ? ORDER BY token").bind(Number(audience.slice(6))).all()).results.map((r) => r.token);
+  }
+  const { results } = await env.DB.prepare(
+    `SELECT d.token, g.level_override,
+       (SELECT COUNT(*) FROM bookings b WHERE b.guest_id = g.id AND b.status = 'confirmed' AND b.checkout <= ?1) AS stays,
+       (SELECT COUNT(*) FROM orders o WHERE o.guest_id = g.id AND o.status = 'delivered' AND o.demo = 0) AS orders
+     FROM push_devices d JOIN guests g ON g.id = d.guest_id ORDER BY d.token`
+  ).bind(today()).all();
+  return results.filter((r) => audience === "all" || levelFrom(r.stays, r.orders, r.level_override).key === audience).map((r) => r.token);
 }
 async function requireGuest(req, env) {
   const g = await optionalGuest(req, env);
@@ -715,7 +795,13 @@ async function guestRoutes(req, env, ctx, parts) {
       `SELECT b.code, b.checkin, b.checkout, b.status, b.total, b.discount, p.name AS property_name
        FROM bookings b JOIN properties p ON p.slug = b.property_slug WHERE b.guest_id = ? ORDER BY b.checkin DESC LIMIT 50`
     ).bind(g.id).all();
-    return json({ name: g.name, email: g.email, phone: g.phone, level: await guestLevel(env, g), bookings: results });
+    const level = await guestLevel(env, g);
+    const offers = await guestOffers(env, g, level);
+    const bistro = await guestDeal(env, g, "bistro");
+    return json({
+      name: g.name, email: g.email, phone: g.phone, level, bookings: results, bistro: { pct: bistro.pct, title: bistro.title, key: bistro.key },
+      offers: offers.map((o) => ({ id: o.id, title: personal(o.title, g), body: personal(o.body, g), kind: o.kind, pct: o.pct, validTo: o.valid_to })),
+    });
   }
   if (first === "me" && req.method === "DELETE") {
     const b = await readJson(req);
@@ -727,6 +813,7 @@ async function guestRoutes(req, env, ctx, parts) {
       env.DB.prepare("UPDATE orders SET guest_id = NULL WHERE guest_id = ?").bind(g.id),
       env.DB.prepare("DELETE FROM guest_sessions WHERE guest_id = ?").bind(g.id),
       env.DB.prepare("DELETE FROM guest_resets WHERE guest_id = ?").bind(g.id),
+      env.DB.prepare("UPDATE push_devices SET guest_id = NULL WHERE guest_id = ?").bind(g.id),
       env.DB.prepare("DELETE FROM guests WHERE id = ?").bind(g.id),
     ]);
     return json({ ok: true });
@@ -789,7 +876,7 @@ async function api(req, env, ctx, url) {
     const b = await readJson(req);
     const p = await bookableProperty(env, String(b.slug || ""));
     const account = await optionalGuest(req, env);
-    return json(await quote(env, p, b.checkin, b.checkout, Math.trunc(Number(b.guests)) || 0, account ? await guestLevel(env, account) : null));
+    return json(await quote(env, p, b.checkin, b.checkout, Math.trunc(Number(b.guests)) || 0, await guestDeal(env, account, "stay")));
   }
 
   if (first === "search" && req.method === "GET") {
@@ -822,11 +909,12 @@ async function api(req, env, ctx, url) {
     if (!token || !["ios", "android"].includes(b.platform)) fail(400, "invalid_token");
     // telefonul primeste alertele de proprietar doar cat timp sesiunea din panou e valida
     const admin = await adminAuth(req, env).catch((e) => { if (e instanceof Fail) return null; throw e; });
+    const account = /^[a-f0-9]{64}$/.test(b.guestToken || "") ? await guestByToken(env, b.guestToken) : null;
     const now = Date.now();
     await env.DB.prepare(
-      `INSERT INTO push_devices (token, platform, lang, admin_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?5)
-       ON CONFLICT(token) DO UPDATE SET lang = ?3, admin_id = ?4, updated_at = ?5`
-    ).bind(token, b.platform, b.lang === "en" ? "en" : "ro", admin ? admin.id : null, now).run();
+      `INSERT INTO push_devices (token, platform, lang, admin_id, guest_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?6, ?5, ?5)
+       ON CONFLICT(token) DO UPDATE SET lang = ?3, admin_id = ?4, guest_id = ?6, updated_at = ?5`
+    ).bind(token, b.platform, b.lang === "en" ? "en" : "ro", admin ? admin.id : null, now, account ? account.id : null).run();
     return json({ ok: true });
   }
 

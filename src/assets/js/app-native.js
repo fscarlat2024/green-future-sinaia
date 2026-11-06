@@ -9,11 +9,12 @@
     const push = window.GF_NATIVE_PUSH;
     if (!push) return;
     let admin = null;
-    try { admin = localStorage.getItem("gf_admin_token"); } catch {}
+    let guest = null;
+    try { admin = localStorage.getItem("gf_admin_token"); guest = localStorage.getItem("gf_guest_token"); } catch {}
     fetch("/api/push/register", {
       method: "POST",
       headers: { "content-type": "application/json", ...(admin ? { authorization: `Bearer ${admin}` } : {}) },
-      body: JSON.stringify({ platform: push.platform, token: push.token, lang: en ? "en" : "ro" }),
+      body: JSON.stringify({ platform: push.platform, token: push.token, lang: en ? "en" : "ro", guestToken: guest }),
     }).catch(() => {});
   }
   window.gfRegisterPush = register;

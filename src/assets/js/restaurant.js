@@ -61,7 +61,7 @@
     let count = 0, total = 0;
     for (const [id, qty] of cart) { count += qty; total += qty * catalog.get(id).price; }
     // afisare; suma finala o calculeaza serverul
-    const discount = member ? Math.round(total * member.level.pct / 100) : 0;
+    const discount = member ? Math.round(total * member.bistro.pct / 100) : 0;
     return { count, total: total - discount, discount };
   };
   function change(id, n) {
@@ -75,7 +75,7 @@
   const totalLine = () => {
     const t = totals();
     return h("div", null,
-      t.discount ? h("div", { class: "cart-total bk-discount" }, h("span", null, T.club(member.level.key === "gold" ? "Gold" : "Silver", member.level.pct)), h("span", null, `-${t.discount} lei`)) : null,
+      t.discount ? h("div", { class: "cart-total bk-discount" }, h("span", null, member.bistro.title ? `${member.bistro.title} (${member.bistro.pct}%)` : T.club(member.bistro.key === "gold" ? "Gold" : "Silver", member.bistro.pct)), h("span", null, `-${t.discount} lei`)) : null,
       h("div", { class: "cart-total" }, h("span", null, T.total), h("b", null, `${t.total} lei`)));
   };
   const lines = () => h("ul", { class: "cart-lines" }, [...cart].map(([id, qty]) => {

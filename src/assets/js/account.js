@@ -18,6 +18,7 @@
       tiers: [["Membru", "la crearea contului", "member"], ["Silver, 5% reducere", "după 2 sejururi", "silver"], ["Gold, 10% reducere", "după 5 sejururi", "gold"]],
       rules: "Contează sejururile încheiate rezervate din cont. 5 comenzi livrate la bistro contează cât un sejur. Reducerea se aplică la prețul nopților, fără curățenie, la apartamentele ai căror proprietari participă.",
       stats: (s, o) => `${s === 1 ? "1 sejur încheiat" : `${s} sejururi încheiate`} · ${o === 1 ? "1 comandă livrată" : `${o} comenzi livrate`}`,
+      offers: "Ofertele tale", valid: (d) => `Valabilă până la ${d}`, off: (p, k) => `-${p}% ${k === "bistro" ? "la bistro" : "la sejur"}`, offerNote: "Reducerea se aplică automat, o singură dată, și nu se adună cu cea de nivel.", useStay: "Rezervă", useBistro: "Vezi meniul",
       bookings: "Rezervările mele", noBookings: "Nu ai încă rezervări din acest cont.", book: "Vezi apartamentele", discount: (d) => `reducere ${d} lei`,
       status: { pending: "De confirmat", confirmed: "Confirmată", declined: "Refuzată", cancelled: "Anulată", expired: "Expirată" },
       logout: "Ieșire din cont", deleteOpen: "Șterge contul", deleteTitle: "Ștergi contul?",
@@ -39,6 +40,7 @@
       tiers: [["Member", "when you sign up", "member"], ["Silver, 5% off", "after 2 stays", "silver"], ["Gold, 10% off", "after 5 stays", "gold"]],
       rules: "Completed stays booked from your account count. 5 delivered bistro orders count as one stay. The discount applies to the nightly price, not to cleaning, at apartments whose owners participate.",
       stats: (s, o) => `${s === 1 ? "1 completed stay" : `${s} completed stays`} · ${o === 1 ? "1 delivered order" : `${o} delivered orders`}`,
+      offers: "Your offers", valid: (d) => `Valid until ${d}`, off: (p, k) => `${p}% off ${k === "bistro" ? "at the bistro" : "your stay"}`, offerNote: "The discount applies automatically, once, and does not add to your level discount.", useStay: "Book", useBistro: "See menu",
       bookings: "My bookings", noBookings: "No bookings from this account yet.", book: "See apartments", discount: (d) => `${d} lei off`,
       status: { pending: "Pending", confirmed: "Confirmed", declined: "Declined", cancelled: "Cancelled", expired: "Expired" },
       logout: "Sign out", deleteOpen: "Delete account", deleteTitle: "Delete your account?",
@@ -100,6 +102,7 @@
       return;
     }
     store.set(KEY, data.token);
+    window.gfRegisterPush?.();
     dashboard();
   }
 
@@ -159,6 +162,7 @@
       try {
         await call("me", "DELETE", { password: new FormData(ev.currentTarget).get("password") }, token);
         store.del(KEY);
+        window.gfRegisterPush?.();
         showLogin();
       } catch (e) { err.textContent = e.message; err.hidden = false; }
     } } }, field(T.password, "password", { type: "password", autocomplete: "current-password" }), err,
@@ -169,6 +173,12 @@
         h("p", null, T.hello(first), " ", T.perks(lv.pct)),
         h("p", null, lv.nextKey ? T.next(lv.staysToNext, T.levels[lv.nextKey], lv.nextPct) : T.top),
         h("p", null, T.stats(lv.stays, lv.orders))),
+      me.offers.length ? h("section", { class: "acc-card" }, h("h3", null, T.offers),
+        me.offers.map((o) => h("article", { class: "offer" },
+          h("div", { class: "acc-row" }, h("b", null, o.title), o.pct ? h("span", { class: "offer-pct" }, T.off(o.pct, o.kind)) : null),
+          h("p", null, o.body), h("small", null, T.valid(day(o.validTo))),
+          o.kind === "info" ? null : h("a", { class: "btn btn-primary", href: o.kind === "bistro" ? (lang === "en" ? "/en/restaurant/" : "/restaurant/") : home }, o.kind === "bistro" ? T.useBistro : T.useStay))),
+        me.offers.some((o) => o.pct) ? h("p", null, T.offerNote) : null) : null,
       h("section", { class: "acc-card" },
         h("ul", { class: "club-tiers" }, T.tiers.map(([name, when, key]) => h("li", { class: key === lv.key ? "on" : null }, h("span", null, name), h("span", null, when)))),
         h("p", null, T.rules)),
@@ -179,7 +189,7 @@
               h("span", null, `${day(b.checkin)} - ${day(b.checkout)} · ${b.total} lei${b.discount ? ` (${T.discount(b.discount)})` : ""} · ${b.code}`)))
           : [h("p", null, T.noBookings), h("a", { class: "btn btn-ghost", href: home }, T.book)]),
       h("div", { class: "acc-links" },
-        link(T.logout, async () => { await call("logout", "POST", null, token).catch(() => {}); store.del(KEY); showLogin(); }),
+        link(T.logout, async () => { await call("logout", "POST", null, token).catch(() => {}); store.del(KEY); window.gfRegisterPush?.(); showLogin(); }),
         link(T.deleteOpen, () => { danger.hidden = false; danger.scrollIntoView({ behavior: "smooth", block: "center" }); })),
       danger);
   }

@@ -9,7 +9,7 @@
   const ERR = {
     bad_login: "Email sau parolă greșită.", too_many_requests: "Prea multe încercări. Reîncearcă în 15 minute.",
     calendar_conflict: "Perioada se suprapune cu o rezervare sau cu un calendar extern.", wrong_status: "Rezervarea și-a schimbat deja starea.",
-    invalid_dates: "Verifică datele: sfârșitul trebuie să fie după început.", invalid_value: "Verifică valorile introduse.",
+    invalid_dates: "Verifică datele: sfârșitul trebuie să fie după început, iar oferta valabilă cel puțin azi.", invalid_value: "Verifică valorile introduse.",
     price_required: "Pune un preț pe noapte înainte de a activa rezervările.", invalid_ical_url: "Linkul calendarului trebuie să înceapă cu https://.",
     forbidden: "Nu ai acces la acest apartament.", push_off: "Cheia pentru notificări nu e pusă pe server.",
   };
@@ -166,6 +166,55 @@
           [["auto", "Automat"], ["member", "Membru"], ["silver", "Silver"], ["gold", "Gold"]].map(([v, t]) => h("option", { value: v, selected: (g.level_override || "auto") === v }, t))))))) : h("p", { class: "adm-card" }, "Nu există conturi încă."));
   }
 
+  // ---------- oferte ----------
+  async function renderOffers() {
+    const [{ offers, push }, { guests }] = await Promise.all([api("offers"), api("guests")]);
+    const KIND = { stay: "Sejur", bistro: "Bistro", info: "Doar informare" };
+    const who = (o) => (o.guestName ? o.guestName : { all: "Toți oaspeții", member: "Membri", silver: "Silver", gold: "Gold" }[o.audience] || "Oaspete șters");
+    const notify = async (id, say) => {
+      let sent = 0, failed = 0, after = "";
+      do {
+        const r = await api(`offers/${id}/notify`, "POST", { after });
+        sent += r.sent; failed += r.failed; after = r.next;
+      } while (after);
+      say.textContent = sent || failed ? `Notificări trimise: ${sent}${failed ? `, nereușite: ${failed}` : ""}.` : "Niciun telefon cu aplicația nu e autentificat în acest public.";
+    };
+    const today = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    const status = h("p", { role: "status" });
+    const form = h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+      ev.preventDefault();
+      const f = new FormData(ev.currentTarget);
+      const { id } = await api("offers", "POST", { title: f.get("title"), body: f.get("body"), audience: f.get("audience"), kind: f.get("kind"), pct: f.get("kind") === "info" ? 0 : Number(f.get("pct")), validTo: f.get("validTo") });
+      await renderOffers();
+    }) } },
+      h("h2", null, "Ofertă nouă"),
+      h("p", null, "Scrie {nume} ca să apară prenumele oaspetelui în cont. Oferta se folosește o singură dată, iar reducerea nu se adună cu cea de nivel. La sejur se aplică doar apartamentelor care participă la club."),
+      h("label", { class: "bk-field" }, h("span", null, "Titlu"), h("input", { name: "title", required: true, maxlength: 80, placeholder: "{nume}, revino în Sinaia" })),
+      h("label", { class: "bk-field" }, h("span", null, "Text"), h("textarea", { name: "body", rows: 3, required: true, maxlength: 400 })),
+      h("div", { class: "adm-row" },
+        h("label", { class: "bk-field" }, h("span", null, "Pentru cine"), h("select", { name: "audience" },
+          h("option", { value: "all" }, "Toți oaspeții"), h("option", { value: "member" }, "Membri"), h("option", { value: "silver" }, "Silver"), h("option", { value: "gold" }, "Gold"),
+          guests.map((g) => h("option", { value: `guest:${g.id}` }, `${g.name} (${g.email})`)))),
+        h("label", { class: "bk-field" }, h("span", null, "Tip"), h("select", { name: "kind" }, h("option", { value: "stay" }, "Reducere la sejur"), h("option", { value: "bistro" }, "Reducere la bistro"), h("option", { value: "info" }, "Doar informare"))),
+        h("label", { class: "bk-field" }, h("span", null, "Reducere (%)"), h("input", { name: "pct", type: "number", min: 1, max: 50, value: 15 })),
+        h("label", { class: "bk-field" }, h("span", null, "Valabilă până la"), h("input", { name: "validTo", type: "date", required: true, value: today }))),
+      h("button", { class: "btn btn-primary", type: "submit" }, "Creează oferta"));
+    root.replaceChildren(
+      h("div", { class: "adm-head" }, h("h1", null, "Oferte"), h("p", null, "Oaspeții le văd în tabul Cont.")),
+      form, status,
+      offers.length ? h("div", { class: "adm-list" }, offers.map((o) => {
+        const say = h("p", { role: "status" });
+        return h("article", { class: "adm-card adm-booking" },
+          h("div", { class: "adm-bk-top" }, h("b", null, o.title), h("span", { class: `mg-status ${o.active ? "is-confirmed" : "is-cancelled"}` }, o.active ? "Activă" : "Oprită")),
+          h("p", null, o.body),
+          h("p", null, `${who(o)} · ${KIND[o.kind]}${o.pct ? ` -${o.pct}%` : ""} · până la ${date(o.valid_to)} · folosită de ${o.used} ori`),
+          o.active ? h("div", { class: "adm-actions" },
+            h("button", { type: "button", class: "btn btn-primary", disabled: !push, on: { click: guarded(async () => { if (confirm("Trimiți notificarea? Nu poate fi retrasă.")) await notify(o.id, say); }) } }, "Trimite notificare"),
+            h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => { if (confirm("Oprești oferta?")) { await api(`offers/${o.id}/stop`, "POST"); renderOffers(); } }) } }, "Oprește")) : null,
+          say);
+      })) : h("p", { class: "adm-card" }, "Nu există oferte încă."));
+  }
+
   // ---------- apartamente ----------
   async function renderSettings(slug) {
     const me = await api("me");
@@ -239,7 +288,7 @@
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests };
+  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers };
   function openTab(name) {
     nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
     guarded(TABS[name])();
@@ -252,6 +301,7 @@
     nav.querySelector('[data-tab="orders"]').hidden = me.role !== "admin";
     nav.querySelector('[data-tab="push"]').hidden = me.role !== "admin";
     nav.querySelector('[data-tab="guests"]').hidden = me.role !== "admin";
+    nav.querySelector('[data-tab="offers"]').hidden = me.role !== "admin";
     nav.hidden = false;
     openTab("bookings");
   });
