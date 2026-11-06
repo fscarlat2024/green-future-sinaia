@@ -885,3 +885,12 @@ section.block#dotari { padding-top: clamp(1.75rem, 3vw, 2.5rem); }
   .hero:not(.tall) { min-height: 0; }
   .search .btn { min-height: 42px; height: 42px; padding-block: 0; font-size: .74rem; }
 }
+/* comenzile la bistro in rezervare */
+.mg-orders { display: grid; gap: .7rem; margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
+.mg-orders h3 { margin: 0; font-size: 1.15rem; }
+.mg-order { display: grid; gap: .2rem; padding-bottom: .7rem; border-bottom: 1px solid var(--line); font-size: .92rem; }
+.mg-order small { color: var(--muted); }
+.mg-order.is-off { opacity: .55; }
+.mg-order-head, .mg-order-sum { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.mg-order-sum b { font-size: 1.1rem; }
+.mg-order-note { margin: 0; font-size: .85rem; color: var(--muted); }

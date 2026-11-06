@@ -18,6 +18,30 @@
   const date = (d) => new Date(d + "T00:00:00Z").toLocaleDateString(lang === "en" ? "en-GB" : "ro-RO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   const show = (text) => { const p = document.createElement("p"); p.textContent = text; root.replaceChildren(p); };
 
+  const O = lang === "en"
+    ? { title: "Bistro orders", total: "Bistro total", test: "test", note: "Added to the apartment bill.", by: "ordered by", status: { new: "Sent", confirmed: "Confirmed", delivered: "Delivered", cancelled: "Cancelled" } }
+    : { title: "Comenzi la bistro", total: "Total bistro", test: "test", note: "Se trec pe nota apartamentului.", by: "comandat de", status: { new: "Trimisă", confirmed: "Confirmată", delivered: "Livrată", cancelled: "Anulată" } };
+  function ordersBox(orders) {
+    const box = document.createElement("section");
+    box.className = "mg-orders";
+    const add = (parent, tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = text; parent.append(e); return e; };
+    add(box, "h3", null, O.title);
+    for (const o of orders) {
+      const row = add(box, "div", `mg-order${o.status === "cancelled" ? " is-off" : ""}`, "");
+      const head = add(row, "div", "mg-order-head", "");
+      add(head, "b", null, `${o.total} lei`);
+      add(head, "span", `mg-status is-${o.status === "new" ? "pending" : o.status === "delivered" ? "confirmed" : o.status}`, `${O.status[o.status] || o.status}${o.demo ? ` (${O.test})` : ""}`);
+      add(row, "span", null, o.items.map((i) => `${i.qty} × ${i.name}`).join(", "));
+      add(row, "small", null, `${new Date(o.createdAt).toLocaleString(lang === "en" ? "en-GB" : "ro-RO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${O.by} ${o.by} · ${o.code}`);
+    }
+    const sum = orders.filter((o) => o.status !== "cancelled").reduce((n, o) => n + o.total, 0);
+    const foot = add(box, "div", "mg-order-sum", "");
+    add(foot, "span", null, O.total);
+    add(foot, "b", null, `${sum} lei`);
+    add(box, "p", "mg-order-note", O.note);
+    return box;
+  }
+
   function render(b) {
     const list = document.createElement("dl");
     list.className = "mg-list";
@@ -33,6 +57,7 @@
     badge.className = `mg-status is-${b.status}`;
     badge.textContent = T.status[b.status] || b.status;
     root.replaceChildren(badge, list);
+    if (b.orders?.length) root.append(ordersBox(b.orders));
     if (b.canCancel) {
       const btn = document.createElement("button");
       btn.type = "button"; btn.className = "btn btn-ghost"; btn.textContent = T.cancel;

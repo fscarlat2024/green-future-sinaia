@@ -691,6 +691,19 @@ function orderCode() {
   return "CMD-" + [...crypto.getRandomValues(new Uint8Array(6))].map((b) => abc[b % abc.length]).join("");
 }
 
+// Comenzile vazute de oaspete: fara telefon, doar prenumele celui care a comandat.
+const orderView = (o) => ({
+  code: o.code, createdAt: o.created_at, total: o.total, discount: o.discount, status: o.status, demo: !!o.demo, apartment: o.apartment,
+  by: String(o.guest_name).trim().split(/\s+/)[0], items: JSON.parse(o.items).map((i) => ({ name: i.name, qty: i.qty })),
+});
+// O comanda tine de rezervare daca e pentru acel apartament si a fost facuta in timpul sejurului confirmat.
+async function stayOrders(env, b, p) {
+  if (b.status !== "confirmed") return [];
+  const { results } = await env.DB.prepare("SELECT * FROM orders WHERE apartment = ? AND created_at >= ? AND created_at < ? ORDER BY created_at DESC LIMIT 100")
+    .bind(p.name, Date.parse(`${b.checkin}T00:00:00Z`) - 10800000, Date.parse(`${b.checkout}T00:00:00Z`) + 86400000).all();
+  return results.map(orderView);
+}
+
 // Numele si pretul vin din meniul de pe server, nu din browser.
 async function createOrder(req, env, ctx) {
   const b = await readJson(req);
@@ -1117,8 +1130,16 @@ async function guestRoutes(req, env, ctx, parts) {
     const level = await guestLevel(env, g);
     const offers = await guestOffers(env, g, level);
     const bistro = await guestDeal(env, g, "bistro");
+    const orders = await env.DB.prepare(
+      `SELECT o.* FROM orders o WHERE o.guest_id = ?1 OR EXISTS (
+         SELECT 1 FROM bookings b JOIN properties p ON p.slug = b.property_slug
+         WHERE b.guest_id = ?1 AND b.status = 'confirmed' AND p.name = o.apartment
+           AND o.created_at >= CAST(strftime('%s', b.checkin) AS INTEGER) * 1000 - 10800000
+           AND o.created_at < (CAST(strftime('%s', b.checkout) AS INTEGER) + 86400) * 1000
+       ) ORDER BY o.created_at DESC LIMIT 50`
+    ).bind(g.id).all();
     return json({
-      name: g.name, email: g.email, phone: g.phone, level, bookings: results, bistro: { pct: bistro.pct, title: bistro.title, key: bistro.key },
+      name: g.name, email: g.email, phone: g.phone, level, bookings: results, orders: orders.results.map(orderView), bistro: { pct: bistro.pct, title: bistro.title, key: bistro.key },
       offers: offers.map((o) => ({ id: o.id, title: personal(o.title, g), body: personal(o.body, g), kind: o.kind, pct: o.pct, validTo: o.valid_to })),
     });
   }
@@ -1345,7 +1366,8 @@ async function api(req, env, ctx, url) {
       if (!third && req.method === "GET") {
         await rateLimit(env, `lookup:${clientIp(req)}`, 60, 3600000);
         const b = await guestBooking(env, second, token);
-        return json(publicBooking(b, await getProperty(env, b.property_slug)));
+        const p = await getProperty(env, b.property_slug);
+        return json({ ...publicBooking(b, p), orders: await stayOrders(env, b, p) });
       }
       if (third === "cancel" && req.method === "POST") {
         await rateLimit(env, `lookup:${clientIp(req)}`, 60, 3600000);
