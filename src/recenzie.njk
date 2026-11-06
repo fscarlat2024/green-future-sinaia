@@ -1,0 +1,15 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/recenzie/index.html' if lang == 'ro' else '/en/review/index.html' }}"
+layout: base.njk
+noindex: true
+scripts: ["/assets/js/review.js"]
+eleventyComputed:
+  title: "{{ 'Lasă o recenzie' if lang == 'ro' else 'Leave a review' }} - {{ site.name }}"
+  urlRo: "/recenzie/"
+  urlEn: "/en/review/"
+---
+<main class="block acc-page"><div class="wrap"><div id="review" class="review-form" data-lang="{{ lang }}"></div></div></main>

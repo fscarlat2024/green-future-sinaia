@@ -52,6 +52,19 @@ layout: base.njk
 </section>
 {% endif %}
 
+<section class="block" id="recenzii-directe" hidden>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ "Rezervări directe" if lang == "ro" else "Direct bookings" }}</span>
+      <h2>{{ "Recenzii de la oaspeții noștri" if lang == "ro" else "Reviews from our guests" }}</h2>
+    </div>
+    <div class="reviews-wrap">
+      <div class="review-score"><div class="rs-num"><span id="direct-reviews-score" style="font:inherit;color:inherit"></span><span>/10</span></div><div class="rs-meta"><span class="rs-count" id="direct-reviews-count"></span></div></div>
+      <div class="review-quotes" id="direct-reviews" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}"></div>
+    </div>
+  </div>
+</section>
+
 <section class="block" id="despre">
   <div class="wrap article-intro">
     <span class="eyebrow">{{ t.ap_welcome }}</span>

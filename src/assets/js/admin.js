@@ -125,6 +125,21 @@
         h("button", { type: "button", on: { click: guarded(async () => { await api("logout", "POST"); logout(); }) } }, h("b", null, "Ieșire"), h("span", null, "Din panou"))));
   }
 
+  // ---------- recenzii ----------
+  async function renderReviews() {
+    const { reviews } = await api("reviews");
+    const shown = reviews.filter((r) => !r.hidden);
+    const avg = shown.length ? (shown.reduce((sum, r) => sum + r.score, 0) / shown.length).toFixed(1) : null;
+    root.replaceChildren(
+      h("div", { class: "adm-head" }, h("h1", null, "Recenzii"), h("p", null, avg ? `Media ${avg} din ${shown.length} recenzii vizibile.` : "Nu există recenzii încă.")),
+      h("p", { class: "pn-note" }, "Emailul pleacă a doua zi după plecare, pentru rezervările directe confirmate."),
+      reviews.length ? h("div", { class: "adm-list" }, reviews.map((r) => h("article", { class: "adm-card adm-booking" },
+        h("div", { class: "adm-bk-top" }, h("b", null, `${r.score}/10 · ${r.author}`), r.hidden ? h("span", { class: "mg-status is-cancelled" }, "Ascunsă") : null),
+        h("p", null, `${r.property_name} · ${date(r.checkin)} – ${date(r.checkout)} · ${r.code}`),
+        r.body ? h("p", { class: "adm-note" }, r.body) : null,
+        isAdmin ? h("div", { class: "adm-actions" }, h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => { await api(`reviews/${r.id}`, "POST", { hidden: !r.hidden }); renderReviews(); }) } }, r.hidden ? "Afișează" : "Ascunde")) : null))) : null);
+  }
+
   // ---------- contacte echipa ----------
   async function renderContacts() {
     const { contacts } = await api("contacts");
@@ -396,7 +411,7 @@
     root.replaceChildren(h("div", { class: "adm-head" }, h("h1", null, p.name), picker), settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts };
+  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };
   const ICON = {
     home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.500 10v10h13V10"/>',
     bookings: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
@@ -406,6 +421,7 @@
     orders: '<path d="M7 3v8M4.500 3v5a2.500 2.500 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.500 1-4 4-4 8h4"/>',
     guests: '<circle cx="9" cy="8" r="3.500"/><path d="M2.500 20c.7-3.500 3.200-5.500 6.500-5.500s5.800 2 6.500 5.500M16 5a3.500 3.500 0 0 1 0 6.500M18 14.800c1.800.8 3 2.500 3.500 5.200"/>',
     offers: '<path d="M4 4h7l9 9-7 7-9-9V4Z"/><circle cx="8" cy="8" r="1.300"/>',
+    reviews: '<path d="m12 3 2.700 5.700 6.300.8-4.600 4.300 1.200 6.200-5.600-3.100-5.600 3.100 1.200-6.200L3 9.500l6.300-.8L12 3Z"/>',
     push: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4"/>',
     contacts: '<path d="M6 3h3l2 5-2.500 1.500a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2Z"/>',
   };
@@ -415,7 +431,8 @@
     { tab: "home", label: "Acasă", main: true },
     { tab: "bookings", label: "Rezervări", main: true },
     { tab: "chats", label: "Mesaje", main: true },
-    { tab: "settings", label: "Apartamente", main: !isAdmin, hint: "Prețuri, calendar, reguli" },
+    { tab: "settings", label: "Apartamente", hint: "Prețuri, calendar, reguli" },
+    { tab: "reviews", label: "Recenzii", hint: "Ce spun oaspeții" },
     ...(isAdmin ? [
       { tab: "orders", label: "Comenzi", hint: "Bistro, la cameră" },
       { tab: "guests", label: "Oaspeți", hint: "Conturi și nivele" },
@@ -423,7 +440,7 @@
       { tab: "push", label: "Notificări", hint: "Anunț în aplicație" },
       { tab: "contacts", label: "Echipa", hint: "Numere de telefon" },
     ] : []),
-    ...(isAdmin ? [{ tab: "more", label: "Mai mult", main: true, phoneOnly: true }] : []),
+    { tab: "more", label: "Mai mult", main: true, phoneOnly: true },
   ];
   function buildNav() {
     nav.replaceChildren(h("a", { class: "pn-side-brand", href: "/" }, h("b", null, "Green Future"), h("small", null, "Panou")));

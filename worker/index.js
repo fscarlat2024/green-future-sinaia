@@ -2,7 +2,7 @@
 // Auth panou: parola PBKDF2 + token Bearer (merge si in site, si in viitoarea aplicatie mobila).
 // Disponibilitatea e verificata in aceeasi instructiune SQL cu rezervarea, ca doi oaspeti
 // sa nu poata prinde aceeasi perioada.
-import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailChat, brevoKeepAlive } from "./mail.js";
+import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailChat, mailReview, brevoKeepAlive } from "./mail.js";
 import restaurant from "../src/_data/restaurant.json";
 import { parseIcal, buildIcal } from "./ical.js";
 import { pushEnabled, validPushToken, pushTo, pushToStaff, guestBookingMessage, guestOrderMessage } from "./push.js";
@@ -389,6 +389,26 @@ async function adminRoutes(req, env, ctx, parts) {
   }
 
   if (first === "dashboard" && req.method === "GET") return json(await dashboard(env, a));
+  if (first === "reviews") {
+    const slugs = await adminSlugs(env, a);
+    if (!second && req.method === "GET") {
+      if (!slugs.length) return json({ reviews: [] });
+      const { results } = await env.DB.prepare(
+        `SELECT r.id, r.score, r.body, r.author, r.hidden, r.created_at, b.code, b.checkin, b.checkout, p.name AS property_name
+         FROM reviews r JOIN bookings b ON b.id = r.booking_id JOIN properties p ON p.slug = r.property_slug
+         WHERE r.property_slug IN (${slugs.map(() => "?").join(",")}) ORDER BY r.created_at DESC LIMIT 200`
+      ).bind(...slugs).all();
+      return json({ reviews: results });
+    }
+    if (second && req.method === "POST") {
+      // doar administratorul ascunde o recenzie, ca proprietarul sa nu le stearga pe cele slabe
+      if (a.role !== "admin") fail(403, "forbidden");
+      const b = await readJson(req);
+      const r = await env.DB.prepare("UPDATE reviews SET hidden = ? WHERE id = ?").bind(b.hidden ? 1 : 0, Number(second)).run();
+      if (!r.meta.changes) fail(404, "not_found");
+      return json({ ok: true });
+    }
+  }
   if (first === "contacts") {
     if (req.method === "GET") return json({ contacts: await staffContacts(env) });
     if (req.method === "POST") {
@@ -689,6 +709,45 @@ async function createOrder(req, env, ctx) {
     pushToStaff(env, null, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
   ]));
   return json({ code, total, discount, demo: !!demo }, 201);
+}
+
+// ---------- recenzii dupa sejur ----------
+const REVIEW_WINDOW_DAYS = 14; // sejururile mai vechi nu primesc email, ca sa nu pornim cu cereri tarzii
+const REVIEW_BATCH = 15; // limita Workers pe cereri externe intr-un singur apel
+async function sendReviewRequests(env) {
+  const now = today();
+  const { results } = await env.DB.prepare(
+    `SELECT b.*, p.name AS p_name, p.owner_email AS p_owner FROM bookings b JOIN properties p ON p.slug = b.property_slug
+     WHERE b.status = 'confirmed' AND b.review_sent_at IS NULL AND b.checkout < ? AND b.checkout >= ? ORDER BY b.checkout LIMIT ${REVIEW_BATCH}`
+  ).bind(now, addDays(now, -REVIEW_WINDOW_DAYS)).all();
+  for (const b of results) {
+    const token = randomHex();
+    // se marcheaza inainte de trimitere, ca doua cereri simultane sa nu trimita de doua ori
+    const r = await env.DB.prepare("UPDATE bookings SET review_sent_at = ?, review_token_hash = ? WHERE id = ? AND review_sent_at IS NULL")
+      .bind(Date.now(), await sha256(token), b.id).run();
+    if (!r.meta.changes) continue;
+    const p = { name: b.p_name, owner_email: b.p_owner };
+    await mailReview(env, p, b, token).catch((e) => console.error("review mail", e));
+    const en = b.lang === "en";
+    await pushTo(env, [b.push_token], {
+      title: en ? `How was your stay at ${p.name}?` : `Cum a fost sejurul la ${p.name}?`,
+      body: en ? "Your review takes one minute." : "Recenzia durează un minut.",
+      url: `${en ? "/en/review/" : "/recenzie/"}?cod=${encodeURIComponent(b.code)}&t=${token}`,
+    }).catch(() => {});
+  }
+}
+async function reviewBooking(env, code, token) {
+  if (!token) fail(404, "not_found");
+  const b = await env.DB.prepare("SELECT * FROM bookings WHERE code = ? AND review_token_hash = ? AND status = 'confirmed'").bind(code, await sha256(token)).first();
+  if (!b) fail(404, "not_found");
+  return b;
+}
+async function publicReviews(env, slug) {
+  const [list, sum] = await Promise.all([
+    env.DB.prepare("SELECT score, body, author, created_at FROM reviews WHERE property_slug = ? AND hidden = 0 ORDER BY created_at DESC LIMIT 30").bind(slug).all(),
+    env.DB.prepare("SELECT COUNT(*) AS n, AVG(score) AS avg FROM reviews WHERE property_slug = ? AND hidden = 0").bind(slug).first(),
+  ]);
+  return { count: sum.n, average: sum.avg || 0, reviews: list.results.map((r) => ({ score: r.score, body: r.body, author: r.author, date: r.created_at })) };
 }
 
 // ---------- tabloul proprietarilor ----------
@@ -1017,6 +1076,7 @@ async function freshen(env, ctx, p, maxAgeMs) {
 async function maintain(env, ctx) {
   if (await claim(env, "expire-pending", 10 * 60000)) ctx.waitUntil(expirePending(env));
   if (env.BREVO_API_KEY && await claim(env, "brevo-keepalive", 30 * 86400000)) ctx.waitUntil(brevoKeepAlive(env));
+  if (await claim(env, "review-requests", 30 * 60000)) ctx.waitUntil(sendReviewRequests(env).catch((e) => console.error("review", e)));
 }
 
 // Cele mai putine apartamente in care incap toti oaspetii; la acelasi numar, cel mai mic pret.
@@ -1059,7 +1119,37 @@ async function api(req, env, ctx, url) {
   if (first === "admin") return adminRoutes(req, env, ctx, parts.slice(1));
   if (first === "guest") return guestRoutes(req, env, ctx, parts.slice(1));
 
+  if (first === "reviews" && second) {
+    await rateLimit(env, `review:${clientIp(req)}`, 60, 3600000);
+    const b = await reviewBooking(env, second, url.searchParams.get("t"));
+    const existing = await env.DB.prepare("SELECT 1 FROM reviews WHERE booking_id = ?").bind(b.id).first();
+    if (req.method === "GET") {
+      const p = await getProperty(env, b.property_slug);
+      return json({ propertyName: p.name, checkin: b.checkin, checkout: b.checkout, done: !!existing });
+    }
+    if (req.method === "POST") {
+      if (existing) fail(409, "already_reviewed");
+      const body = await readJson(req);
+      const score = Number(body.score);
+      if (!Number.isInteger(score) || score < 1 || score > 10) fail(400, "invalid_score");
+      const text = String(body.body || "").trim().slice(0, 1000);
+      const author = b.guest_name.trim().split(/\s+/)[0].slice(0, 40);
+      const r = await env.DB.prepare(
+        "INSERT OR IGNORE INTO reviews (booking_id, property_slug, score, body, author, lang, created_at) VALUES (?,?,?,?,?,?,?)"
+      ).bind(b.id, b.property_slug, score, text, author, b.lang, Date.now()).run();
+      if (!r.meta.changes) fail(409, "already_reviewed");
+      const p = await getProperty(env, b.property_slug);
+      ctx.waitUntil(pushToStaff(env, p.slug, { title: `Recenzie nouă: ${score}/10, ${p.name}`, body: text.slice(0, 180), url: "/admin/" }).catch(() => {}));
+      return json({ ok: true }, 201);
+    }
+  }
+
   if (first === "properties" && req.method === "GET") {
+    if (third === "reviews") {
+      const p = await getProperty(env, second);
+      if (!p) fail(404, "not_found");
+      return json(await publicReviews(env, p.slug));
+    }
     if (!second) {
       const { results } = await env.DB.prepare("SELECT * FROM properties WHERE active = 1 AND base_price > 0 ORDER BY name").all();
       return json({ properties: results.map(publicProperty) });

@@ -2,7 +2,7 @@
 // Fiecare apartament e generat in ambele limbi (ro + en) prin pagination.
 module.exports = {
   layout: "apartment.njk",
-  scripts: ["/assets/js/booking.js"],
+  scripts: ["/assets/js/booking.js", "/assets/js/review.js"],
   pagination: {
     data: "languages",
     size: 1,

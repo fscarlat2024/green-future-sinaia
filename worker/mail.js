@@ -119,6 +119,15 @@ export function mailChat(env, to, title, text, link, lang) {
   return send(env, to, title, wrap(esc(title), body));
 }
 
+export function mailReview(env, p, b, token) {
+  const en = b.lang === "en";
+  const title = en ? `How was your stay at ${p.name}?` : `Cum a fost sejurul la ${p.name}?`;
+  const link = `${esc(env.SITE_URL)}${en ? "/en/review/" : "/recenzie/"}?cod=${esc(b.code)}&t=${esc(token)}`;
+  const body = `<p>${en ? "Thank you for staying with us! Your review takes one minute and helps other guests choose." : "Îți mulțumim că ai stat la noi! Recenzia durează un minut și îi ajută pe ceilalți oaspeți să aleagă."}</p>
+    <p style="margin-top:18px"><a href="${link}" style="background:#2E6B47;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${en ? "Leave a review" : "Lasă o recenzie"}</a></p>`;
+  return send(env, b.guest_email, title, wrap(esc(title), body), p.owner_email);
+}
+
 export function mailConflict(env, p, b, event) {
   const title = `Suprapunere în calendar: ${p.name}, ${b.code}`;
   const body = `<p>Calendarul extern arată o perioadă ocupată (${fmt(event.from, "ro")} - ${fmt(event.to, "ro")}) peste rezervarea directă de mai jos. Verifică și rezolvă manual.</p>
