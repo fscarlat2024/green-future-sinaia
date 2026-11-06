@@ -631,7 +631,7 @@ async function api(req, env, ctx, url) {
     await rateLimit(env, `push:${clientIp(req)}`, 120, 3600000);
     const b = await readJson(req);
     const token = validPushToken(b.token);
-    if (!token || b.platform !== "ios") fail(400, "invalid_token");
+    if (!token || !["ios", "android"].includes(b.platform)) fail(400, "invalid_token");
     // telefonul primeste alertele de proprietar doar cat timp sesiunea din panou e valida
     const admin = await adminAuth(req, env).catch((e) => { if (e instanceof Fail) return null; throw e; });
     const now = Date.now();

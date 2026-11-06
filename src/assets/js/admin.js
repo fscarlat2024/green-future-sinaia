@@ -66,7 +66,9 @@
         start();
       } catch (e) { err.textContent = e.message; err.hidden = false; }
     } } },
-      h("h1", null, "Intră în panou"),
+      window.GF_NATIVE ? h("span", { class: "gf-mark", "aria-hidden": "true" }) : null,
+      h("h1", null, window.GF_NATIVE ? "Intră în cont" : "Intră în panou"),
+      window.GF_NATIVE ? h("p", { class: "gf-login-sub" }, "Contul pentru proprietari și administratori.") : null,
       h("label", { class: "bk-field" }, h("span", null, "Email"), h("input", { name: "email", type: "email", required: true, autocomplete: "username" })),
       h("label", { class: "bk-field" }, h("span", null, "Parolă"), h("input", { name: "password", type: "password", required: true, autocomplete: "current-password" })),
       err,

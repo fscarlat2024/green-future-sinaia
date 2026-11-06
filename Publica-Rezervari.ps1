@@ -58,6 +58,20 @@ if ((node $wrangler secret list | Out-String) -match "APNS_KEY") {
     Write-Host "    Nu gasesc $apns. Notificarile raman oprite." -ForegroundColor Yellow
 }
 
+Write-Host "    Cheia pentru notificarile Android"
+$fcm = "C:\Users\florin\Downloads\ncs-apps-e64e0-firebase-adminsdk-fbsvc-757c3150b5.json"
+if ((node $wrangler secret list | Out-String) -match "FCM_SA") {
+    Write-Host "    Exista deja."
+} elseif (Test-Path $fcm) {
+    $tmp = Join-Path $env:TEMP ("fcm-" + [guid]::NewGuid() + ".json")
+    try {
+        @{ FCM_SA = [IO.File]::ReadAllText($fcm) } | ConvertTo-Json | Out-File -FilePath $tmp -Encoding ascii
+        node $wrangler secret bulk $tmp
+    } finally { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+} else {
+    Write-Host "    Nu gasesc $fcm. Notificarile Android raman oprite." -ForegroundColor Yellow
+}
+
 Write-Host "5/6 Cont administrator" -ForegroundColor Cyan
 if (Test-Path "cont-admin.txt") {
     Write-Host "    Exista deja, parola nu se schimba."
