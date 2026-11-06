@@ -584,3 +584,16 @@ body.no-scroll { overflow: hidden; }
 
 section.menu-section { padding: 0 0 8rem; }
 @media (max-width: 619px) { .hero.tall .hero-cta { display: grid; grid-template-columns: 1fr 1fr; } .hero.tall .hero-cta .btn { padding-inline: .5rem; } }
+/* telefon: rezervarea incape pe primul ecran */
+@media (max-width: 619px) {
+  .hero .loc-tag { display: none; }
+  .hero:not(.tall) { min-height: 0; align-items: flex-start; }
+  .hero:not(.tall) .hero-in { padding: 1.6rem 0 4.4rem; gap: .8rem; }
+  .hero:not(.tall) h1 { font-size: clamp(2.3rem, 11vw, 2.9rem); }
+  .hero:not(.tall) p.lead { font-size: .96rem; line-height: 1.45; }
+  .hero:not(.tall):has(.search:not([hidden])) .hero-cta { display: none; }
+  .search { margin-top: .4rem; padding: .85rem; gap: .55rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .search label:nth-of-type(3), .search .btn { grid-column: auto; }
+  .search .btn { align-self: end; padding-inline: .5rem; }
+  .search-msg { grid-column: 1 / -1; }
+}
