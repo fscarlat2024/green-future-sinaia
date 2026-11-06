@@ -1,3 +1,5 @@
+/android/*
+  X-Robots-Tag: noindex, nofollow
 /assets/css/*
   Cache-Control: public, max-age=0, must-revalidate
 /assets/js/*

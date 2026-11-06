@@ -634,3 +634,10 @@ html.gf-app .cart-bar:not([hidden]) { bottom: calc(58px + .8rem); }
   body.adm #adm-nav > * { flex: none; }
 }
 .gf-owner { display: block; padding: 1.4rem 1rem; text-align: center; font-size: .82rem; color: var(--ink-soft); }
+html.gf-app #proprietari { display: none; }
+.android-page { max-width: 560px; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+.android-page h1 { margin: .5rem 0 1rem; font-size: 2.3rem; line-height: 1.1; }
+.android-page h2 { margin: 2.4rem 0 .8rem; font-size: 1.5rem; }
+.android-page ol { padding-left: 1.2rem; line-height: 1.65; }
+.android-page li { margin-bottom: .6rem; }
+.android-note { margin-top: 2rem; font-size: .85rem; color: var(--muted); }

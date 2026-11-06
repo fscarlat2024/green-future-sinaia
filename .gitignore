@@ -6,3 +6,4 @@ _site/
 .dev.vars
 .wrangler/
 cont-admin.txt
+*.apk
