@@ -4,9 +4,9 @@
   if (!form) return;
   const lang = form.dataset.lang === "en" ? "en" : "ro";
   const T = lang === "en"
-    ? { free: "Available", busy: "Unavailable", total: (t, n) => `${t} lei for ${n} ${n === 1 ? "night" : "nights"}`, from: (p) => `from ${p} lei / night`,
+    ? { free: "Available", busy: "Unavailable", total: (t, n) => [`${t} lei`, `for ${n} ${n === 1 ? "night" : "nights"}`], from: (p) => [`from ${p} lei`, "per night"],
         min: (n) => `Minimum ${n} nights`, cap: (n) => `Up to ${n} guests`, dates: "Check-out must be after check-in.", soon: "Soon", none: "No apartment is available for these dates. Try other dates." }
-    : { free: "Disponibil", busy: "Indisponibil", total: (t, n) => `${t} lei pentru ${n} ${n === 1 ? "noapte" : "nopți"}`, from: (p) => `de la ${p} lei / noapte`,
+    : { free: "Disponibil", busy: "Indisponibil", total: (t, n) => [`${t} lei`, `pentru ${n} ${n === 1 ? "noapte" : "nopți"}`], from: (p) => [`de la ${p} lei`, "pe noapte"],
         min: (n) => `Minimum ${n} nopți`, cap: (n) => `Maximum ${n} persoane`, dates: "Plecarea trebuie să fie după sosire.", soon: "În curând", none: "Niciun apartament nu e liber în aceste date. Încearcă alte date." };
   const msg = document.getElementById("search-msg");
   const local = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -15,6 +15,13 @@
   form.elements.checkout.min = todayStr;
   form.elements.checkin.addEventListener("change", () => { form.elements.checkout.min = form.elements.checkin.value || todayStr; });
 
+  const setPrice = (el, [main, sub]) => {
+    const b = document.createElement("b");
+    b.textContent = main;
+    const s = document.createElement("small");
+    s.textContent = sub;
+    el.replaceChildren(b, s);
+  };
   const cards = new Map([...document.querySelectorAll(".apt[data-slug]")].map((el) => [el.dataset.slug, el]));
 
   fetch("/api/properties").then((r) => (r.ok ? r.json() : null)).then((data) => {
@@ -22,7 +29,7 @@
     form.hidden = false;
     for (const p of data.properties) {
       const card = cards.get(p.slug);
-      if (card) card.querySelector(".price").replaceChildren(T.from(p.basePrice));
+      if (card) setPrice(card.querySelector(".price"), T.from(p.basePrice));
     }
   }).catch(() => {});
 
@@ -45,10 +52,10 @@
       const price = card.querySelector(".price");
       pill.textContent = res.available ? T.free : T.busy;
       pill.classList.toggle("is-busy", !res.available);
-      price.textContent = res.available ? T.total(res.total, res.nights)
-        : res.reason === "min_nights" ? T.min(res.minNights)
+      if (res.available) setPrice(price, T.total(res.total, res.nights));
+      else price.textContent = res.reason === "min_nights" ? T.min(res.minNights)
         : res.reason === "too_many_guests" ? T.cap(res.capacity) : T.busy;
-      card.querySelectorAll("a[href]").forEach((a) => {
+      card.querySelectorAll("a.apt-link").forEach((a) => {
         const base = a.getAttribute("href").split("?")[0].split("#")[0];
         a.setAttribute("href", `${base}?${qs}#rezervare`);
       });

@@ -685,3 +685,41 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
 .adm-row .bk-field { grid-template-columns: minmax(0, 1fr); }
 .adm-row select { width: 100%; min-width: 0; }
 @media (max-width: 720px) { .adm-row { grid-template-columns: minmax(0, 1fr); } }
+/* lista de apartamente, randuri ca pe Booking */
+.apts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.apts .apt { position: relative; display: grid; grid-template-columns: 240px minmax(0, 1fr) 210px; align-items: stretch; overflow: hidden; }
+.apts .apt .ph { position: relative; height: auto; min-height: 170px; aspect-ratio: auto; overflow: hidden; }
+.apts .apt .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.apts .apt .body { display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; padding: 1.1rem 1.2rem; }
+.apts .apt h3 { margin: 0; }
+.apt-link { color: inherit; text-decoration: none; }
+.apt-link::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.apts .apt .desc { margin: 0; }
+.apts .apt .tagpill { position: static; display: inline-block; margin-top: auto; }
+.apt-side { display: flex; flex-direction: column; align-items: flex-end; gap: .6rem; padding: 1.1rem 1.2rem; text-align: right; border-left: 1px solid var(--line); }
+.apt-side .price { display: grid; gap: .1rem; font-size: .85rem; line-height: 1.25; }
+.apt-side .price b { font-family: "Cormorant Garamond", serif; font-size: 1.7rem; font-weight: 600; line-height: 1.1; color: var(--ink); }
+.apt-side .price small { color: var(--ink-soft); font-size: .78rem; }
+.apt-rev { position: relative; z-index: 2; display: flex; align-items: center; justify-content: flex-end; gap: .55rem; text-decoration: none; color: inherit; }
+.apt-score { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; flex: none; order: 2; border-radius: 7px 7px 7px 0; background: var(--accent); color: var(--on-accent); font-size: .9rem; font-weight: 700; }
+.apt-rev-t { display: grid; line-height: 1.2; text-align: right; }
+.apt-rev-t b { font-size: .86rem; }
+.apt-rev-t small { color: var(--ink-soft); font-size: .72rem; }
+.apt-go { margin-top: auto; }
+.apt-soon { display: grid; place-items: center; background: radial-gradient(120% 90% at 20% 10%, #2a3a2a 0%, #0f1610 70%); color: #E2C88F; font-family: "Cormorant Garamond", serif; font-size: 1.2rem; }
+.apts .apt:not([data-slug]) { opacity: .75; grid-template-columns: 240px minmax(0, 1fr); }
+@media (max-width: 720px) {
+  .apts .apt { grid-template-columns: 112px minmax(0, 1fr); grid-template-areas: "ph body" "ph side"; }
+  .apts .apt .ph { grid-area: ph; min-height: 100%; }
+  .apts .apt .body { grid-area: body; padding: .8rem .9rem .3rem; gap: .25rem; }
+  .apts .apt h3 { font-size: 1.2rem; }
+  .apts .apt .meta { font-size: .78rem; }
+  .apts .apt .desc, .apt-go { display: none; }
+  .apts .apt .tagpill { margin-top: .2rem; font-size: .68rem; }
+  .apt-side { grid-area: side; align-items: flex-start; gap: .4rem; padding: .3rem .9rem .85rem; text-align: left; border-left: 0; }
+  .apt-side .price b { font-size: 1.4rem; }
+  .apt-rev { justify-content: flex-start; }
+  .apt-score { order: 0; }
+  .apt-rev-t { text-align: left; }
+  .apts .apt:not([data-slug]) { grid-template-columns: 112px minmax(0, 1fr); grid-template-areas: "ph body"; }
+}

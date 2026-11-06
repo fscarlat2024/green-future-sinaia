@@ -68,26 +68,27 @@ eleventyComputed:
     <div class="apts">
       {% for apt in apts %}
       <article class="apt" data-slug="{{ apt.page.fileSlug }}">
-        <a href="{{ apt.url }}" class="ph" aria-label="{{ apt.data.name }}"><span class="tagpill">{{ t.available }}</span><img src="{{ apt.data.hero }}" alt="{{ apt.data.name }}" loading="lazy"></a>
+        <div class="ph"><img src="{{ apt.data.hero }}" alt="" loading="lazy"></div>
         <div class="body">
-          <h3>{{ apt.data.name }}</h3>
+          <h3><a href="{{ apt.url }}" class="apt-link">{{ apt.data.name }}</a></h3>
           <div class="meta"><span>{{ apt.data.capacity }}</span>{% if apt.data.metaExtra %}<span>·</span><span>{{ apt.data.metaExtra }}</span>{% endif %}</div>
           <p class="desc">{{ apt.data.tagline }}</p>
-          <div class="foot">
-            {% if apt.data.price %}<div class="price"><b>{{ apt.data.price }}</b> <small>{{ apt.data.priceUnit }}</small></div>{% else %}<div class="price"><small>{{ "Preț pe Booking" if lang == "ro" else "Price on Booking" }}</small></div>{% endif %}
-            <a href="{{ apt.url }}" class="btn btn-primary">{{ t.view_apt }}</a>
-          </div>
+          <span class="tagpill">{{ t.available }}</span>
+        </div>
+        <div class="apt-side">
+          {% if apt.data.price %}<div class="price"><b>{{ apt.data.price }}</b> <small>{{ apt.data.priceUnit }}</small></div>{% else %}<div class="price"><small>{{ "Preț pe Booking" if lang == "ro" else "Price on Booking" }}</small></div>{% endif %}
+          {% if apt.data.reviewScore %}<a class="apt-rev" href="{{ apt.url }}#recenzii"><span class="apt-score">{{ apt.data.reviewScore }}</span><span class="apt-rev-t"><b>{{ apt.data["reviewWord_" + lang] }}</b><small>{{ apt.data.reviewCount }} {{ "recenzii pe Booking" if lang == "ro" else "reviews on Booking" }}</small></span></a>{% endif %}
+          <span class="btn btn-primary apt-go">{{ t.view_apt }}</span>
         </div>
       </article>
       {% endfor %}
 
       <article class="apt">
-        <div class="ph" style="background:radial-gradient(120% 90% at 20% 10%,#2a3a2a 0%,#0f1610 70%);display:grid;place-items:center;color:#E2C88F;font-family:'Cormorant Garamond',serif;font-size:1.3rem">{{ t.soon }}</div>
+        <div class="ph apt-soon">{{ t.soon }}</div>
         <div class="body">
           <h3>{{ t.soon_name }}</h3>
           <div class="meta"><span>{{ t.soon_cap }}</span></div>
           <p class="desc">{{ t.soon_desc }}</p>
-          <div class="foot"><div class="price"><small>—</small></div><span class="btn btn-ghost" style="pointer-events:none;opacity:.6">{{ t.soon }}</span></div>
         </div>
       </article>
     </div>
