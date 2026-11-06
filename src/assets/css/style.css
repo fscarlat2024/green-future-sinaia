@@ -877,3 +877,11 @@ button.pn-kpi { cursor: pointer; }
 section.block#dotari { padding-top: clamp(1.75rem, 3vw, 2.5rem); }
 /* pe telefon, dupa cautare urmeaza direct apartamentele */
 @media (max-width: 720px) { .home-about, .facts { display: none; } #apartamente { padding-top: 2rem !important; } }
+@media (max-width: 720px) {
+  #apartamente .sec-head .eyebrow { display: none; }
+  #apartamente .sec-head h2 { margin-top: 0; }
+  #apartamente { padding-top: 1.25rem !important; }
+  .hero:not(.tall) .hero-in { padding-bottom: 1.25rem; }
+  .hero:not(.tall) { min-height: 0; }
+  .search .btn { min-height: 42px; height: 42px; padding-block: 0; font-size: .74rem; }
+}
