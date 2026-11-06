@@ -3,13 +3,26 @@
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (d, lang) => new Date(d + "T00:00:00Z").toLocaleDateString(lang === "en" ? "en-GB" : "ro-RO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-async function send(env, to, subject, html) {
-  const key = String(env.BREVO_API_KEY || "").replace(/^﻿/, "").trim();
+const brevoKey = (env) => String(env.BREVO_API_KEY || "").replace(/^﻿/, "").trim();
+
+// Brevo dezactiveaza cheile nefolosite 90 de zile, iar un site fara rezervari poate sta atat fara emailuri.
+export async function brevoKeepAlive(env) {
+  const r = await fetch("https://api.brevo.com/v3/smtp/templates?limit=1", {
+    headers: { "api-key": brevoKey(env), accept: "application/json" },
+  });
+  if (!r.ok) console.error(`Brevo keepalive ${r.status}`);
+}
+
+async function send(env, to, subject, html, replyTo) {
+  const key = brevoKey(env);
   if (!key || !to) { console.log(`[mail oprit] ${to}: ${subject}`); return false; }
   const r = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: { "api-key": key, accept: "application/json", "content-type": "application/json" },
-    body: JSON.stringify({ sender: { name: "Green Future Sinaia", email: env.MAIL_FROM }, to: [{ email: to }], subject, htmlContent: html }),
+    body: JSON.stringify({
+      sender: { name: "Green Future Sinaia", email: env.MAIL_FROM }, to: [{ email: to }], subject, htmlContent: html,
+      ...(replyTo ? { replyTo: { email: replyTo } } : {}),
+    }),
   });
   if (!r.ok) console.error(`Brevo ${r.status}: ${(await r.text()).slice(0, 200)}`);
   return r.ok;
@@ -29,6 +42,9 @@ const details = (p, b, lang) => {
     ${row(L.in, `${fmt(b.checkin, lang)}, ${p.checkin_time}`)}${row(L.out, `${fmt(b.checkout, lang)}, ${p.checkout_time}`)}
     ${row(L.guests, b.adults + b.children)}${row(L.total, `${b.total} lei (${L.pay})`)}</table>`;
 };
+
+// Fara email de proprietar, rezervarea ajunge la adresa site-ului, redirectionata catre administrator.
+const ownerAddress = (env, p) => p.owner_email || env.MAIL_FROM;
 
 const COPY = {
   received: {
@@ -60,7 +76,7 @@ export function mailGuest(env, p, b, kind, token) {
   const manage = token
     ? `<p style="margin-top:18px"><a href="${esc(env.SITE_URL)}${path}?cod=${esc(b.code)}&t=${esc(token)}" style="background:#2E6B47;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${lang === "en" ? "View or cancel your booking" : "Vezi sau anulează rezervarea"}</a></p>`
     : "";
-  return send(env, b.guest_email, `${title} - ${b.code}`, wrap(esc(title), `<p>${esc(text)}</p>${details(p, b, lang)}${manage}`));
+  return send(env, b.guest_email, `${title} - ${b.code}`, wrap(esc(title), `<p>${esc(text)}</p>${details(p, b, lang)}${manage}`), p.owner_email);
 }
 
 export function mailOwnerNew(env, p, b, cancelled = false) {
@@ -71,12 +87,12 @@ export function mailOwnerNew(env, p, b, cancelled = false) {
   const body = `${details(p, b, "ro")}
     <p style="margin-top:16px"><b>${esc(b.guest_name)}</b><br>${esc(b.guest_email)}<br>${esc(b.guest_phone)}</p>
     ${b.note ? `<p><i>${esc(b.note)}</i></p>` : ""}${action}`;
-  return send(env, p.owner_email, title, wrap(esc(title), body));
+  return send(env, ownerAddress(env, p), title, wrap(esc(title), body), b.guest_email);
 }
 
 export function mailConflict(env, p, b, event) {
   const title = `Suprapunere în calendar: ${p.name}, ${b.code}`;
   const body = `<p>Calendarul extern arată o perioadă ocupată (${fmt(event.from, "ro")} - ${fmt(event.to, "ro")}) peste rezervarea directă de mai jos. Verifică și rezolvă manual.</p>
     ${details(p, b, "ro")}<p><b>${esc(b.guest_name)}</b>, ${esc(b.guest_phone)}</p>`;
-  return send(env, p.owner_email, title, wrap(esc(title), body));
+  return send(env, ownerAddress(env, p), title, wrap(esc(title), body), b.guest_email);
 }

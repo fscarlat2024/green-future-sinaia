@@ -11,7 +11,7 @@
   },
   "vars": {
     "SITE_URL": "https://greenfuturesinaia.com",
-    "MAIL_FROM": "contact@greenfuturesinaia.com"
+    "MAIL_FROM": "rezervari@greenfuturesinaia.com"
   },
   "d1_databases": [
     {
@@ -21,7 +21,6 @@
       "migrations_dir": "migrations"
     }
   ],
-  // calendarele Booking.com/Airbnb + expirarea cererilor fara raspuns
-  "triggers": { "crons": ["*/30 * * * *"] },
+  // fara cron: contul a atins limita gratuita de 5; vezi maintain() in worker/index.js
   "observability": { "enabled": true }
 }

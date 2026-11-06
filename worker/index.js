@@ -2,7 +2,7 @@
 // Auth panou: parola PBKDF2 + token Bearer (merge si in site, si in viitoarea aplicatie mobila).
 // Disponibilitatea e verificata in aceeasi instructiune SQL cu rezervarea, ca doi oaspeti
 // sa nu poata prinde aceeasi perioada.
-import { mailOwnerNew, mailGuest, mailConflict } from "./mail.js";
+import { mailOwnerNew, mailGuest, mailConflict, brevoKeepAlive } from "./mail.js";
 import { parseIcal, buildIcal } from "./ical.js";
 
 const enc = new TextEncoder();
@@ -10,6 +10,9 @@ const SESSION_DAYS = 30;
 const MAX_NIGHTS = 60;
 const MAX_ADVANCE_DAYS = 400;
 const PENDING_HOURS = 24;
+const ICAL_MAX_AGE_MS = 30 * 60000;
+const ICAL_BOOKING_AGE_MS = 2 * 60000; // inainte de o rezervare sau confirmare, calendarul trebuie sa fie aproape la zi
+const ICAL_WAIT_MS = 3000;
 const ACTIVE = "('pending','confirmed')";
 
 class Fail extends Error {
@@ -188,6 +191,7 @@ async function createBooking(req, env, ctx) {
   const children = Math.trunc(Number(b.children)) || 0;
   if (adults < 1 || children < 0) fail(400, "invalid_guests");
   const guest = cleanGuest(b);
+  await freshen(env, ctx, p, ICAL_BOOKING_AGE_MS);
   const q = await quote(env, p, b.checkin, b.checkout, adults + children);
   if (!q.available) fail(409, "unavailable");
   // dupa validari, ca o greseala de tastare sa nu consume din limita
@@ -329,6 +333,7 @@ async function adminRoutes(req, env, ctx, parts) {
     let updated;
     if (third === "confirm") {
       if (b.status !== "pending") fail(409, "wrong_status");
+      await freshen(env, ctx, p, ICAL_BOOKING_AGE_MS);
       if (!(await blocksFree(env, b))) fail(409, "calendar_conflict");
       updated = await setStatus(env, b, "confirmed");
     } else if (third === "decline") {
@@ -449,10 +454,40 @@ async function expirePending(env) {
   }
 }
 
+// ---------- intretinere fara cron ----------
+// Contul Cloudflare a atins limita gratuita de 5 cron-uri, asa ca lucrarile periodice pornesc la cererile primite.
+// Fiecare lucrare e revendicata atomic, ca cererile simultane sa nu o porneasca de doua ori.
+async function claim(env, key, everyMs) {
+  const now = Date.now();
+  const r = await env.DB.prepare(
+    `INSERT INTO rate_limits (key, count, window_start) VALUES (?1, 1, ?2)
+     ON CONFLICT(key) DO UPDATE SET
+       count = CASE WHEN window_start < ?3 THEN 1 ELSE count + 1 END,
+       window_start = CASE WHEN window_start < ?3 THEN ?2 ELSE window_start END
+     RETURNING count`).bind(key, now, now - everyMs).first();
+  return r.count === 1;
+}
+
+// Aduce calendarul extern daca e mai vechi decat maxAgeMs. Asteapta putin, ca vizitatorul sa vada deja datele noi;
+// daca Booking raspunde greu, cererea continua si sincronizarea se termina in fundal.
+async function freshen(env, ctx, p, maxAgeMs) {
+  if (!p.ical_import_url || !(await claim(env, `ical:${p.slug}`, maxAgeMs))) return;
+  const job = syncIcal(env, p);
+  ctx.waitUntil(job);
+  await Promise.race([job, new Promise((resolve) => setTimeout(resolve, ICAL_WAIT_MS))]);
+}
+
+async function maintain(env, ctx) {
+  if (await claim(env, "expire-pending", 10 * 60000)) ctx.waitUntil(expirePending(env));
+  if (env.BREVO_API_KEY && await claim(env, "brevo-keepalive", 30 * 86400000)) ctx.waitUntil(brevoKeepAlive(env));
+}
+
 // ---------- rute ----------
 async function api(req, env, ctx, url) {
   const parts = url.pathname.split("/").filter(Boolean).slice(1).map(decodeURIComponent);
   const [first, second, third] = parts;
+
+  await maintain(env, ctx);
 
   if (first === "admin") return adminRoutes(req, env, ctx, parts.slice(1));
 
@@ -461,7 +496,11 @@ async function api(req, env, ctx, url) {
       const { results } = await env.DB.prepare("SELECT * FROM properties WHERE active = 1 AND base_price > 0 ORDER BY name").all();
       return json({ properties: results.map(publicProperty) });
     }
-    if (third === "calendar") return json(await calendar(env, await bookableProperty(env, second)));
+    if (third === "calendar") {
+      const p = await bookableProperty(env, second);
+      await freshen(env, ctx, p, ICAL_MAX_AGE_MS);
+      return json(await calendar(env, p));
+    }
   }
 
   if (first === "quote" && req.method === "POST") {
@@ -478,6 +517,7 @@ async function api(req, env, ctx, url) {
     const guests = Math.trunc(Number(url.searchParams.get("guests"))) || 1;
     if (!isDate(checkin) || !isDate(checkout) || checkin >= checkout) fail(400, "invalid_dates");
     const { results } = await env.DB.prepare("SELECT * FROM properties WHERE active = 1 AND base_price > 0").all();
+    await Promise.all(results.map((p) => freshen(env, ctx, p, ICAL_MAX_AGE_MS)));
     const out = [];
     for (const p of results) {
       try {
@@ -542,10 +582,5 @@ export default {
       console.error(e);
       return json({ error: "server_error" }, 500);
     }
-  },
-
-  async scheduled(event, env, ctx) {
-    const { results } = await env.DB.prepare("SELECT * FROM properties WHERE active = 1 AND ical_import_url IS NOT NULL").all();
-    ctx.waitUntil(Promise.allSettled([...results.map((p) => syncIcal(env, p)), expirePending(env)]));
   },
 };
