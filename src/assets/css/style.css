@@ -597,3 +597,19 @@ section.menu-section { padding: 0 0 8rem; }
   .search .btn { align-self: end; padding-inline: .5rem; }
   .search-msg { grid-column: 1 / -1; }
 }
+/* campurile de data nu trebuie sa iasa din coloana (iOS le da o latime proprie) */
+.search label { overflow: hidden; }
+.search input[type="date"] { display: block; width: 100%; min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; }
+.search input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+@media (max-width: 619px) {
+  .search input[type="date"], .search select { padding: .55rem .45rem; font-size: 15px; min-height: 42px; }
+  .search input[type="date"]::-webkit-calendar-picker-indicator { margin-inline-start: 0; padding: 0; }
+}
+/* bistro: fotografia din antet */
+.page-hero.has-photo { position: relative; isolation: isolate; background-size: cover; background-position: center; color: #F1EDE3; padding-block: clamp(3.4rem, 9vw, 7rem) clamp(2.4rem, 5vw, 4rem); }
+.page-hero.has-photo::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(8,12,9,.62) 0%, rgba(8,12,9,.55) 55%, var(--ground) 100%); }
+.page-hero.has-photo h1 { color: #F1EDE3; }
+.page-hero.has-photo .eyebrow { color: #E2C88F; }
+.page-hero.has-photo .lead { color: rgba(241,237,227,.9); }
+.page-hero.has-photo .demo-note { color: rgba(241,237,227,.75); }
+:root[data-theme="light"] .page-hero.has-photo::before { background: linear-gradient(180deg, rgba(8,12,9,.62) 0%, rgba(8,12,9,.55) 60%, rgba(8,12,9,.7) 100%); }

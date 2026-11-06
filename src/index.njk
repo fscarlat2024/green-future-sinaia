@@ -101,7 +101,7 @@ eleventyComputed:
       <h2>{{ "Totul, la câțiva pași de apartament" if lang == "ro" else "Everything, steps from your apartment" }}</h2>
     </div>
     <div class="exp">
-      <a class="exp-card exp-bistro" href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">
+      <a class="exp-card" href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}" style="background-image:url('/assets/img/complex/bistro.jpg')">
         <span class="exp-kicker">Attitude Bistro</span>
         <b>{{ "Meniu și comandă la cameră" if lang == "ro" else "Menu and room orders" }}</b>
         <span>{{ "Vezi preparatele și comanzi la apartament, cu plata pe nota camerei." if lang == "ro" else "See the dishes and order to your apartment, added to your room bill." }}</span>

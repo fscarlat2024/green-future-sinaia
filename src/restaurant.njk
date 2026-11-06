@@ -13,7 +13,7 @@ eleventyComputed:
   urlEn: "/en/restaurant/"
 ---
 {% set r = restaurant[lang] %}
-<main class="page-hero is-compact">
+<main class="page-hero is-compact has-photo" style="background-image:url('/assets/img/complex/bistro.jpg')">
   <div class="wrap">
     <span class="eyebrow">{{ r.eyebrow }}</span>
     <h1>{{ r.title }}</h1>
