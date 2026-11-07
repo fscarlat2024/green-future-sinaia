@@ -2,7 +2,7 @@
 // Auth panou: parola PBKDF2 + token Bearer (merge si in site, si in viitoarea aplicatie mobila).
 // Disponibilitatea e verificata in aceeasi instructiune SQL cu rezervarea, ca doi oaspeti
 // sa nu poata prinde aceeasi perioada.
-import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailChat, mailReview, brevoKeepAlive } from "./mail.js";
+import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailVerifyCode, mailChat, mailReview, brevoKeepAlive } from "./mail.js";
 import restaurant from "../src/_data/restaurant.json";
 import { parseIcal, buildIcal } from "./ical.js";
 import { pushEnabled, validPushToken, pushTo, pushToStaff, guestBookingMessage, guestOrderMessage } from "./push.js";
@@ -989,6 +989,22 @@ async function offerTokens(env, audience) {
   ).bind(today()).all();
   return results.filter((r) => audience === "all" || levelFrom(r.stays, r.orders, r.level_override).key === audience).map((r) => r.token);
 }
+// ---------- email confirmat si card de membru ----------
+async function sendVerifyCode(env, g) {
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
+  await env.DB.prepare("UPDATE guests SET verify_code_hash = ?, verify_expires = ?, verify_attempts = 0 WHERE id = ?")
+    .bind(await sha256(`${g.id}:${code}`), Date.now() + 30 * 60000, g.id).run();
+  return mailVerifyCode(env, g, code);
+}
+// Rezervarile facute cu acelasi email intra in cont doar dupa ce emailul e confirmat, altfel oricine le-ar vedea scriind adresa altcuiva.
+async function memberCard(env, g) {
+  if (!g.email_verified_at) return { state: "verify", codeSent: !!g.verify_code_hash && g.verify_expires > Date.now() };
+  await env.DB.prepare("UPDATE bookings SET guest_id = ? WHERE guest_id IS NULL AND lower(guest_email) = ?").bind(g.id, g.email).run();
+  const has = await env.DB.prepare("SELECT 1 FROM bookings WHERE lower(guest_email) = ? AND status = 'confirmed' LIMIT 1").bind(g.email).first();
+  if (!has) return { state: "no_booking" };
+  return { state: "active", number: `GF-${String(g.id).padStart(6, "0")}`, since: new Date(g.created_at).getUTCFullYear() };
+}
+
 async function requireGuest(req, env) {
   const g = await optionalGuest(req, env);
   if (!g) fail(401, "unauthorized");
@@ -1029,6 +1045,7 @@ async function guestRoutes(req, env, ctx, parts) {
       "INSERT OR IGNORE INTO guests (email, pass_hash, name, phone, lang, created_at) VALUES (?,?,?,?,?,?)"
     ).bind(email, await makePassword(pw), name, phone, b.lang === "en" ? "en" : "ro", Date.now()).run();
     if (!res.meta.changes) fail(409, "email_taken");
+    await sendVerifyCode(env, { id: res.meta.last_row_id, email, lang: b.lang === "en" ? "en" : "ro" }).catch((e) => console.error("verify", e));
     return json({ token: await guestSession(env, res.meta.last_row_id) }, 201);
   }
   if (first === "login" && req.method === "POST") {
@@ -1079,7 +1096,8 @@ async function guestRoutes(req, env, ctx, parts) {
       .bind(await sha256(String(b.token || "")), Date.now()).first();
     if (!row) fail(400, "reset_expired");
     await env.DB.batch([
-      env.DB.prepare("UPDATE guests SET pass_hash = ? WHERE id = ?").bind(await makePassword(pw), row.guest_id),
+      // linkul a ajuns pe email, deci adresa e confirmata
+      env.DB.prepare("UPDATE guests SET pass_hash = ?, email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?").bind(await makePassword(pw), Date.now(), row.guest_id),
       env.DB.prepare("DELETE FROM guest_resets WHERE guest_id = ?").bind(row.guest_id),
       env.DB.prepare("DELETE FROM guest_sessions WHERE guest_id = ?").bind(row.guest_id),
     ]);
@@ -1117,12 +1135,30 @@ async function guestRoutes(req, env, ctx, parts) {
       return json({ ok: true }, 201);
     }
   }
+  if (first === "verify" && parts[1] === "send" && req.method === "POST") {
+    if (g.email_verified_at) return json({ ok: true });
+    await rateLimit(env, `verify-send:${g.id}`, 3, 3600000);
+    await sendVerifyCode(env, g);
+    return json({ ok: true });
+  }
+  if (first === "verify" && !parts[1] && req.method === "POST") {
+    if (g.email_verified_at) return json({ ok: true });
+    const code = String((await readJson(req)).code || "").replace(/\D/g, "");
+    if (!g.verify_code_hash || g.verify_expires < Date.now() || g.verify_attempts >= 6) fail(400, "code_expired");
+    if ((await sha256(`${g.id}:${code}`)) !== g.verify_code_hash) {
+      await env.DB.prepare("UPDATE guests SET verify_attempts = verify_attempts + 1 WHERE id = ?").bind(g.id).run();
+      fail(400, "code_invalid");
+    }
+    await env.DB.prepare("UPDATE guests SET email_verified_at = ?, verify_code_hash = NULL, verify_expires = NULL, verify_attempts = 0 WHERE id = ?").bind(Date.now(), g.id).run();
+    return json({ ok: true });
+  }
   if (first === "logout" && req.method === "POST") {
     const m = req.headers.get("authorization").match(/^Bearer (.+)$/);
     await env.DB.prepare("DELETE FROM guest_sessions WHERE token_hash = ?").bind(await sha256(m[1])).run();
     return json({ ok: true });
   }
   if (first === "me" && req.method === "GET") {
+    const card = await memberCard(env, g); // leaga rezervarile, deci inaintea listelor si a nivelului
     const { results } = await env.DB.prepare(
       `SELECT b.code, b.checkin, b.checkout, b.status, b.total, b.discount, p.name AS property_name
        FROM bookings b JOIN properties p ON p.slug = b.property_slug WHERE b.guest_id = ? ORDER BY b.checkin DESC LIMIT 50`
@@ -1139,7 +1175,7 @@ async function guestRoutes(req, env, ctx, parts) {
        ) ORDER BY o.created_at DESC LIMIT 50`
     ).bind(g.id).all();
     return json({
-      name: g.name, email: g.email, phone: g.phone, level, bookings: results, orders: orders.results.map(orderView), bistro: { pct: bistro.pct, title: bistro.title, key: bistro.key },
+      name: g.name, email: g.email, phone: g.phone, level, card, bookings: results, orders: orders.results.map(orderView), bistro: { pct: bistro.pct, title: bistro.title, key: bistro.key },
       offers: offers.map((o) => ({ id: o.id, title: personal(o.title, g), body: personal(o.body, g), kind: o.kind, pct: o.pct, validTo: o.valid_to })),
     });
   }

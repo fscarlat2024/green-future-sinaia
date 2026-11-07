@@ -903,3 +903,17 @@ html.gf-app .chat-head, html.gf-app .pn-top { padding-top: calc(.7rem + env(safe
 .cart-drawer .bk-back { padding-right: 3rem; }
 html.gf-app .cart-drawer { padding-top: env(safe-area-inset-top); padding-bottom: 66px; }
 html.gf-app .cart-close { top: calc(1rem + env(safe-area-inset-top)); }
+/* cardul de membru */
+.member-card { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; aspect-ratio: 1.586; max-width: 26rem; width: 100%; padding: 1.25rem 1.35rem; overflow: hidden; border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent); border-radius: 14px; color: #F4EBD8; background: radial-gradient(120% 130% at 90% 0%, #3b3220 0%, #171a15 52%, #0e120e 100%); box-shadow: 0 18px 40px -22px rgba(0,0,0,.8); }
+.member-card.is-silver { background: radial-gradient(120% 130% at 90% 0%, #4a4d50 0%, #1c1f20 55%, #101213 100%); }
+.member-card.is-gold { background: radial-gradient(120% 130% at 90% 0%, #6b5120 0%, #2a2112 52%, #14100a 100%); }
+.mc-top { display: flex; align-items: center; gap: .55rem; }
+.mc-brand { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: #D9BC80; }
+.mc-level { font-family: "Cormorant Garamond", serif; font-size: 2rem; font-weight: 500; line-height: 1; color: #fff; }
+.mc-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.mc-bottom > div { display: grid; gap: .15rem; min-width: 0; }
+.mc-name { overflow: hidden; font-size: .95rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.mc-no { flex: none; text-align: right; }
+.mc-no span { font-size: .95rem; font-weight: 600; letter-spacing: .08em; }
+.member-card small { font-size: .68rem; color: #C9BCA3; }
+.member-card .gf-mark { flex: none; width: 1.3rem; height: 1.3rem; margin: 0; }

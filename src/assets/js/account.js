@@ -20,12 +20,15 @@
       stats: (s, o) => `${s === 1 ? "1 sejur încheiat" : `${s} sejururi încheiate`} · ${o === 1 ? "1 comandă livrată" : `${o} comenzi livrate`}`,
       offers: "Ofertele tale", valid: (d) => `Valabilă până la ${d}`, off: (p, k) => `-${p}% ${k === "bistro" ? "la bistro" : "la sejur"}`, offerNote: "Reducerea se aplică automat, o singură dată, și nu se adună cu cea de nivel.", useStay: "Rezervă", useBistro: "Vezi meniul",
       messages: "Mesajele mele", unread: (n) => (n === 1 ? "1 mesaj nou" : `${n} mesaje noi`), chatPath: "/mesaje/",
+      cardTitle: "Cardul de membru", cardSince: (y) => `Membru din ${y}`, cardNo: "Număr card",
+      verifyTitle: "Confirmă-ți emailul", verifyText: (e) => `Am trimis un cod pe ${e}. După confirmare, cardul de membru și rezervările făcute cu acest email apar aici automat.`, verifyAsk: (e) => `Confirmă adresa ${e} și cardul de membru, împreună cu rezervările făcute cu ea, apar aici automat.`, verifySend: "Trimite codul pe email", verifyCode: "Codul din email", verifyBtn: "Confirmă", verifyResend: "Trimite alt cod", verifySent: "Am trimis un cod nou.",
+      noCardText: (e) => `Cardul apare automat după prima rezervare confirmată făcută cu ${e}.`,
       orders: "Comenzile mele la bistro", orderStatus: { new: "Trimisă", confirmed: "Confirmată", delivered: "Livrată", cancelled: "Anulată" }, orderTest: "test",
       bookings: "Rezervările mele", noBookings: "Nu ai încă rezervări din acest cont.", book: "Vezi apartamentele", discount: (d) => `reducere ${d} lei`,
       status: { pending: "De confirmat", confirmed: "Confirmată", declined: "Refuzată", cancelled: "Anulată", expired: "Expirată" },
       logout: "Ieșire din cont", deleteOpen: "Șterge contul", deleteTitle: "Ștergi contul?",
       deleteText: "Contul și nivelul tău dispar definitiv. Rezervările rămân la proprietar, fără legătură cu contul.", deleteConfirm: "Șterge definitiv", cancel: "Renunță",
-      errors: { bad_login: "Email sau parolă greșită.", too_many_requests: "Prea multe încercări. Revino puțin mai târziu.", email_taken: "Există deja un cont cu acest email.", invalid_email: "Adresa de email nu pare corectă.", invalid_name: "Scrie numele complet.", invalid_phone: "Numărul de telefon nu pare corect.", weak_password: "Parola trebuie să aibă cel puțin 8 caractere.", accept_required: "Bifează acordul pentru a continua.", reset_expired: "Linkul a expirat. Cere altul." },
+      errors: { code_invalid: "Codul nu este corect.", code_expired: "Codul a expirat. Cere altul.", bad_login: "Email sau parolă greșită.", too_many_requests: "Prea multe încercări. Revino puțin mai târziu.", email_taken: "Există deja un cont cu acest email.", invalid_email: "Adresa de email nu pare corectă.", invalid_name: "Scrie numele complet.", invalid_phone: "Numărul de telefon nu pare corect.", weak_password: "Parola trebuie să aibă cel puțin 8 caractere.", accept_required: "Bifează acordul pentru a continua.", reset_expired: "Linkul a expirat. Cere altul." },
       generic: "Nu am putut finaliza. Încearcă din nou.",
     },
     en: {
@@ -44,12 +47,15 @@
       stats: (s, o) => `${s === 1 ? "1 completed stay" : `${s} completed stays`} · ${o === 1 ? "1 delivered order" : `${o} delivered orders`}`,
       offers: "Your offers", valid: (d) => `Valid until ${d}`, off: (p, k) => `${p}% off ${k === "bistro" ? "at the bistro" : "your stay"}`, offerNote: "The discount applies automatically, once, and does not add to your level discount.", useStay: "Book", useBistro: "See menu",
       messages: "My messages", unread: (n) => (n === 1 ? "1 new message" : `${n} new messages`), chatPath: "/en/messages/",
+      cardTitle: "Member card", cardSince: (y) => `Member since ${y}`, cardNo: "Card number",
+      verifyTitle: "Confirm your email", verifyText: (e) => `We sent a code to ${e}. Once confirmed, your member card and the bookings made with this email appear here automatically.`, verifyAsk: (e) => `Confirm ${e} and your member card, along with the bookings made with it, appear here automatically.`, verifySend: "Email me the code", verifyCode: "Code from the email", verifyBtn: "Confirm", verifyResend: "Send another code", verifySent: "We sent a new code.",
+      noCardText: (e) => `Your card appears automatically after your first confirmed booking made with ${e}.`,
       orders: "My bistro orders", orderStatus: { new: "Sent", confirmed: "Confirmed", delivered: "Delivered", cancelled: "Cancelled" }, orderTest: "test",
       bookings: "My bookings", noBookings: "No bookings from this account yet.", book: "See apartments", discount: (d) => `${d} lei off`,
       status: { pending: "Pending", confirmed: "Confirmed", declined: "Declined", cancelled: "Cancelled", expired: "Expired" },
       logout: "Sign out", deleteOpen: "Delete account", deleteTitle: "Delete your account?",
       deleteText: "Your account and level are permanently removed. Bookings stay with the owner, no longer linked to the account.", deleteConfirm: "Delete permanently", cancel: "Cancel",
-      errors: { bad_login: "Wrong email or password.", too_many_requests: "Too many attempts. Please come back a little later.", email_taken: "An account with this email already exists.", invalid_email: "This email address does not look right.", invalid_name: "Please enter your full name.", invalid_phone: "This phone number does not look right.", weak_password: "The password needs at least 8 characters.", accept_required: "Please tick the consent box to continue.", reset_expired: "This link has expired. Please ask for a new one." },
+      errors: { code_invalid: "This code is not correct.", code_expired: "This code has expired. Please ask for another one.", bad_login: "Wrong email or password.", too_many_requests: "Too many attempts. Please come back a little later.", email_taken: "An account with this email already exists.", invalid_email: "This email address does not look right.", invalid_name: "Please enter your full name.", invalid_phone: "This phone number does not look right.", weak_password: "The password needs at least 8 characters.", accept_required: "Please tick the consent box to continue.", reset_expired: "This link has expired. Please ask for a new one." },
       generic: "We could not complete this. Please try again.",
     },
   }[lang];
@@ -150,6 +156,42 @@
       });
   }
 
+  function cardBlock(me, token) {
+    const c = me.card || {};
+    if (c.state === "active") {
+      return h("section", { class: `member-card is-${me.level.key}`, "aria-label": T.cardTitle },
+        h("div", { class: "mc-top" }, h("span", { class: "gf-mark", "aria-hidden": "true" }), h("span", { class: "mc-brand" }, "Green Future Club")),
+        h("b", { class: "mc-level" }, T.levels[me.level.key]),
+        h("div", { class: "mc-bottom" },
+          h("div", null, h("span", { class: "mc-name" }, me.name), h("small", null, T.cardSince(c.since))),
+          h("div", { class: "mc-no" }, h("small", null, T.cardNo), h("span", null, c.number))));
+    }
+    if (c.state === "no_booking") return h("section", { class: "acc-card" }, h("h3", null, T.cardTitle), h("p", null, T.noCardText(me.email)));
+    const err = h("p", { class: "bk-err", role: "alert", hidden: true });
+    const said = h("p", { role: "status", hidden: true });
+    if (!c.codeSent) {
+      return h("section", { class: "acc-card" }, h("h3", null, T.verifyTitle), h("p", null, T.verifyAsk(me.email)), err,
+        h("button", { type: "button", class: "btn btn-primary", on: { click: async () => {
+          err.hidden = true;
+          try { await call("verify/send", "POST", null, token); dashboard(); }
+          catch (e) { err.textContent = e.message; err.hidden = false; }
+        } } }, T.verifySend));
+    }
+    return h("section", { class: "acc-card" }, h("h3", null, T.verifyTitle), h("p", null, T.verifyText(me.email)),
+      h("form", { class: "bk-form", on: { submit: async (ev) => {
+        ev.preventDefault();
+        err.hidden = true;
+        try { await call("verify", "POST", { code: new FormData(ev.currentTarget).get("code") }, token); dashboard(); }
+        catch (e) { err.textContent = e.message; err.hidden = false; }
+      } } }, field(T.verifyCode, "code", { inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6", pattern: "[0-9]{6}" }), err, said,
+        h("div", { class: "acc-row" }, h("button", { type: "submit", class: "btn btn-primary" }, T.verifyBtn),
+          link(T.verifyResend, async () => {
+            err.hidden = true;
+            try { await call("verify/send", "POST", null, token); said.textContent = T.verifySent; said.hidden = false; }
+            catch (e) { err.textContent = e.message; err.hidden = false; }
+          }))));
+  }
+
   async function dashboard() {
     const token = store.get(KEY);
     let me;
@@ -179,7 +221,8 @@
       h("div", { class: "acc-row" }, h("button", { type: "submit", class: "btn btn-ghost" }, T.deleteConfirm), link(T.cancel, () => { danger.hidden = true; }))));
 
     fill(
-      h("section", { class: "club-card" }, h("small", null, T.club), h("h2", null, T.levels[lv.key]),
+      cardBlock(me, token),
+      h("section", { class: "club-card" }, me.card?.state === "active" ? null : [h("small", null, T.club), h("h2", null, T.levels[lv.key])],
         h("p", null, T.hello(first), " ", T.perks(lv.pct)),
         h("p", null, lv.nextKey ? T.next(lv.staysToNext, T.levels[lv.nextKey], lv.nextPct) : T.top),
         h("p", null, T.stats(lv.stays, lv.orders))),

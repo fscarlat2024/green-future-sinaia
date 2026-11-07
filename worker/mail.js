@@ -112,6 +112,14 @@ export function mailGuestReset(env, g, token) {
   return send(env, g.email, title, wrap(esc(title), body));
 }
 
+export function mailVerifyCode(env, g, code) {
+  const en = g.lang === "en";
+  const title = en ? "Confirm your email" : "Confirmă-ți emailul";
+  const body = `<p>${en ? "Enter this code in your Green Future account. It is valid for 30 minutes. If you did not create an account, ignore this email." : "Scrie acest cod în contul tău Green Future. Este valabil 30 de minute. Dacă nu ți-ai făcut cont, ignoră emailul."}</p>
+    <p style="margin-top:18px;font-size:30px;font-weight:700;letter-spacing:6px">${esc(code)}</p>`;
+  return send(env, g.email, title, wrap(esc(title), body));
+}
+
 export function mailChat(env, to, title, text, link, lang) {
   const label = lang === "en" ? "Open the conversation" : "Deschide conversația";
   const body = `<p style="white-space:pre-wrap">${esc(text)}</p>
