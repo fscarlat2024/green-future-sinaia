@@ -917,3 +917,5 @@ html.gf-app .cart-close { top: calc(1rem + env(safe-area-inset-top)); }
 .mc-no span { font-size: .95rem; font-weight: 600; letter-spacing: .08em; }
 .member-card small { font-size: .68rem; color: #C9BCA3; }
 .member-card .gf-mark { flex: none; width: 1.3rem; height: 1.3rem; margin: 0; }
+/* Sinaia, Perla Carpatilor ramane doar pe site */
+html.gf-app #sinaia, html.gf-app .nav-links a[href$='#sinaia'], html.gf-app a[href$='#sinaia'] { display: none; }
