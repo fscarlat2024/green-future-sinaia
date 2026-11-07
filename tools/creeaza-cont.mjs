@@ -2,6 +2,7 @@
 //   node tools/creeaza-cont.mjs email@firma.ro admin [--remote]
 //   node tools/creeaza-cont.mjs proprietar@firma.ro owner [studio-dandelion] [--remote]
 //   fara apartament, proprietarul isi adauga singur apartamentul din panou
+//   node tools/creeaza-cont.mjs bistro@firma.ro bistro [--remote]   contul Attitude: doar comenzi si meniu
 import { webcrypto as crypto } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { writeFileSync, unlinkSync, mkdtempSync } from "node:fs";
@@ -11,8 +12,8 @@ import { join } from "node:path";
 const args = process.argv.slice(2);
 const remote = args.includes("--remote");
 const [email, role = "owner", slug] = args.filter((a) => a !== "--remote");
-if (!email || !["admin", "owner"].includes(role)) {
-  console.error("Folosire: node tools/creeaza-cont.mjs <email> <admin|owner> [slug] [--remote]");
+if (!email || !["admin", "owner", "bistro"].includes(role)) {
+  console.error("Folosire: node tools/creeaza-cont.mjs <email> <admin|owner|bistro> [slug] [--remote]");
   process.exit(1);
 }
 

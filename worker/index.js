@@ -5,7 +5,7 @@
 import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailVerifyCode, mailChat, mailReview, brevoKeepAlive } from "./mail.js";
 import restaurant from "../src/_data/restaurant.json";
 import { parseIcal, buildIcal } from "./ical.js";
-import { pushEnabled, validPushToken, pushTo, pushToStaff, guestBookingMessage, guestOrderMessage } from "./push.js";
+import { pushEnabled, validPushToken, pushTo, pushToStaff, pushToBistro, guestBookingMessage, guestOrderMessage } from "./push.js";
 
 const enc = new TextEncoder();
 const SESSION_DAYS = 30;
@@ -324,6 +324,8 @@ async function adminRoutes(req, env, ctx, parts) {
   if (parts[0] === "login" && req.method === "POST") return login(req, env);
   const a = await adminAuth(req, env);
   const [first, second, third] = parts;
+  // contul bistroului vede doar comenzile si meniul
+  if (a.role === "bistro" && !["logout", "me", "orders", "menu"].includes(first)) fail(403, "forbidden");
 
   if (first === "logout" && req.method === "POST") {
     await env.DB.prepare("DELETE FROM admin_sessions WHERE token_hash = ?").bind(a.tokenHash).run();
@@ -370,8 +372,12 @@ async function adminRoutes(req, env, ctx, parts) {
     return json({ ok: true, status: updated.status });
   }
 
+  if (first === "menu") {
+    if (a.role !== "admin" && a.role !== "bistro") fail(403, "forbidden");
+    return menuRoutes(req, env, parts);
+  }
   if (first === "orders") {
-    if (a.role !== "admin") fail(403, "forbidden");
+    if (a.role !== "admin" && a.role !== "bistro") fail(403, "forbidden");
     if (!second && req.method === "GET") {
       const { results } = await env.DB.prepare(
         "SELECT * FROM orders ORDER BY status = 'new' DESC, status = 'confirmed' DESC, created_at DESC LIMIT 200"
@@ -685,7 +691,6 @@ async function expirePending(env) {
 }
 
 // ---------- comenzi restaurant ----------
-const MENU = new Map(restaurant.categories.flatMap((c) => c.items).map((i) => [i.id, i]));
 function orderCode() {
   const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   return "CMD-" + [...crypto.getRandomValues(new Uint8Array(6))].map((b) => abc[b % abc.length]).join("");
@@ -718,11 +723,14 @@ async function createOrder(req, env, ctx) {
   if (phone.replace(/\D/g, "").length < 6 || phone.length > 30) fail(400, "invalid_phone");
   if (!Array.isArray(b.items) || !b.items.length || b.items.length > 40) fail(400, "invalid_items");
   const lang = b.lang === "en" ? "en" : "ro";
+  if (!bistroOpen(await bistroSettings(env))) fail(409, "bistro_closed");
+  const menu = new Map((await env.DB.prepare("SELECT id, name_ro, price, sold_out_on FROM menu_items WHERE active = 1").all()).results.map((i) => [i.id, i]));
   const items = b.items.map((line) => {
-    const item = MENU.get(String(line?.id));
+    const item = menu.get(String(line?.id));
     const qty = Number(line?.qty);
-    if (!item || !Number.isInteger(qty) || qty < 1 || qty > 20) fail(400, "invalid_items");
-    return { id: item.id, name: item.ro.name, price: item.price, qty };
+    if (!Number.isInteger(qty) || qty < 1 || qty > 20) fail(400, "invalid_items");
+    if (!item || item.sold_out_on === today()) fail(409, "item_unavailable");
+    return { id: item.id, name: item.name_ro, price: item.price, qty };
   });
   const account = await optionalGuest(req, env);
   const deal = await guestDeal(env, account, "bistro");
@@ -740,9 +748,155 @@ async function createOrder(req, env, ctx) {
   ).bind(code, apartment, name, phone, note, JSON.stringify(items), total, demo, lang, now, now, validPushToken(b.pushToken), account ? account.id : null, discount, discount && deal.offerId ? deal.offerId : null).run();
   ctx.waitUntil(Promise.allSettled([
     mailOrder(env, { code, apartment, guest_name: name, guest_phone: phone, note, items, total, discount, demo }),
-    pushToStaff(env, null, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
+    pushToBistro(env, { title: "Comandă nouă la bistro", body: `Ap. ${apartment}: ${total} lei${demo ? " (test)" : ""}`, url: "/admin/" }),
   ]));
   return json({ code, total, discount, demo: !!demo }, 201);
+}
+
+// ---------- meniul bistroului ----------
+const bistroSettings = (env) => env.DB.prepare("SELECT open_from, open_to FROM bistro_settings WHERE id = 1").first();
+function bistroOpen(s) {
+  if (!s?.open_from || !s?.open_to) return true;
+  const now = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Bucharest", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  return s.open_from <= s.open_to ? now >= s.open_from && now < s.open_to : now >= s.open_from || now < s.open_to;
+}
+const MENU_ITEM = `SELECT i.*, (SELECT updated_at FROM menu_photos f WHERE f.item_id = i.id) AS photo_at FROM menu_items i`;
+const menuPhoto = (i) => (i.photo_at ? `/api/menu/photos/${encodeURIComponent(i.id)}?v=${i.photo_at}` : null);
+async function publicMenu(env) {
+  const [cats, items, s] = await Promise.all([
+    env.DB.prepare("SELECT * FROM menu_categories ORDER BY position").all(),
+    env.DB.prepare(`${MENU_ITEM} WHERE i.active = 1 ORDER BY i.position`).all(),
+    bistroSettings(env),
+  ]);
+  const now = today();
+  return {
+    open: bistroOpen(s), from: s?.open_from || null, to: s?.open_to || null,
+    categories: cats.results.map((c) => ({
+      id: c.id, ro: c.name_ro, en: c.name_en,
+      items: items.results.filter((i) => i.category_id === c.id).map((i) => ({
+        id: i.id, price: i.price, soldOut: i.sold_out_on === now, photo: menuPhoto(i),
+        ro: { name: i.name_ro, desc: i.desc_ro, allergens: i.allergens_ro },
+        en: { name: i.name_en, desc: i.desc_en, allergens: i.allergens_en },
+      })),
+    })).filter((c) => c.items.length),
+  };
+}
+function cleanMenuItem(b) {
+  const text = (v, max) => String(v ?? "").trim().slice(0, max) || null;
+  const nameRo = text(b.nameRo, 120);
+  if (!nameRo || nameRo.length < 2) fail(400, "invalid_name");
+  const price = Number(b.price);
+  if (!Number.isInteger(price) || price < 1 || price > 100000) fail(400, "invalid_value");
+  return { nameRo, nameEn: text(b.nameEn, 120) || nameRo, descRo: text(b.descRo, 500), descEn: text(b.descEn, 500), allergensRo: text(b.allergensRo, 300), allergensEn: text(b.allergensEn, 300), price, active: b.active === false ? 0 : 1 };
+}
+async function moveInList(env, table, rows, id, dir) {
+  const at = rows.findIndex((x) => x.id === id);
+  const to = at + (dir === "up" ? -1 : 1);
+  if (at < 0 || to < 0 || to >= rows.length) return;
+  [rows[at], rows[to]] = [rows[to], rows[at]];
+  await env.DB.batch(rows.map((x, n) => env.DB.prepare(`UPDATE ${table} SET position = ? WHERE id = ?`).bind(n, x.id)));
+}
+async function menuRoutes(req, env, parts) {
+  const [, kind, id, action] = parts;
+  if (!kind && req.method === "GET") {
+    const [cats, items, s] = await Promise.all([
+      env.DB.prepare("SELECT * FROM menu_categories ORDER BY position").all(),
+      env.DB.prepare(`${MENU_ITEM} ORDER BY i.position`).all(),
+      bistroSettings(env),
+    ]);
+    const now = today();
+    return json({
+      settings: { from: s?.open_from || "", to: s?.open_to || "" }, open: bistroOpen(s), categories: cats.results,
+      items: items.results.map(({ photo_at, sold_out_on, ...i }) => ({ ...i, soldOut: sold_out_on === now, photo: menuPhoto({ id: i.id, photo_at }) })),
+    });
+  }
+  if (kind === "settings" && req.method === "PATCH") {
+    const b = await readJson(req);
+    const time = (v) => { const t = String(v || ""); if (t && !/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) fail(400, "invalid_value"); return t || null; };
+    const from = time(b.from), to = time(b.to);
+    if (!!from !== !!to || (from && from === to)) fail(400, "invalid_hours");
+    await env.DB.prepare("UPDATE bistro_settings SET open_from = ?, open_to = ? WHERE id = 1").bind(from, to).run();
+    return json({ ok: true });
+  }
+  if (kind === "categories") {
+    const list = async () => (await env.DB.prepare("SELECT id FROM menu_categories ORDER BY position").all()).results;
+    if (!id && req.method === "POST") {
+      const b = await readJson(req);
+      const ro = String(b.nameRo || "").trim().slice(0, 80);
+      if (ro.length < 2) fail(400, "invalid_name");
+      const newId = `c-${randomHex(5)}`;
+      await env.DB.prepare("INSERT INTO menu_categories (id, position, name_ro, name_en) VALUES (?, (SELECT COALESCE(MAX(position), -1) + 1 FROM menu_categories), ?, ?)")
+        .bind(newId, ro, String(b.nameEn || "").trim().slice(0, 80) || ro).run();
+      return json({ id: newId }, 201);
+    }
+    if (!(await env.DB.prepare("SELECT 1 FROM menu_categories WHERE id = ?").bind(id).first())) fail(404, "not_found");
+    if (action === "move" && req.method === "POST") {
+      await moveInList(env, "menu_categories", await list(), id, (await readJson(req)).dir);
+      return json({ ok: true });
+    }
+    if (req.method === "PATCH") {
+      const b = await readJson(req);
+      const ro = String(b.nameRo || "").trim().slice(0, 80);
+      if (ro.length < 2) fail(400, "invalid_name");
+      await env.DB.prepare("UPDATE menu_categories SET name_ro = ?, name_en = ? WHERE id = ?").bind(ro, String(b.nameEn || "").trim().slice(0, 80) || ro, id).run();
+      return json({ ok: true });
+    }
+    if (req.method === "DELETE") {
+      if (await env.DB.prepare("SELECT 1 FROM menu_items WHERE category_id = ? LIMIT 1").bind(id).first()) fail(409, "category_not_empty");
+      await env.DB.prepare("DELETE FROM menu_categories WHERE id = ?").bind(id).run();
+      return json({ ok: true });
+    }
+  }
+  if (kind === "items") {
+    const category = async (c) => { if (!(await env.DB.prepare("SELECT 1 FROM menu_categories WHERE id = ?").bind(String(c)).first())) fail(400, "invalid_value"); return String(c); };
+    if (!id && req.method === "POST") {
+      const b = await readJson(req);
+      const i = cleanMenuItem(b);
+      const cat = await category(b.categoryId);
+      const newId = `m-${randomHex(6)}`;
+      await env.DB.prepare(
+        `INSERT INTO menu_items (id, category_id, position, price, name_ro, name_en, desc_ro, desc_en, allergens_ro, allergens_en, active)
+         VALUES (?1, ?2, (SELECT COALESCE(MAX(position), -1) + 1 FROM menu_items WHERE category_id = ?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
+      ).bind(newId, cat, i.price, i.nameRo, i.nameEn, i.descRo, i.descEn, i.allergensRo, i.allergensEn, i.active).run();
+      return json({ id: newId }, 201);
+    }
+    const row = await env.DB.prepare("SELECT id, category_id FROM menu_items WHERE id = ?").bind(id).first();
+    if (!row) fail(404, "not_found");
+    if (action === "soldout" && req.method === "POST") {
+      await env.DB.prepare("UPDATE menu_items SET sold_out_on = ? WHERE id = ?").bind((await readJson(req)).on ? today() : null, id).run();
+      return json({ ok: true });
+    }
+    if (action === "move" && req.method === "POST") {
+      const rows = (await env.DB.prepare("SELECT id FROM menu_items WHERE category_id = ? ORDER BY position").bind(row.category_id).all()).results;
+      await moveInList(env, "menu_items", rows, id, (await readJson(req)).dir);
+      return json({ ok: true });
+    }
+    if (action === "photo" && req.method === "POST") {
+      const data = new Uint8Array(await req.arrayBuffer());
+      if (data.length > MAX_PHOTO_BYTES) fail(413, "photo_too_large");
+      if (data.length < 500 || data[0] !== 0xff || data[1] !== 0xd8 || data[2] !== 0xff) fail(400, "invalid_photo");
+      await env.DB.prepare("INSERT INTO menu_photos (item_id, data, updated_at) VALUES (?1, ?2, ?3) ON CONFLICT(item_id) DO UPDATE SET data = ?2, updated_at = ?3").bind(id, data, Date.now()).run();
+      return json({ ok: true });
+    }
+    if (action === "photo" && req.method === "DELETE") {
+      await env.DB.prepare("DELETE FROM menu_photos WHERE item_id = ?").bind(id).run();
+      return json({ ok: true });
+    }
+    if (!action && req.method === "PATCH") {
+      const b = await readJson(req);
+      const i = cleanMenuItem(b);
+      const cat = await category(b.categoryId);
+      await env.DB.prepare(
+        "UPDATE menu_items SET category_id = ?, price = ?, name_ro = ?, name_en = ?, desc_ro = ?, desc_en = ?, allergens_ro = ?, allergens_en = ?, active = ? WHERE id = ?"
+      ).bind(cat, i.price, i.nameRo, i.nameEn, i.descRo, i.descEn, i.allergensRo, i.allergensEn, i.active, id).run();
+      return json({ ok: true });
+    }
+    if (!action && req.method === "DELETE") {
+      await env.DB.batch([env.DB.prepare("DELETE FROM menu_photos WHERE item_id = ?").bind(id), env.DB.prepare("DELETE FROM menu_items WHERE id = ?").bind(id)]);
+      return json({ ok: true });
+    }
+  }
+  fail(404, "not_found");
 }
 
 // ---------- apartamente adaugate din panou ----------
@@ -1271,6 +1425,12 @@ async function api(req, env, ctx, url) {
   if (first === "admin") return adminRoutes(req, env, ctx, parts.slice(1));
   if (first === "guest") return guestRoutes(req, env, ctx, parts.slice(1));
 
+  if (first === "menu" && !second && req.method === "GET") return json(await publicMenu(env));
+  if (first === "menu" && second === "photos" && third && req.method === "GET") {
+    const row = await env.DB.prepare("SELECT data FROM menu_photos WHERE item_id = ?").bind(third).first();
+    if (!row) return new Response("Not found", { status: 404, headers: CORS });
+    return new Response(new Uint8Array(row.data), { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff", ...CORS } });
+  }
   if (first === "photos" && second && req.method === "GET") {
     const row = await env.DB.prepare("SELECT data FROM property_photos WHERE id = ?").bind(Number(second)).first();
     if (!row) return new Response("Not found", { status: 404, headers: CORS });

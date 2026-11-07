@@ -5,7 +5,7 @@ pagination:
   alias: lang
 permalink: "{{ '/restaurant/index.html' if lang == 'ro' else '/en/restaurant/index.html' }}"
 layout: base.njk
-scripts: ["/assets/js/menu-view.js", "/assets/js/restaurant.js"]
+scripts: ["/assets/js/menu-view.js", "/assets/js/restaurant.js", "/assets/js/menu-live.js"]
 eleventyComputed:
   title: "{{ restaurant[lang].eyebrow }} - {{ site.name }}"
   description: "{{ restaurant[lang].lead }}"

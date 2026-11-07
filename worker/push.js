@@ -99,6 +99,14 @@ export async function pushTo(env, tokens, msg) {
 }
 
 // Telefoanele proprietarilor unui apartament si ale administratorilor; fara slug, doar ale administratorilor.
+// comenzile de la bistro merg la administratori si la contul Attitude, nu la proprietari
+export async function pushToBistro(env, msg) {
+  const { results } = await env.DB.prepare(
+    "SELECT d.token FROM push_devices d JOIN admins a ON a.id = d.admin_id WHERE a.role IN ('admin', 'bistro')"
+  ).all();
+  return pushTo(env, results.map((r) => r.token), msg);
+}
+
 export async function pushToStaff(env, slug, msg) {
   const { results } = await env.DB.prepare(
     `SELECT d.token FROM push_devices d JOIN admins a ON a.id = d.admin_id

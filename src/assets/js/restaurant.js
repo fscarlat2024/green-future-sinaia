@@ -1,5 +1,5 @@
 // Cos si comanda la camera pe pagina restaurantului. Preturile sunt recalculate pe server.
-(function () {
+window.gfRestaurant = function () {
   const root = document.getElementById("menu");
   if (!root) return;
   const lang = root.dataset.lang === "en" ? "en" : "ro";
@@ -11,7 +11,7 @@
       remove: "Scoate", add: "Adaugă", bar: (n, t) => `Comanda ta · ${n} ${n === 1 ? "produs" : "produse"} · ${t} lei`,
       okTitle: "Comanda a fost trimisă", okDemo: "Este o comandă de test și nu se prepară.", okReal: "Restaurantul o confirmă în scurt timp și o aduce la apartament.",
       code: "Cod comandă", again: "Comandă nouă", note24: "Plata se trece pe nota camerei.",
-      choose: "Alege apartamentul", noList: "Lista nu s-a încărcat. Reîncarcă pagina.", invalid_apartment: "Alege apartamentul din listă.", invalid_name: "Scrie numele tău.", invalid_phone: "Numărul de telefon nu pare corect.",
+      choose: "Alege apartamentul", noList: "Lista nu s-a încărcat. Reîncarcă pagina.", item_unavailable: "Un produs nu mai este disponibil. Reîncarcă pagina și verifică comanda.", bistro_closed: "Bistroul nu primește comenzi acum.", invalid_apartment: "Alege apartamentul din listă.", invalid_name: "Scrie numele tău.", invalid_phone: "Numărul de telefon nu pare corect.",
       accept_required: "Bifează acordul pentru plata pe nota camerei.", too_many_requests: "Prea multe comenzi într-un timp scurt. Revino puțin mai târziu.",
       generic: "Comanda nu a putut fi trimisă. Te rugăm să încerci din nou.",
     },
@@ -22,7 +22,7 @@
       remove: "Remove", add: "Add", bar: (n, t) => `Your order · ${n} ${n === 1 ? "item" : "items"} · ${t} lei`,
       okTitle: "Your order has been sent", okDemo: "This is a test order and will not be prepared.", okReal: "The restaurant will confirm it shortly and bring it to your apartment.",
       code: "Order code", again: "New order", note24: "Payment is added to the room bill.",
-      choose: "Choose your apartment", noList: "The list did not load. Please reload the page.", invalid_apartment: "Please choose your apartment from the list.", invalid_name: "Please enter your name.", invalid_phone: "This phone number does not look right.",
+      choose: "Choose your apartment", noList: "The list did not load. Please reload the page.", item_unavailable: "An item is no longer available. Please reload the page and check your order.", bistro_closed: "The bistro is not taking orders right now.", invalid_apartment: "Please choose your apartment from the list.", invalid_name: "Please enter your name.", invalid_phone: "This phone number does not look right.",
       accept_required: "Please tick the room bill consent.", too_many_requests: "Too many orders in a short time. Please come back a little later.",
       generic: "Your order could not be sent. Please try again.",
     },
@@ -194,4 +194,4 @@
   root.querySelectorAll(".mi-add").forEach((b) => b.addEventListener("click", () => { if (step === "form") step = "items"; change(b.dataset.id, 1); }));
   root.querySelectorAll(".mi-sub").forEach((b) => b.addEventListener("click", () => { if (step === "form") step = "items"; change(b.dataset.id, -1); }));
   render();
-})();
+};

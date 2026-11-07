@@ -9,7 +9,7 @@
   const ERR = {
     bad_login: "Email sau parolă greșită.", too_many_requests: "Prea multe încercări. Reîncearcă în 15 minute.",
     calendar_conflict: "Perioada se suprapune cu o rezervare sau cu un calendar extern.", wrong_status: "Rezervarea și-a schimbat deja starea.",
-    invalid_name: "Scrie numele apartamentului.", need_photos: "Adaugă cel puțin 3 poze.", need_description: "Scrie descrierea apartamentului și salveaz-o.", too_many_photos: "Poți avea cel mult 20 de poze.", invalid_photo: "Fișierul nu e o poză validă.", photo_too_large: "Poza e prea mare.",
+    invalid_hours: "Completează ambele ore, diferite între ele, sau lasă-le goale pe amândouă.", category_not_empty: "Mută sau șterge întâi produsele din această categorie.", invalid_name: "Scrie numele.", need_photos: "Adaugă cel puțin 3 poze.", need_description: "Scrie descrierea apartamentului și salveaz-o.", too_many_photos: "Poți avea cel mult 20 de poze.", invalid_photo: "Fișierul nu e o poză validă.", photo_too_large: "Poza e prea mare.",
     invalid_phone: "Numărul de telefon nu pare corect.", invalid_dates: "Verifică datele: sfârșitul trebuie să fie după început, iar oferta valabilă cel puțin azi.", invalid_value: "Verifică valorile introduse.",
     price_required: "Pune un preț pe noapte înainte de a activa rezervările.", invalid_ical_url: "Linkul calendarului trebuie să înceapă cu https://.",
     forbidden: "Nu ai acces la acest apartament.", push_off: "Cheia pentru notificări nu e pusă pe server.",
@@ -215,8 +215,31 @@
 
   // ---------- comenzi restaurant ----------
   const ORDER_STATUS = { new: "Nouă", confirmed: "Confirmată", delivered: "Livrată", cancelled: "Anulată" };
-  async function renderOrders() {
+  let orderTimer = null, orderSig = "", orderIds = null, audio = null;
+  const stopOrders = () => { clearInterval(orderTimer); orderTimer = null; orderIds = null; };
+  // telefonul si browserul lasa sunetul sa porneasca doar dupa o atingere
+  document.addEventListener("pointerdown", () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch {} });
+  function beep() {
+    if (!audio || audio.state !== "running") return;
+    [0, .22].forEach((at) => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(.18, audio.currentTime + at);
+      g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + at + .18);
+      o.connect(g).connect(audio.destination);
+      o.start(audio.currentTime + at);
+      o.stop(audio.currentTime + at + .2);
+    });
+  }
+  async function renderOrders(poll) {
     const { orders } = await api("orders");
+    const sig = JSON.stringify(orders.map((o) => [o.id, o.status]));
+    const fresh = orders.filter((o) => o.status === "new").map((o) => o.id);
+    if (orderIds && fresh.some((id) => !orderIds.includes(id))) beep();
+    orderIds = fresh;
+    if (poll === true && sig === orderSig) return;
+    orderSig = sig;
+    if (!orderTimer) orderTimer = setInterval(() => renderOrders(true).catch(() => {}), 20000);
     const act = (o, action, label, cls) => h("button", { type: "button", class: `btn ${cls}`, on: { click: guarded(async () => {
       await api(`orders/${o.id}/${action}`, "POST");
       renderOrders();
@@ -224,6 +247,7 @@
     const open = orders.filter((o) => o.status === "new").length;
     fill(
       h("div", { class: "adm-head" }, h("h1", null, "Comenzi la cameră"), h("p", null, open ? `${open} comenzi noi.` : "Nicio comandă nouă.")),
+      h("p", { class: "pn-note" }, "Lista se actualizează singură. Lasă pagina deschisă și atinge ecranul o dată ca să se audă sunetul la comenzile noi."),
       orders.length ? h("div", { class: "adm-list" }, orders.map((o) => h("article", { class: "adm-card adm-booking" },
         h("div", { class: "adm-bk-top" }, h("b", null, `Ap. ${o.apartment} · ${o.guest_name}`), h("span", { class: `mg-status is-${{ new: "pending", confirmed: "confirmed", delivered: "confirmed", cancelled: "cancelled" }[o.status]}` }, ORDER_STATUS[o.status] || o.status)),
         h("p", null, o.items.map((i) => `${i.qty} × ${i.name}`).join(", ")),
@@ -233,6 +257,106 @@
           o.status === "new" ? act(o, "confirm", "Confirmă", "btn-primary") : null,
           o.status === "confirmed" ? act(o, "deliver", "Marchează livrată", "btn-primary") : null,
           o.status === "new" || o.status === "confirmed" ? act(o, "cancel", "Anulează", "btn-ghost") : null)))) : h("p", { class: "adm-card" }, "Nu există comenzi încă."));
+  }
+
+  // ---------- meniul bistroului ----------
+  async function renderMenu(openCat) {
+    const m = await api("menu");
+    const row = (...kids) => h("div", { class: "adm-row" }, kids);
+    const text = (label, name, value, attrs) => h("label", { class: "bk-field" }, h("span", null, label), h("input", { name, value: value ?? "", ...attrs }));
+    const area = (label, name, value) => { const t = h("textarea", { name, rows: 2, maxlength: 500 }); t.value = value ?? ""; return h("label", { class: "bk-field" }, h("span", null, label), t); };
+    const hours = h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+      ev.preventDefault();
+      const f = new FormData(ev.currentTarget);
+      await api("menu/settings", "PATCH", { from: f.get("from"), to: f.get("to") });
+      renderMenu(openCat);
+    }) } }, h("h2", null, "Program comenzi"),
+      h("p", null, m.settings.from ? (m.open ? "Acum se primesc comenzi." : "Acum nu se primesc comenzi.") : "Fără program: comenzile se primesc oricând."),
+      row(text("De la", "from", m.settings.from, { type: "time" }), text("Până la", "to", m.settings.to, { type: "time" })),
+      h("button", { class: "btn btn-primary", type: "submit" }, "Salvează programul"));
+    const editItem = (item, categoryId) => {
+      const isNew = !item;
+      const i = item || {};
+      const del = h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => {
+        if (!confirm("Ștergi produsul din meniu? Comenzile vechi rămân.")) return;
+        await api(`menu/items/${i.id}`, "DELETE");
+        renderMenu(i.category_id);
+      }) } }, "Șterge produsul");
+      const photoSay = h("p", { role: "status" });
+      const photo = isNew ? null : h("section", { class: "adm-card" }, h("h2", null, "Poză"),
+        i.photo ? h("img", { class: "mn-photo", src: i.photo, alt: "" }) : h("p", null, "Fără poză."),
+        h("input", { type: "file", accept: "image/*", "aria-label": "Alege o poză", on: { change: guarded(async (ev) => {
+          const file = ev.target.files[0];
+          if (!file) return;
+          photoSay.textContent = "Se încarcă...";
+          const blob = await shrink(file);
+          const r = await fetch(`/api/admin/menu/items/${i.id}/photo`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "image/jpeg" }, body: blob });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(ERR[data.error] || "Poza nu a putut fi încărcată.");
+          const fresh = (await api("menu")).items.find((x) => x.id === i.id);
+          editItem(fresh, fresh.category_id);
+        }) } }), photoSay,
+        i.photo ? h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => {
+          await api(`menu/items/${i.id}/photo`, "DELETE");
+          const fresh = (await api("menu")).items.find((x) => x.id === i.id);
+          editItem(fresh, fresh.category_id);
+        }) } }, "Scoate poza") : null);
+      fill(h("button", { type: "button", class: "bk-back", on: { click: guarded(() => renderMenu(categoryId)) } }, "‹ Înapoi la meniu"),
+        h("div", { class: "adm-head" }, h("h1", null, isNew ? "Produs nou" : i.name_ro)),
+        h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+          ev.preventDefault();
+          const f = new FormData(ev.currentTarget);
+          const body = Object.fromEntries(f.entries());
+          body.active = f.get("active") === "on";
+          body.price = Number(body.price);
+          if (isNew) await api("menu/items", "POST", body); else await api(`menu/items/${i.id}`, "PATCH", body);
+          renderMenu(body.categoryId);
+        }) } },
+          h("label", { class: "bk-field" }, h("span", null, "Categorie"), h("select", { name: "categoryId", required: true }, m.categories.map((c) => h("option", { value: c.id, selected: c.id === (i.category_id || categoryId) }, c.name_ro)))),
+          text("Nume în română", "nameRo", i.name_ro, { required: true, maxlength: 120 }),
+          text("Nume în engleză (opțional)", "nameEn", i.name_en === i.name_ro ? "" : i.name_en, { maxlength: 120 }),
+          text("Preț (lei)", "price", i.price, { type: "number", min: 1, max: 100000, step: 1, required: true, inputmode: "numeric" }),
+          area("Descriere în română", "descRo", i.desc_ro), area("Descriere în engleză", "descEn", i.desc_en),
+          area("Alergeni în română", "allergensRo", i.allergens_ro), area("Alergeni în engleză", "allergensEn", i.allergens_en),
+          h("p", { class: "pn-note" }, "Verifică alergenii cu bucătăria. Ce scrii aici văd oaspeții înainte să comande."),
+          h("label", { class: "bk-check" }, h("input", { type: "checkbox", name: "active", checked: isNew || !!i.active }), h("span", null, "Apare în meniu")),
+          h("button", { class: "btn btn-primary", type: "submit" }, isNew ? "Adaugă produsul" : "Salvează")),
+        photo, isNew ? null : del);
+      window.scrollTo(0, 0);
+    };
+    const item = (i, list, n) => h("article", { class: `adm-card mn-item${i.active ? "" : " is-off"}` },
+      h("div", { class: "adm-bk-top" }, h("b", null, i.name_ro), h("span", null, `${i.price} lei`)),
+      i.active ? null : h("p", { class: "pn-note" }, "Nu apare în meniu"),
+      h("div", { class: "adm-actions" },
+        h("button", { type: "button", class: `btn ${i.soldOut ? "btn-primary" : "btn-ghost"}`, on: { click: guarded(async () => { await api(`menu/items/${i.id}/soldout`, "POST", { on: !i.soldOut }); renderMenu(i.category_id); }) } }, i.soldOut ? "Epuizat azi: reactivează" : "Epuizat azi"),
+        h("button", { type: "button", class: "btn btn-ghost", on: { click: () => editItem(i, i.category_id) } }, "Editează"),
+        n > 0 ? h("button", { type: "button", class: "btn btn-ghost", "aria-label": `Mută mai sus ${i.name_ro}`, on: { click: guarded(async () => { await api(`menu/items/${i.id}/move`, "POST", { dir: "up" }); renderMenu(i.category_id); }) } }, "↑") : null,
+        n < list.length - 1 ? h("button", { type: "button", class: "btn btn-ghost", "aria-label": `Mută mai jos ${i.name_ro}`, on: { click: guarded(async () => { await api(`menu/items/${i.id}/move`, "POST", { dir: "down" }); renderMenu(i.category_id); }) } }, "↓") : null));
+    const cats = m.categories.map((c, n) => {
+      const items = m.items.filter((i) => i.category_id === c.id);
+      const rename = h("form", { class: "adm-inline", hidden: true, on: { submit: guarded(async (ev) => {
+        ev.preventDefault();
+        const f = new FormData(ev.currentTarget);
+        await api(`menu/categories/${c.id}`, "PATCH", { nameRo: f.get("nameRo"), nameEn: f.get("nameEn") });
+        renderMenu(c.id);
+      }) } }, text("Nume în română", "nameRo", c.name_ro, { required: true, maxlength: 80 }), text("Nume în engleză", "nameEn", c.name_en, { maxlength: 80 }), h("button", { class: "btn btn-primary", type: "submit" }, "Salvează categoria"));
+      return h("details", { class: "adm-card mn-cat", open: c.id === openCat ? true : null },
+        h("summary", null, h("b", null, c.name_ro), h("span", null, `${items.length} produse`)),
+        h("div", { class: "adm-actions" },
+          h("button", { type: "button", class: "btn btn-primary", on: { click: () => editItem(null, c.id) } }, "Adaugă produs"),
+          h("button", { type: "button", class: "btn btn-ghost", on: { click: () => { rename.hidden = !rename.hidden; } } }, "Redenumește"),
+          n > 0 ? h("button", { type: "button", class: "btn btn-ghost", "aria-label": `Mută mai sus ${c.name_ro}`, on: { click: guarded(async () => { await api(`menu/categories/${c.id}/move`, "POST", { dir: "up" }); renderMenu(c.id); }) } }, "↑") : null,
+          n < m.categories.length - 1 ? h("button", { type: "button", class: "btn btn-ghost", "aria-label": `Mută mai jos ${c.name_ro}`, on: { click: guarded(async () => { await api(`menu/categories/${c.id}/move`, "POST", { dir: "down" }); renderMenu(c.id); }) } }, "↓") : null,
+          items.length ? null : h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => { if (confirm("Ștergi categoria goală?")) { await api(`menu/categories/${c.id}`, "DELETE"); renderMenu(); } }) } }, "Șterge categoria")),
+        rename, items.map((i, k) => item(i, items, k)));
+    });
+    const add = h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+      ev.preventDefault();
+      const f = new FormData(ev.currentTarget);
+      const { id } = await api("menu/categories", "POST", { nameRo: f.get("nameRo"), nameEn: f.get("nameEn") });
+      renderMenu(id);
+    }) } }, h("h2", null, "Categorie nouă"), row(text("Nume în română", "nameRo", "", { required: true, maxlength: 80 }), text("Nume în engleză (opțional)", "nameEn", "", { maxlength: 80 })), h("button", { class: "btn btn-ghost", type: "submit" }, "Adaugă categoria"));
+    fill(h("div", { class: "adm-head" }, h("h1", null, "Meniu"), h("p", null, `${m.items.length} produse. Modificările apar imediat pe site și în aplicație.`)), hours, ...cats, add);
   }
 
   // ---------- mesaje ----------
@@ -493,8 +617,9 @@
       presentation, settings, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };
+  const TABS = { bookings: renderBookings, orders: renderOrders, menu: () => renderMenu(), settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };
   const ICON = {
+    menu: '<path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
     home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.500 10v10h13V10"/>',
     bookings: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
     chats: '<path d="M5 5h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1Z"/>',
@@ -507,9 +632,12 @@
     push: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4"/>',
     contacts: '<path d="M6 3h3l2 5-2.500 1.500a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2Z"/>',
   };
-  let isAdmin = false;
+  let isAdmin = false, isBistro = false;
   // pe telefon apar doar cele principale, restul sunt in Mai mult; pe calculator apar toate in stanga
-  const TAB_LIST = () => [
+  const TAB_LIST = () => isBistro ? [
+    { tab: "orders", label: "Comenzi", main: true },
+    { tab: "menu", label: "Meniu", main: true },
+  ] : [
     { tab: "home", label: "Acasă", main: true },
     { tab: "bookings", label: "Rezervări", main: true },
     { tab: "chats", label: "Mesaje", main: true },
@@ -517,6 +645,7 @@
     { tab: "reviews", label: "Recenzii", hint: "Ce spun oaspeții" },
     ...(isAdmin ? [
       { tab: "orders", label: "Comenzi", hint: "Bistro, la cameră" },
+      { tab: "menu", label: "Meniu bistro", hint: "Produse, prețuri, program" },
       { tab: "guests", label: "Oaspeți", hint: "Conturi și nivele" },
       { tab: "offers", label: "Oferte", hint: "Reduceri personalizate" },
       { tab: "push", label: "Notificări", hint: "Anunț în aplicație" },
@@ -536,6 +665,7 @@
   }
   function openTab(name) {
     stopChat();
+    stopOrders();
     const inMore = !TAB_LIST().find((t) => t.tab === name)?.main;
     nav.querySelectorAll(".adm-tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name || (inMore && b.dataset.tab === "more")));
     window.scrollTo(0, 0);
@@ -546,9 +676,10 @@
   const start = guarded(async () => {
     const me = await api("me");
     isAdmin = me.role === "admin";
+    isBistro = me.role === "bistro";
     buildNav();
     nav.hidden = false;
-    openTab(location.hash === "#mesaje" ? "chats" : "home");
+    openTab(isBistro ? "orders" : location.hash === "#mesaje" ? "chats" : "home");
   });
   window.addEventListener("hashchange", () => { if (token && location.hash === "#mesaje") openTab("chats"); });
   if (token) start(); else renderLogin();

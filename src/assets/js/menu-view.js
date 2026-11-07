@@ -1,6 +1,6 @@
 // Meniul ca o pagina incadrata: o singura categorie odata, cu trecere la categoria vecina.
 // Fara JS ramane lista completa.
-(function () {
+window.gfMenuView = function () {
   const root = document.getElementById("menu");
   const list = root && root.querySelector(".menu-list");
   if (!list) return;
@@ -99,4 +99,4 @@
 
   show(current, false);
   page.classList.add("is-enter");
-})();
+};

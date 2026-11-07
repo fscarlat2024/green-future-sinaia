@@ -955,3 +955,19 @@ html.gf-app:has(#chat) body { padding-bottom: 0; }
   html.gf-app body.adm:has(#adm-nav:not([hidden])) .pn-body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
+/* meniul administrat din panou */
+.menu-item.has-photo { position: relative; padding-left: 84px; min-height: 92px; }
+.mi-thumb { position: absolute; left: 0; top: .95rem; width: 72px; height: 72px; object-fit: cover; border-radius: 10px; }
+.menu-item.is-out { opacity: .6; }
+.mi-soldout { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.menu-closed { margin-bottom: 1rem; padding-block: .7rem; color: var(--ink-soft); text-align: center; }
+.menu-empty { padding: 2rem 0; color: var(--ink-soft); text-align: center; }
+.mn-cat { display: block; }
+.mn-cat > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 40px; cursor: pointer; list-style: none; }
+.mn-cat > summary::-webkit-details-marker { display: none; }
+.mn-cat > summary span { font-size: .85rem; color: var(--ink-soft); }
+.mn-cat[open] > summary { margin-bottom: .6rem; }
+.mn-cat > *:not(summary) { margin-top: .7rem; }
+.mn-item.is-off { opacity: .6; }
+.mn-item .btn { min-height: 38px; padding: .4rem .7rem; }
+.mn-photo { width: 140px; height: 140px; object-fit: cover; border-radius: 10px; }
