@@ -55,7 +55,7 @@ eleventyComputed:
       <p>{{ site[lang].about_p2 }}</p>
       <p class="about-note">{{ site[lang].about_note }}</p>
     </div>
-    <div class="collage" role="img" aria-label="{{ 'Piscina, bistroul și apartamentele din Green Future Sinaia' if lang == 'ro' else 'The pool, the bistro and the apartments at Green Future Sinaia' }}" data-collage='[{% for src in site.collage %}{% if loop.index > 3 %}"{{ src }}"{% if not loop.last %},{% endif %}{% endif %}{% endfor %}]'>
+    <div class="collage" role="img" aria-label="{{ 'Complexul Green Future Sinaia, văzut din aer, terasa, zona de spa și un apartament' if lang == 'ro' else 'The Green Future Sinaia complex from the air, a terrace, the spa area and an apartment' }}" data-collage='[{% for src in site.collage %}{% if loop.index > 3 %}"{{ src }}"{% if not loop.last %},{% endif %}{% endif %}{% endfor %}]'>
       {% for src in site.collage %}{% if loop.index <= 3 %}<div class="collage-tile"><img class="on" src="{{ src }}" alt="" loading="lazy"></div>{% endif %}{% endfor %}
     </div>
   </div>

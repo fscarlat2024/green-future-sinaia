@@ -8,7 +8,7 @@
   let step = 0, next = 0, timer = null, busy = false;
 
   function swap() {
-    if (busy || !queue.length) return;
+    if (busy || !queue.length || document.hidden) return;
     busy = true;
     const tile = tiles[order[step % order.length]];
     step++;
@@ -21,7 +21,8 @@
       next = (next + 1) % queue.length;
       const old = tile.querySelector("img");
       tile.append(img);
-      requestAnimationFrame(() => requestAnimationFrame(() => img.classList.add("on")));
+      void img.offsetWidth; // fara requestAnimationFrame: in fereastra inactiva s-ar opri, iar poza veche tot ar disparea
+      img.classList.add("on");
       setTimeout(() => { old.remove(); busy = false; }, 1300);
     };
     img.onerror = () => { next = (next + 1) % queue.length; busy = false; };
