@@ -6,10 +6,10 @@
   const dynamicSlugs = new Set();
   const T = lang === "en"
     ? { free: "Available", busy: "Unavailable", total: (t, n) => [`${t} lei`, `for ${n} ${n === 1 ? "night" : "nights"}`], from: (p) => [`from ${p} lei`, "per night"],
-        min: (n) => `Minimum ${n} nights`, cap: (n) => `Up to ${n} guests`, dates: "Check-out must be after check-in.", soon: "Soon", none: "No apartment is available for these dates. Try other dates.",
+        min: (n) => `Minimum ${n} nights`, cap: (n) => `Up to ${n} guests`, dates: "Check-out must be after check-in.", pick: "Please choose your check-in and check-out dates.", past: "Check-in cannot be in the past.", soon: "Soon", none: "No apartment is available for these dates. Try other dates.",
         noneFor: (g) => `We have no availability for ${g} guests on these dates. Try other dates or fewer guests.`, comboTitle: (g, n) => `For ${g} guests we recommend ${n} apartments`, comboGuests: (g) => `${g} ${g === 1 ? "guest" : "guests"}`, recommended: "Recommended", comboTotal: "Total", comboNote: "Each apartment is booked separately, with its own owner.", path: (s) => (dynamicSlugs.has(s) ? `/en/apartment/?p=${s}&` : `/en/apartments/${s}/?`), reviewsEmpty: "New", book: "See apartment", guestsN: (n) => `${n} guests`, available: "Available" }
     : { free: "Disponibil", busy: "Indisponibil", total: (t, n) => [`${t} lei`, `pentru ${n} ${n === 1 ? "noapte" : "nopți"}`], from: (p) => [`de la ${p} lei`, "pe noapte"],
-        min: (n) => `Minimum ${n} nopți`, cap: (n) => `Maximum ${n} persoane`, dates: "Plecarea trebuie să fie după sosire.", soon: "În curând", none: "Niciun apartament nu e liber în aceste date. Încearcă alte date.",
+        min: (n) => `Minimum ${n} nopți`, cap: (n) => `Maximum ${n} persoane`, dates: "Plecarea trebuie să fie după sosire.", pick: "Alege data sosirii și data plecării.", past: "Sosirea nu poate fi în trecut.", soon: "În curând", none: "Niciun apartament nu e liber în aceste date. Încearcă alte date.",
         noneFor: (g) => `Nu avem disponibilitate pentru ${g} persoane în aceste date. Încearcă alte date sau mai puține persoane.`, comboTitle: (g, n) => `Pentru ${g} persoane îți recomandăm ${n} apartamente`, comboGuests: (g) => `${g} ${g === 1 ? "persoană" : "persoane"}`, recommended: "Recomandat", comboTotal: "Total", comboNote: "Fiecare apartament se rezervă separat, la proprietarul lui.", path: (s) => (dynamicSlugs.has(s) ? `/apartament/?p=${s}&` : `/apartamente/${s}/?`), reviewsEmpty: "Nou", book: "Vezi apartamentul", guestsN: (n) => `${n} persoane`, available: "Disponibil" };
   const msg = document.getElementById("search-msg");
   const local = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -26,6 +26,21 @@
     el.replaceChildren(b, s);
   };
   const cards = new Map([...document.querySelectorAll(".apt[data-slug]")].map((el) => [el.dataset.slug, el]));
+  const basePrices = new Map();
+  // la date gresite nu raman afisate rezultatele cautarii de dinainte
+  const clearResults = () => {
+    document.body.classList.remove("has-search");
+    const box = document.getElementById("combo");
+    box.hidden = true;
+    box.replaceChildren();
+    for (const [slug, card] of cards) {
+      const pill = card.querySelector(".tagpill");
+      pill.textContent = T.free;
+      pill.classList.remove("is-busy");
+      if (basePrices.has(slug)) setPrice(card.querySelector(".price"), T.from(basePrices.get(slug)));
+      card.querySelectorAll("a.apt-link").forEach((a) => a.setAttribute("href", a.getAttribute("href").replace(/([?&])checkin=.*$/, "").replace(/[?&]$/, "")));
+    }
+  };
 
   // apartamentele adaugate din panou, in lista, inainte de "In curand"
   const addListing = (p) => {
@@ -58,6 +73,7 @@
     form.hidden = false;
     for (const p of data.properties) {
       const card = cards.get(p.slug);
+      basePrices.set(p.slug, p.basePrice);
       if (card) setPrice(card.querySelector(".price"), T.from(p.basePrice));
     }
   }).catch(() => {});
@@ -68,7 +84,8 @@
     const checkout = form.elements.checkout.value;
     const guests = form.elements.guests.value;
     msg.textContent = "";
-    if (!checkin || !checkout || checkin >= checkout) { msg.textContent = T.dates; return; }
+    const wrong = !checkin || !checkout ? T.pick : checkin < todayStr ? T.past : checkin >= checkout ? T.dates : "";
+    if (wrong) { clearResults(); msg.textContent = wrong; return; }
     const qs = new URLSearchParams({ checkin, checkout, guests });
     const r = await fetch(`/api/search?${qs}`).catch(() => null);
     const data = r && r.ok ? await r.json() : null;

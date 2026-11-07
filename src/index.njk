@@ -27,7 +27,7 @@ eleventyComputed:
       <a href="#apartamente" class="btn btn-ochre btn-lg">{{ t.hero_cta_apts }}</a>
       <a href="#experiente" class="btn btn-ghost btn-lg">{{ t.hero_cta_fac }}</a>
     </div>
-    <form class="search" id="search" data-lang="{{ lang }}" hidden>
+    <form class="search" id="search" data-lang="{{ lang }}" novalidate hidden>
       <label><span>{{ t.bk_checkin }}</span><input type="date" name="checkin" required></label>
       <label><span>{{ t.bk_checkout }}</span><input type="date" name="checkout" required></label>
       <label><span>{{ t.bk_guests }}</span><select name="guests">{% for n in [1,2,3,4,5,6,7,8] %}<option value="{{ n }}"{% if n == 2 %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
