@@ -992,8 +992,11 @@ async function offerTokens(env, audience) {
 // ---------- email confirmat si card de membru ----------
 async function sendVerifyCode(env, g) {
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
+  // emailurile pot ajunge cu intarziere sau pe rand, asa ca raman valabile si ultimele coduri trimise
+  const row = await env.DB.prepare("SELECT verify_code_hash, verify_expires FROM guests WHERE id = ?").bind(g.id).first();
+  const kept = row?.verify_code_hash && row.verify_expires > Date.now() ? row.verify_code_hash.split(",") : [];
   await env.DB.prepare("UPDATE guests SET verify_code_hash = ?, verify_expires = ?, verify_attempts = 0 WHERE id = ?")
-    .bind(await sha256(`${g.id}:${code}`), Date.now() + 30 * 60000, g.id).run();
+    .bind([await sha256(`${g.id}:${code}`), ...kept].slice(0, 3).join(","), Date.now() + 30 * 60000, g.id).run();
   return mailVerifyCode(env, g, code);
 }
 // Rezervarile facute cu acelasi email intra in cont doar dupa ce emailul e confirmat, altfel oricine le-ar vedea scriind adresa altcuiva.
@@ -1145,7 +1148,7 @@ async function guestRoutes(req, env, ctx, parts) {
     if (g.email_verified_at) return json({ ok: true });
     const code = String((await readJson(req)).code || "").replace(/\D/g, "");
     if (!g.verify_code_hash || g.verify_expires < Date.now() || g.verify_attempts >= 6) fail(400, "code_expired");
-    if ((await sha256(`${g.id}:${code}`)) !== g.verify_code_hash) {
+    if (!g.verify_code_hash.split(",").includes(await sha256(`${g.id}:${code}`))) {
       await env.DB.prepare("UPDATE guests SET verify_attempts = verify_attempts + 1 WHERE id = ?").bind(g.id).run();
       fail(400, "code_invalid");
     }
