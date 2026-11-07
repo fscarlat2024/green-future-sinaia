@@ -919,3 +919,17 @@ html.gf-app .cart-close { top: calc(1rem + env(safe-area-inset-top)); }
 .member-card .gf-mark { flex: none; width: 1.3rem; height: 1.3rem; margin: 0; }
 /* Sinaia, Perla Carpatilor ramane doar pe site */
 html.gf-app #sinaia, html.gf-app .nav-links a[href$='#sinaia'], html.gf-app a[href$='#sinaia'] { display: none; }
+/* butoane de aplicatie: doar in aplicatie, site-ul ramane neschimbat */
+html.gf-app .btn { min-height: 48px; padding: .7rem 1.1rem; border-radius: 12px; font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-transform: none; transition: transform .1s ease, opacity .1s ease; }
+html.gf-app .btn:hover { transform: none; }
+html.gf-app .btn:active { transform: scale(.97); opacity: .85; }
+html.gf-app form > .btn, html.gf-app .acc-card > .btn, html.gf-app .offer .btn, html.gf-app .adm-form > .btn, html.gf-app .adm-inline > .btn { width: 100%; justify-self: stretch; }
+html.gf-app .cta-row .btn { flex: 1 1 100%; }
+html.gf-app .search .btn { min-height: 42px; height: 42px; padding-block: 0; font-size: 1rem; }
+html.gf-app .search input, html.gf-app .search select, html.gf-app .bk-field input, html.gf-app .bk-field select, html.gf-app .bk-field textarea, html.gf-app .adm select { border-radius: 10px; }
+html.gf-app .acc-link, html.gf-app .cart-cancel { min-height: 44px; padding: .55rem .95rem; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); text-decoration: none; }
+html.gf-app .cart-cancel { justify-self: stretch; width: 100%; color: var(--ink-soft); font-size: 1rem; }
+html.gf-app .acc-link:active, html.gf-app .cart-cancel:active, html.gf-app .bk-back:active { opacity: .6; }
+html.gf-app .bk-back { min-height: 44px; }
+html.gf-app .cl-qty button { width: 36px; height: 36px; border-radius: 10px; }
+html.gf-app .mi-add, html.gf-app .mi-sub { width: 34px; height: 34px; }
