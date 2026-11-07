@@ -933,3 +933,25 @@ html.gf-app .acc-link:active, html.gf-app .cart-cancel:active, html.gf-app .bk-b
 html.gf-app .bk-back { min-height: 44px; }
 html.gf-app .cl-qty button { width: 36px; height: 36px; border-radius: 10px; }
 html.gf-app .mi-add, html.gf-app .mi-sub { width: 34px; height: 34px; }
+/* bara de jos din aplicatie: pagina curenta intr-o forma rotunjita, peste zona de gesturi a telefonului */
+html.gf-app .gf-tabs { height: calc(64px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); }
+html.gf-app .gf-tabs a { gap: 2px; font-size: .7rem; font-weight: 500; transition: color .15s ease; }
+html.gf-app .gf-tabs svg { box-sizing: content-box; width: 22px; height: 22px; padding: 4px 16px; border-radius: 999px; transition: background .15s ease; }
+html.gf-app .gf-tabs a.on { color: var(--accent); font-weight: 600; }
+html.gf-app .gf-tabs a.on svg { background: color-mix(in srgb, var(--accent) 22%, transparent); stroke-width: 1.8; }
+html.gf-app .gf-tabs a:active svg { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+html.gf-app body { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+html.gf-app .cart-bar:not([hidden]) { bottom: calc(64px + .8rem + env(safe-area-inset-bottom)); }
+html.gf-app .ap-sticky { bottom: calc(64px + env(safe-area-inset-bottom)); }
+html.gf-app body:has(.ap-sticky:not([hidden])) { padding-bottom: calc(142px + env(safe-area-inset-bottom)); }
+html.gf-app .cart-drawer { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+html.gf-app:has(#chat) body { padding-bottom: 0; }
+@media (max-width: 719px) {
+  html.gf-app .pn-nav { height: calc(64px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); }
+  html.gf-app .pn-nav .adm-tab { gap: 2px; font-size: .7rem; font-weight: 500; }
+  html.gf-app .pn-nav .adm-tab svg { box-sizing: content-box; width: 22px; height: 22px; padding: 4px 16px; border-radius: 999px; transition: background .15s ease; }
+  html.gf-app .pn-nav .adm-tab.on { font-weight: 600; }
+  html.gf-app .pn-nav .adm-tab.on svg { background: color-mix(in srgb, var(--accent) 22%, transparent); stroke-width: 1.8; }
+  html.gf-app body.adm:has(#adm-nav:not([hidden])) .pn-body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+}
+html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }

@@ -37,7 +37,7 @@
   for (const [icon, label, href] of tabs) {
     const a = document.createElement("a");
     a.href = href;
-    if ((!href.includes("#") && location.pathname === href) || (icon === "user" && location.pathname.startsWith("/admin"))) a.className = "on";
+    if ((!href.includes("#") && location.pathname === href) || (icon === "user" && location.pathname.startsWith("/admin")) || (icon === "apt" && /^\/(en\/)?apart/.test(location.pathname))) a.className = "on";
     a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[icon]}</svg>`;
     a.append(label);
     bar.append(a);
