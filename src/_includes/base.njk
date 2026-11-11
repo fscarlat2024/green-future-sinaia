@@ -89,7 +89,13 @@
           <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a><a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a><a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a><a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a><a href="{{ home }}#proprietari">{{ t.nav_owners }}</a>
         </nav>
       </div>
+      <nav class="foot-legal" style="display:flex;gap:1.1rem;flex-wrap:wrap;margin-top:1rem;font-size:.78rem">
+        <a href="{{ '/termeni/' if lang == 'ro' else '/en/terms/' }}">{{ "Termeni și condiții" if lang == "ro" else "Terms of Service" }}</a>
+        <a href="{{ '/confidentialitate/' if lang == 'ro' else '/en/privacy/' }}">{{ "Confidențialitate" if lang == "ro" else "Privacy Policy" }}</a>
+        <a href="{{ '/anulare/' if lang == 'ro' else '/en/cancellation/' }}">{{ "Anulare și rambursare" if lang == "ro" else "Cancellation & Refund" }}</a>
+      </nav>
       <p class="foot-credit">{{ "Foto:" if lang == "ro" else "Photo:" }} Castelul Peleș, <a href="{{ site.heroCredit.url }}" rel="noopener">{{ site.heroCredit.author }}, Wikimedia Commons</a>, {{ site.heroCredit.license }}</p>
+      <p class="foot-credit">{{ "Plățile cu cardul sunt procesate de" if lang == "ro" else "Card payments processed by" }} <strong>Grow LLC</strong>, 16192 Coastal Hwy, Lewes, Delaware 19958, {{ "SUA" if lang == "ro" else "USA" }}.</p>
     </div>
   </footer>
 

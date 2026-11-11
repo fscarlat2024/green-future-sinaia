@@ -7,7 +7,7 @@
   try { token = localStorage.getItem(KEY); } catch {}
 
   const ERR = {
-    bad_login: "Email sau parolă greșită.", too_many_requests: "Prea multe încercări. Reîncearcă în 15 minute.",
+    bad_login: "Email sau parolă greșită.", wrong_password: "Parola actuală nu e corectă.", weak_password: "Parola nouă trebuie să aibă cel puțin 8 caractere.", same_password: "Parola nouă trebuie să fie diferită de cea actuală.", too_many_requests: "Prea multe încercări. Reîncearcă în 15 minute.",
     calendar_conflict: "Perioada se suprapune cu o rezervare sau cu un calendar extern.", wrong_status: "Rezervarea și-a schimbat deja starea.",
     invalid_hours: "Completează ambele ore, diferite între ele, sau lasă-le goale pe amândouă.", category_not_empty: "Mută sau șterge întâi produsele din această categorie.", invalid_name: "Scrie numele.", need_photos: "Adaugă cel puțin 3 poze.", need_description: "Scrie descrierea apartamentului și salveaz-o.", too_many_photos: "Poți avea cel mult 20 de poze.", invalid_photo: "Fișierul nu e o poză validă.", photo_too_large: "Poza e prea mare.",
     invalid_phone: "Numărul de telefon nu pare corect.", invalid_dates: "Verifică datele: sfârșitul trebuie să fie după început, iar oferta valabilă cel puțin azi.", invalid_value: "Verifică valorile introduse.",
@@ -158,6 +158,41 @@
   }
 
   // ---------- rezervari ----------
+  // ---------- notarea oaspetilor ----------
+  const todayIso = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Bucharest" }).format(new Date());
+  // istoricul de la toate gazdele: doar medii, fara notele scrise
+  function historyLine(x) {
+    if (!x) return null;
+    if (!x.n) return h("p", { class: "adm-hist" }, "Oaspete fără note de la gazde.");
+    const low = Math.min(x.communication, x.cleanliness, x.rules) < 3 || x.again < x.n;
+    return h("p", { class: `adm-hist${low ? " is-low" : ""}` },
+      `${low ? "⚠ " : "★ "}Notat de ${x.hosts} ${x.hosts === 1 ? "gazdă" : "gazde"}: comunicare ${x.communication} · curățenie ${x.cleanliness} · reguli ${x.rules} · l-ar primi din nou: ${x.again} din ${x.n}`);
+  }
+  function rateForm(kind, row, done) {
+    const r = row.rating;
+    const sel = (name, label) => {
+      const s = h("select", { name, required: true }, h("option", { value: "" }, "Alege"), [5, 4, 3, 2, 1].map((n) => h("option", { value: n, selected: r && r[name] === n }, `${n} ${n === 5 ? "foarte bine" : n === 1 ? "foarte rău" : ""}`.trim())));
+      return h("label", { class: "bk-field" }, h("span", null, label), s);
+    };
+    const note = h("textarea", { name: "note", rows: 2, maxlength: 1000, placeholder: "Notă privată, o vezi doar tu" });
+    note.value = r?.note || "";
+    const say = h("p", { role: "status" });
+    const form = h("form", { class: "adm-form adm-rate", on: { submit: guarded(async (ev) => {
+      ev.preventDefault();
+      const f = new FormData(ev.currentTarget);
+      await api("ratings", "POST", { [kind]: row.id, communication: Number(f.get("communication")), cleanliness: Number(f.get("cleanliness")), rules: Number(f.get("rules")), again: f.get("again") === "on", note: f.get("note") });
+      done();
+    }) } },
+      h("div", { class: "adm-row" }, sel("communication", "Comunicare"), sel("cleanliness", "Curățenie lăsată"), sel("rules", "Respectarea regulilor")),
+      h("label", { class: "bk-check" }, h("input", { type: "checkbox", name: "again", checked: r ? !!r.again : true }), h("span", null, "L-aș primi din nou")),
+      h("label", { class: "bk-field" }, h("span", null, "Notă (opțional, privată)"), note),
+      h("p", null, h("small", null, "Celelalte gazde văd doar mediile, nu și nota scrisă.")),
+      h("button", { class: "btn btn-primary", type: "submit" }, r ? "Actualizează nota" : "Salvează nota"), say);
+    return h("details", { class: "adm-rate-box" },
+      h("summary", null, r ? `Nota ta: comunicare ${r.communication} · curățenie ${r.cleanliness} · reguli ${r.rules}${r.again ? "" : " · nu l-ai primi din nou"}` : "Notează oaspetele"),
+      form);
+  }
+
   async function renderBookings() {
     const { bookings } = await api("bookings");
     const act = (b, action, label, cls, ask) => h("button", { type: "button", class: `btn ${cls}`, on: { click: guarded(async () => {
@@ -173,6 +208,8 @@
         h("p", null, `${b.property_name} · ${date(b.checkin)} – ${date(b.checkout)} · ${b.adults + b.children} oaspeți · ${b.total} lei${b.discount ? ` (reducere club ${b.discount} lei)` : ""}`),
         h("p", null, h("a", { href: `tel:${b.guest_phone.replace(/[^+\d]/g, "")}` }, b.guest_phone), " · ", h("a", { href: `mailto:${b.guest_email}` }, b.guest_email), ` · ${b.code}`),
         b.note ? h("p", { class: "adm-note" }, b.note) : null,
+        historyLine(b.history),
+        b.status === "confirmed" && b.checkin <= todayIso() ? rateForm("bookingId", b, renderBookings) : null,
         h("div", { class: "adm-actions" },
           b.status === "pending" ? act(b, "confirm", "Confirmă", "btn-primary") : null,
           b.status === "pending" ? act(b, "decline", "Refuză", "btn-ghost", "Refuzi această rezervare? Oaspetele primește un email.") : null,
@@ -475,10 +512,17 @@
     (() => { const t = h("textarea", { name: "story", rows: 4, maxlength: 1200, placeholder: "De ce ai amenajat locul așa? Ce simte cineva când intră aici?" }); t.value = p?.story || ""; return h("label", { class: "bk-field" }, h("span", null, "Povestea apartamentului (apare într-un chenar auriu)"), t); })(),
     (() => { const t = h("textarea", { name: "description", rows: 6, maxlength: 4000 }); t.value = p?.description || ""; return h("label", { class: "bk-field" }, h("span", null, "Descriere"), t); })(),
     (() => { const t = h("textarea", { name: "amenities", rows: 6, maxlength: 2000, placeholder: "Wi-Fi\nBucătărie utilată\nBalcon" }); t.value = (p?.amenities || []).join("\n"); return h("label", { class: "bk-field" }, h("span", null, "Facilități, câte una pe rând"), t); })(),
+    // nota de pe Booking: doar administratorul o completeaza
+    p && isAdmin ? h("div", { class: "adm-row" },
+      h("label", { class: "bk-field" }, h("span", null, "Nota pe Booking (ex. 9,4)"), h("input", { name: "bookingScore", inputmode: "decimal", value: p.bookingScore ?? "" })),
+      h("label", { class: "bk-field" }, h("span", null, "Număr evaluări pe Booking"), h("input", { name: "bookingCount", type: "number", min: 0, value: p.bookingCount ?? "" })),
+      h("label", { class: "bk-field" }, h("span", null, "Link Booking"), h("input", { name: "bookingUrl", type: "url", placeholder: "https://www.booking.com/hotel/ro/...", value: p.bookingUrl || "" }))) : null,
   ];
   const listingBody = (form) => {
     const f = new FormData(form);
-    return { name: f.get("name"), capacity: Number(f.get("capacity")), roomType: f.get("roomType"), tagline: f.get("tagline"), description: f.get("description"), story: f.get("story"), amenities: String(f.get("amenities")).split("\n") };
+    const body = { name: f.get("name"), capacity: Number(f.get("capacity")), roomType: f.get("roomType"), tagline: f.get("tagline"), description: f.get("description"), story: f.get("story"), amenities: String(f.get("amenities")).split("\n") };
+    if (f.has("bookingScore")) Object.assign(body, { bookingScore: f.get("bookingScore"), bookingCount: f.get("bookingCount"), bookingUrl: f.get("bookingUrl") });
+    return body;
   };
   function renderNewListing() {
     fill(h("div", { class: "adm-head" }, h("h1", null, "Apartament nou")),
@@ -507,16 +551,25 @@
     const input = h("input", { type: "file", accept: "image/*", multiple: true, "aria-label": "Alege poze", on: { change: guarded(async (ev) => {
       const files = [...ev.target.files];
       let done = 0;
-      for (const file of files) {
-        say.textContent = `Se încarcă ${done + 1} din ${files.length}...`;
+      const bad = [];
+      let stop = null;
+      for (const [i, file] of files.entries()) {
+        say.textContent = `Se încarcă ${i + 1} din ${files.length}...`;
+        // o poza care nu se poate citi e sarita; restul se incarca mai departe
         const blob = await shrink(file).catch(() => null);
-        if (!blob) throw new Error(`Nu pot citi poza ${file.name}.`);
-        const r = await fetch(`/api/admin/properties/${slug}/photos`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "image/jpeg" }, body: blob });
-        const data = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(ERR[data.error] || "Poza nu a putut fi încărcată.");
-        done++;
+        if (!blob) { bad.push(file.name); continue; }
+        try {
+          const r = await fetch(`/api/admin/properties/${slug}/photos`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "image/jpeg" }, body: blob });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) { stop = ERR[data.error] || "Poza nu a putut fi încărcată."; break; }
+          done++;
+        } catch { stop = "Poza nu a putut fi încărcată. Verifică internetul și încearcă din nou."; break; }
       }
-      await reload();
+      say.textContent = "";
+      ev.target.value = "";
+      if (done) await reload();
+      const msg = [bad.length ? `Nu pot citi ${bad.length === 1 ? "poza" : "pozele"} ${bad.join(", ")}. Încearcă poze JPG sau PNG.` : "", stop || ""].filter(Boolean).join("\n");
+      if (msg) throw new Error(msg);
     }) } });
     const grid = h("div", { class: "pn-photos" }, photos.map((ph, i) => h("figure", null, h("img", { src: ph.url, alt: "", loading: "lazy" }),
       h("figcaption", null,
@@ -611,13 +664,97 @@
       : null;
     const addBtn = h("button", { type: "button", class: "btn btn-ghost", on: { click: renderNewListing } }, "Adaugă apartament");
     const presentation = p.dynamic ? await listingEditor(p, slug, reload) : null;
+    // check-in online: regulamentul apartamentului + linkul pentru oaspetii de pe Booking / Airbnb
+    const rulesSay = h("p", { role: "status" });
+    const rulesText = h("textarea", { name: "text", rows: 8, maxlength: 8000, placeholder: "Ex.: Fumatul interzis în apartament. Liniște după ora 22. Animalele de companie doar cu acordul gazdei." });
+    rulesText.value = p.houseRules || "";
+    const checkin = h("section", { class: "adm-card" }, h("h2", null, "Check-in online"),
+      h("p", null, "Oaspetele trimite poza buletinului și bifează regulamentul. Rezervările de pe site primesc linkul automat. Pentru oaspeții de pe Booking sau Airbnb, trimite-le acest link pe WhatsApp:"),
+      p.checkinUrl ? h("input", { class: "adm-copy", readonly: true, value: p.checkinUrl, "aria-label": "Link check-in", on: { focus: (e) => e.target.select() } }) : null,
+      p.checkinUrl ? h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async (e) => { await navigator.clipboard.writeText(p.checkinUrl); e.target.textContent = "Copiat"; }) } }, "Copiază linkul") : null,
+      h("form", { class: "adm-form", on: { submit: guarded(async (ev) => {
+        ev.preventDefault();
+        await api(`properties/${slug}/rules`, "PUT", { text: rulesText.value });
+        rulesSay.textContent = "Regulamentul apartamentului a fost salvat.";
+      }) } },
+        h("label", { class: "bk-field" }, h("span", null, "Regulamentul apartamentului (opțional; dacă îl scrii, oaspetele trebuie să-l bifeze)"), rulesText),
+        h("button", { class: "btn btn-primary", type: "submit" }, "Salvează regulamentul"), rulesSay));
+
     const STATUS_LABEL = { draft: "Ciornă, nu apare pe site", pending: "Așteaptă aprobarea", published: "Publicat" };
     fill(h("div", { class: "adm-head" }, h("h1", null, p.name), picker, addBtn),
       p.dynamic ? h("p", null, h("span", { class: `mg-status ${p.status === "published" ? "is-confirmed" : "is-pending"}` }, STATUS_LABEL[p.status])) : null,
-      presentation, settings, rates, blocks, cal);
+      presentation, settings, checkin, rates, blocks, cal);
   }
 
-  const TABS = { bookings: renderBookings, orders: renderOrders, menu: () => renderMenu(), settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };
+  // ---------- check-in-uri: buletin + regulament ----------
+  async function renderCheckins() {
+    const d = await api("checkins");
+    const viewer = async (c, box) => {
+      const r = await fetch(`/api/admin/checkins/${c.id}/photo`, { headers: { authorization: `Bearer ${token}` } });
+      if (r.status === 401) { logout(); return; }
+      if (!r.ok) throw new Error("Poza nu a putut fi încărcată.");
+      // data: e permis de CSP, blob: nu
+      const url = await new Promise(async (res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(await r.blob()); });
+      box.replaceChildren(h("img", { class: "ci-photo", src: url, alt: `Act de identitate ${c.guest_name}` }),
+        h("a", { class: "btn btn-ghost", href: url, download: `buletin-${c.guest_name.replace(/[^\w-]+/g, "-")}.jpg` }, "Descarcă poza"));
+    };
+    const rows = d.checkins.map((c) => {
+      const box = h("div");
+      return h("div", { class: "adm-card adm-bk" },
+        h("div", { class: "adm-bk-top" }, h("b", null, c.guest_name), h("span", null, c.property_name)),
+        h("p", null, `${date(c.checkin)} – ${date(c.checkout)}${c.booking_code ? ` · rezervare ${c.booking_code}` : " · Booking / Airbnb / altă sursă"}${c.guest_phone ? ` · ${c.guest_phone}` : ""}`),
+        h("p", null, [c.condo_rules_ok ? "✓ regulament condominiu" : null, c.house_rules_ok ? "✓ regulament apartament" : null].filter(Boolean).join(" · ") || "Nu exista niciun regulament de bifat la momentul trimiterii."),
+        h("small", null, `Trimis ${new Date(c.created_at).toLocaleString("ro-RO")}. Poza se șterge automat pe ${date(c.delete_after)}.`),
+        historyLine(c.history),
+        // oaspetii veniti pe Booking/Airbnb se noteaza aici; cei de pe site, la Rezervari
+        !c.booking_code && c.checkin <= todayIso() ? rateForm("checkinId", c, renderCheckins) : null,
+        h("div", { class: "adm-actions" },
+          h("button", { type: "button", class: "btn btn-primary", on: { click: guarded(() => viewer(c, box)) } }, c.seen_at ? "Vezi buletinul" : "Vezi buletinul (nou)"),
+          h("button", { type: "button", class: "btn btn-ghost", on: { click: guarded(async () => { if (confirm(`Ștergi check-in-ul lui ${c.guest_name}, cu tot cu poza buletinului?`)) { await api(`checkins/${c.id}`, "DELETE"); renderCheckins(); } }) } }, "Șterge")),
+        box);
+    });
+    let condo = null;
+    if (isAdmin) {
+      const say = h("p", { role: "status" });
+      const t = h("textarea", { name: "text", rows: 10, maxlength: 8000, placeholder: "Scrie aici regulamentul simplificat al condominiului. Cât e gol, oaspeții nu au ce bifa." });
+      t.value = d.condoRules || "";
+      condo = h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+        ev.preventDefault();
+        await api("checkins/condo-rules", "PUT", { text: t.value });
+        say.textContent = "Regulamentul condominiului a fost salvat. Apare la toate check-in-urile noi.";
+      }) } }, h("h2", null, "Regulamentul condominiului"),
+        h("p", null, "Îl văd toți oaspeții la check-in și trebuie să-l bifeze. Regulamentul fiecărui apartament îl scrie proprietarul, la Apartamente."),
+        h("label", { class: "bk-field" }, h("span", null, "Text"), t), h("button", { class: "btn btn-primary", type: "submit" }, "Salvează"), say);
+    }
+    fill(h("div", { class: "adm-head" }, h("h1", null, "Check-in")),
+      h("p", null, "Buletinele trimise de oaspeți. Le vezi doar tu, pentru apartamentele tale, și se șterg automat la 30 de zile după plecare."),
+      ...(rows.length ? rows : [h("p", { class: "adm-card" }, "Niciun check-in încă.")]),
+      condo);
+  }
+
+  // ---------- parola mea ----------
+  function renderPassword() {
+    const say = h("p", { role: "status" });
+    const field = (label, name, auto) => h("label", { class: "bk-field" }, h("span", null, label),
+      h("input", { name, type: "password", required: true, minlength: name === "current" ? 1 : 8, maxlength: 200, autocomplete: auto }));
+    fill(h("div", { class: "adm-head" }, h("h1", null, "Parola mea")),
+      h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+        ev.preventDefault();
+        const f = ev.currentTarget;
+        say.textContent = "";
+        if (f.password.value !== f.again.value) throw new Error("Parola nouă nu e la fel în cele două câmpuri.");
+        await api("password", "POST", { current: f.current.value, password: f.password.value });
+        f.reset();
+        say.textContent = "Parola a fost schimbată. Pe celelalte telefoane și calculatoare trebuie să intri din nou cu parola nouă.";
+      }) } },
+        h("p", null, "Parola nouă trebuie să aibă cel puțin 8 caractere."),
+        field("Parola actuală", "current", "current-password"),
+        field("Parola nouă", "password", "new-password"),
+        field("Repetă parola nouă", "again", "new-password"),
+        h("button", { class: "btn btn-primary", type: "submit" }, "Schimbă parola"), say));
+  }
+
+  const TABS = { checkin: renderCheckins, password: renderPassword, bookings: renderBookings, orders: renderOrders, menu: () => renderMenu(), settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };
   const ICON = {
     menu: '<path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
     home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.500 10v10h13V10"/>',
@@ -630,6 +767,8 @@
     offers: '<path d="M4 4h7l9 9-7 7-9-9V4Z"/><circle cx="8" cy="8" r="1.300"/>',
     reviews: '<path d="m12 3 2.700 5.700 6.300.8-4.600 4.300 1.200 6.200-5.600-3.100-5.600 3.100 1.200-6.200L3 9.500l6.300-.8L12 3Z"/>',
     push: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4"/>',
+    checkin: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.300"/><path d="M5.800 16.500c.6-1.700 1.800-2.500 3.200-2.500s2.600.8 3.200 2.500M14.500 10h4M14.500 13.500h3"/>',
+    password: '<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
     contacts: '<path d="M6 3h3l2 5-2.500 1.500a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2Z"/>',
   };
   let isAdmin = false, isBistro = false;
@@ -637,12 +776,15 @@
   const TAB_LIST = () => isBistro ? [
     { tab: "orders", label: "Comenzi", main: true },
     { tab: "menu", label: "Meniu", main: true },
+    { tab: "password", label: "Parola mea", hint: "Schimbă parola" },
+    { tab: "more", label: "Mai mult", main: true, phoneOnly: true },
   ] : [
     { tab: "home", label: "Acasă", main: true },
     { tab: "bookings", label: "Rezervări", main: true },
     { tab: "chats", label: "Mesaje", main: true },
     { tab: "settings", label: "Apartamente", hint: "Prețuri, calendar, reguli" },
     { tab: "reviews", label: "Recenzii", hint: "Ce spun oaspeții" },
+    { tab: "checkin", label: "Check-in", hint: "Buletine și regulament" },
     ...(isAdmin ? [
       { tab: "orders", label: "Comenzi", hint: "Bistro, la cameră" },
       { tab: "menu", label: "Meniu bistro", hint: "Produse, prețuri, program" },
@@ -651,6 +793,7 @@
       { tab: "push", label: "Notificări", hint: "Anunț în aplicație" },
       { tab: "contacts", label: "Echipa", hint: "Numere de telefon" },
     ] : []),
+    { tab: "password", label: "Parola mea", hint: "Schimbă parola" },
     { tab: "more", label: "Mai mult", main: true, phoneOnly: true },
   ];
   function buildNav() {
@@ -679,8 +822,8 @@
     isBistro = me.role === "bistro";
     buildNav();
     nav.hidden = false;
-    openTab(isBistro ? "orders" : location.hash === "#mesaje" ? "chats" : "home");
+    openTab(isBistro ? "orders" : location.hash === "#mesaje" ? "chats" : location.hash === "#checkin" ? "checkin" : "home");
   });
-  window.addEventListener("hashchange", () => { if (token && location.hash === "#mesaje") openTab("chats"); });
+  window.addEventListener("hashchange", () => { if (token && location.hash === "#mesaje") openTab("chats"); if (token && location.hash === "#checkin") openTab("checkin"); });
   if (token) start(); else renderLogin();
 })();

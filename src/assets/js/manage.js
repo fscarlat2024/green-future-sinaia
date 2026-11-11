@@ -57,6 +57,20 @@
     badge.className = `mg-status is-${b.status}`;
     badge.textContent = T.status[b.status] || b.status;
     root.replaceChildren(badge, list);
+    // check-in online: poza buletinului + regulamentul
+    if (b.status === "pending" || b.status === "confirmed") {
+      const en = root.dataset.lang === "en";
+      const box = document.createElement("div");
+      box.className = "mg-checkin";
+      const p = document.createElement("p");
+      p.textContent = en ? "Save time on arrival: send a photo of your ID and confirm the house rules." : "Câștigi timp la sosire: trimite poza buletinului și confirmă regulamentul.";
+      const a = document.createElement("a");
+      a.className = "btn btn-primary";
+      a.href = `${en ? "/en/checkin/" : "/checkin/"}?b=${encodeURIComponent(code)}&t=${encodeURIComponent(token)}`;
+      a.textContent = en ? "Online check-in" : "Check-in online";
+      box.append(p, a);
+      root.append(box);
+    }
     if (b.orders?.length) root.append(ordersBox(b.orders));
     if (b.canCancel) {
       const btn = document.createElement("button");

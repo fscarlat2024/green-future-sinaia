@@ -14,9 +14,15 @@
       next: "Continuă", bookNow: "Rezervă acum", request: "Trimite cererea de rezervare", back: "Înapoi",
       name: "Nume și prenume", email: "Email", phone: "Telefon", note: "Mesaj pentru gazdă (opțional)",
       payNote: "Nu plătești nimic acum. Plata se face la proprietate.",
+      payNoteChoice: "Alegi la pasul următor: plătești acum cu cardul sau la proprietate.",
       instantNote: "Rezervarea se confirmă pe loc.",
       requestNote: "Proprietarul confirmă în cel mult 24 de ore. Perioada e reținută până atunci.",
       cancelNote: (n) => (n > 0 ? `Anulare gratuită cu cel puțin ${n} zile înainte de sosire.` : "Anulare gratuită până în ziua sosirii."),
+      payMethod: "Cum plătești?",
+      payNow: "Plătesc acum cu cardul",
+      payNowNote: "Plată online securizată prin Stripe. Rezervarea se confirmă după plată.",
+      payLater: "Plătesc la cazare",
+      payLaterNote: "Plata se face la check-in, cash sau card. Proprietarul confirmă rezervarea.",
       accept: "Sunt de acord ca datele mele să fie folosite pentru această rezervare și transmise proprietarului.",
       sending: "Se trimite...",
       okRequest: "Cererea ta a fost trimisă", okInstant: "Rezervarea ta este confirmată",
@@ -40,9 +46,15 @@
       next: "Continue", bookNow: "Book now", request: "Send booking request", back: "Back",
       name: "Full name", email: "Email", phone: "Phone", note: "Message for the host (optional)",
       payNote: "You pay nothing now. Payment is made at the property.",
+      payNoteChoice: "You choose at the next step: pay now by card or at the property.",
       instantNote: "Your booking is confirmed immediately.",
       requestNote: "The owner confirms within 24 hours. The dates are held until then.",
       cancelNote: (n) => (n > 0 ? `Free cancellation up to ${n} days before check-in.` : "Free cancellation until the day of check-in."),
+      payMethod: "How would you like to pay?",
+      payNow: "Pay now by card",
+      payNowNote: "Secure online payment via Stripe. The booking is confirmed after payment.",
+      payLater: "Pay at the property",
+      payLaterNote: "Payment on check-in, cash or card. The owner confirms the booking.",
       accept: "I agree that my details are used for this booking and shared with the owner.",
       sending: "Sending...",
       okRequest: "Your request has been sent", okInstant: "Your booking is confirmed",
@@ -209,7 +221,7 @@
   function notes() {
     const p = state.property;
     return h("ul", { class: "bk-notes" },
-      h("li", null, T.payNote),
+      h("li", null, p.stripeEnabled ? T.payNoteChoice : T.payNote),
       h("li", null, p.instantBook ? T.instantNote : T.requestNote),
       h("li", null, T.cancelNote(p.freeCancelDays)));
   }
@@ -245,6 +257,16 @@
       field(T.phone, "phone", { type: "tel", autocomplete: "tel", maxlength: "30", value: member?.phone }),
       h("label", { class: "bk-field" }, h("span", null, T.note), h("textarea", { name: "note", rows: "3", maxlength: "1000" })),
       h("input", { class: "bk-trap", name: "website", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" }),
+      p.stripeEnabled ? h("fieldset", { class: "bk-pay" },
+        h("legend", null, T.payMethod),
+        h("label", { class: "bk-pay-opt" },
+          h("input", { type: "radio", name: "payMethod", value: "later", checked: true }),
+          h("span", { class: "bk-pay-ttl" }, T.payLater),
+          h("small", null, T.payLaterNote)),
+        h("label", { class: "bk-pay-opt" },
+          h("input", { type: "radio", name: "payMethod", value: "now" }),
+          h("span", { class: "bk-pay-ttl" }, T.payNow, " 💳"),
+          h("small", null, T.payNowNote))) : null,
       h("label", { class: "bk-check" }, h("input", { type: "checkbox", name: "accept", required: true }), h("span", null, T.accept)),
       errorBox(),
       h("button", { type: "submit", class: "btn btn-primary btn-lg bk-go" }, p.instantBook ? T.bookNow : T.request),
@@ -263,7 +285,7 @@
       method: "POST", headers: { "content-type": "application/json", ...authHeader() },
       body: JSON.stringify({
         slug: root.dataset.slug, checkin: state.checkin, checkout: state.checkout, adults: state.adults, children: state.children, lang,
-        name: f.get("name"), email: f.get("email"), phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token,
+        name: f.get("name"), email: f.get("email"), phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token, payNow: f.get("payMethod") === "now",
       }),
     }).catch(() => null);
     const data = r ? await r.json().catch(() => ({})) : {};
@@ -277,7 +299,7 @@
     again.elements.accept.checked = keep.accept === "on";
   }
 
-  function success(b) {
+  async function success(b) {
     if (window.GF_NATIVE) {
       // notificarile nu poarta cheia rezervarii; pagina o ia de aici, de pe telefonul care a rezervat
       try {
@@ -285,6 +307,48 @@
         saved[b.code] = b.token;
         localStorage.setItem("gf_bookings", JSON.stringify(saved));
       } catch {}
+    }
+    // daca apartamentul cere plata online cu cardul, cream sesiunea Stripe si redirectam
+    if (b.requiresPayment) {
+      calEl.hidden = true;
+      root.classList.add("is-done");
+      const payingTxt = lang === "en" ? "Redirecting to secure payment…" : "Te redirecționez către pagina de plată securizată…";
+      sideEl.replaceChildren(
+        h("div", { class: "bk-done" }, h("div", { class: "bk-tick", "aria-hidden": "true" }, "💳"),
+          h("h3", null, payingTxt),
+          h("div", { class: "bk-code" }, h("small", null, T.code), h("b", null, b.code))));
+      sideEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      try {
+        const payR = await fetch(`/api/bookings/${encodeURIComponent(b.code)}/pay?token=${encodeURIComponent(b.token)}`, {
+          method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ lang }),
+        });
+        const payData = await payR.json().catch(() => ({}));
+        if (payR.ok && payData.url) {
+          window.location.href = payData.url;
+          return;
+        }
+        // fallback: afisez butonul manual de plata si link catre pagina de gestionare
+        const detail = (payData && (payData.message || payData.error)) ? ` (${payData.message || payData.error})` : "";
+        const errTxt = (lang === "en" ? "Could not start payment. Please contact us." : "Nu am putut iniția plata. Te rugăm să ne contactezi.") + detail;
+        const retryTxt = lang === "en" ? "Try payment again" : "Încearcă plata din nou";
+        const path = lang === "en" ? "/en/booking/" : "/rezervare/";
+        const link = `${path}?cod=${encodeURIComponent(b.code)}&t=${encodeURIComponent(b.token)}`;
+        sideEl.replaceChildren(
+          h("div", { class: "bk-done" }, h("div", { class: "bk-tick", "aria-hidden": "true" }, "⚠️"),
+            h("h3", null, errTxt),
+            h("div", { class: "bk-code" }, h("small", null, T.code), h("b", null, b.code)),
+            h("a", { class: "btn btn-primary", href: link }, retryTxt)));
+      } catch {
+        const errTxt = lang === "en" ? "Network error during payment. Please contact us." : "Eroare de rețea la plată. Te rugăm să ne contactezi.";
+        const path = lang === "en" ? "/en/booking/" : "/rezervare/";
+        const link = `${path}?cod=${encodeURIComponent(b.code)}&t=${encodeURIComponent(b.token)}`;
+        sideEl.replaceChildren(
+          h("div", { class: "bk-done" }, h("div", { class: "bk-tick", "aria-hidden": "true" }, "⚠️"),
+            h("h3", null, errTxt),
+            h("div", { class: "bk-code" }, h("small", null, T.code), h("b", null, b.code)),
+            h("a", { class: "btn btn-primary", href: link }, lang === "en" ? "Open booking" : "Deschide rezervarea")));
+      }
+      return;
     }
     const path = lang === "en" ? "/en/booking/" : "/rezervare/";
     const link = `${path}?cod=${encodeURIComponent(b.code)}&t=${encodeURIComponent(b.token)}`;

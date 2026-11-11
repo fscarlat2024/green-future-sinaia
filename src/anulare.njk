@@ -1,0 +1,130 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/anulare/index.html' if lang == 'ro' else '/en/cancellation/index.html' }}"
+layout: base.njk
+eleventyComputed:
+  title: "{{ 'Politica de anulare' if lang == 'ro' else 'Cancellation Policy' }} - {{ site.name }}"
+  description: "{{ 'Reguli de anulare și rambursare a rezervărilor făcute pe greenfuturesinaia.com.' if lang == 'ro' else 'Rules for cancelling and refunding bookings made on greenfuturesinaia.com.' }}"
+  urlRo: "/anulare/"
+  urlEn: "/en/cancellation/"
+---
+<main class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">{{ 'Legal' if lang == 'ro' else 'Legal' }}</span>
+    <h1>{{ 'Politica de anulare și rambursare' if lang == 'ro' else 'Cancellation and Refund Policy' }}</h1>
+    <p class="lead">{{ 'Ultima actualizare: 10 noiembrie 2026' if lang == 'ro' else 'Last updated: 10 November 2026' }}</p>
+  </div>
+</main>
+
+<section class="block">
+  <div class="wrap legal-doc">
+  {% if lang == 'ro' %}
+    <h2>Rezumat rapid</h2>
+    <table class="cancel-table">
+      <thead>
+        <tr><th>Când anulezi</th><th>Rambursare</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Cu peste 7 zile înainte de check-in</td><td><strong>100%</strong> din suma plătită</td></tr>
+        <tr><td>Între 2 și 7 zile înainte</td><td><strong>50%</strong> din suma plătită</td></tr>
+        <tr><td>Sub 48 de ore sau no-show</td><td><strong>0%</strong> - fără rambursare</td></tr>
+      </tbody>
+    </table>
+
+    <h2>1. Cum anulezi</h2>
+    <p>Trimite email la <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a> cu subiectul „Anulare rezervare &lt;CODUL&gt;" sau ne contactezi pe WhatsApp la +40 740 196 718. Anularea devine efectivă în momentul confirmării din partea noastră.</p>
+
+    <h2>2. Modul de calcul</h2>
+    <p>Momentul anulării = ora la care primim cererea (ora României). Comparăm cu ora de check-in (14:00 în ziua sosirii) și aplicăm grila de mai sus.</p>
+
+    <h2>3. Procesul de rambursare</h2>
+    <ul>
+      <li>Rambursarea se face pe cardul folosit la plată (prin Stripe).</li>
+      <li>Timp de procesare Stripe: 5-10 zile lucrătoare.</li>
+      <li>Comisionul de procesare card (aprox. 1,5%) NU se rambursează.</li>
+      <li>Primești email de confirmare când refund-ul e inițiat.</li>
+    </ul>
+
+    <h2>4. Modificarea rezervării</h2>
+    <p>Dacă vrei să schimbi datele check-in/check-out:</p>
+    <ul>
+      <li><strong>Cu peste 7 zile înainte:</strong> gratuit, în limita disponibilității.</li>
+      <li><strong>Sub 7 zile:</strong> se tratează ca anulare + rezervare nouă.</li>
+    </ul>
+
+    <h2>5. Anulări din partea noastră</h2>
+    <p>Dacă din motive neprevăzute (lucrări, defecțiuni majore) trebuie să anulăm, primești <strong>rambursare 100%</strong> + facem tot posibilul să te mutăm în alt apartament similar din complex.</p>
+
+    <h2>6. Force majeure</h2>
+    <p>În caz de forță majoră (dezastre naturale, pandemii, restricții guvernamentale), aplicăm următoarea abordare:</p>
+    <ul>
+      <li>Credit valabil 12 luni pentru o nouă rezervare, SAU</li>
+      <li>Rambursare 50% (doar comisionul de procesare se reține).</li>
+    </ul>
+
+    <h2>7. Plecare anticipată</h2>
+    <p>Nu rambursăm nopțile neconsumate pentru plecarea voluntară mai devreme decât data de check-out confirmată.</p>
+
+    <h2>8. Rezervări nerambursabile</h2>
+    <p>Dacă alegi explicit un tarif „nerambursabil" (dacă e disponibil), plătești cu 10% mai puțin dar nu primești nimic înapoi la anulare. În prezent toate rezervările sunt cu tarif standard rambursabil.</p>
+
+    <h2>9. Chargeback</h2>
+    <p>Dacă ai o reclamație, contactează-ne întâi. Chargeback-ul direct la bancă fără încercare de rezolvare amiabilă e considerat tentativă de fraudă și poate fi urmărit juridic. Noi colaborăm cu Stripe și cu banca pentru a rezolva corect fiecare caz.</p>
+  {% else %}
+    <h2>Quick summary</h2>
+    <table class="cancel-table">
+      <thead>
+        <tr><th>When you cancel</th><th>Refund</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>More than 7 days before check-in</td><td><strong>100%</strong> of amount paid</td></tr>
+        <tr><td>Between 2 and 7 days before</td><td><strong>50%</strong> of amount paid</td></tr>
+        <tr><td>Less than 48 hours or no-show</td><td><strong>0%</strong> - no refund</td></tr>
+      </tbody>
+    </table>
+
+    <h2>1. How to cancel</h2>
+    <p>Send an email to <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a> with subject "Cancel booking &lt;CODE&gt;" or contact us on WhatsApp at +40 740 196 718. Cancellation becomes effective when we confirm.</p>
+
+    <h2>2. Calculation</h2>
+    <p>The moment of cancellation = the time we receive the request (Romania time). We compare with check-in time (14:00 on arrival day) and apply the table above.</p>
+
+    <h2>3. Refund process</h2>
+    <ul>
+      <li>Refund goes to the original card (via Stripe).</li>
+      <li>Stripe processing time: 5-10 business days.</li>
+      <li>Card processing fee (approx. 1.5%) is NOT refunded.</li>
+      <li>You receive a confirmation email when the refund is initiated.</li>
+    </ul>
+
+    <h2>4. Booking changes</h2>
+    <p>If you want to change check-in/check-out dates:</p>
+    <ul>
+      <li><strong>More than 7 days ahead:</strong> free, subject to availability.</li>
+      <li><strong>Less than 7 days:</strong> treated as cancellation + new booking.</li>
+    </ul>
+
+    <h2>5. Cancellations from our side</h2>
+    <p>If unforeseen reasons (works, major defects) force us to cancel, you get <strong>100% refund</strong> and we do our best to relocate you to a similar apartment in the complex.</p>
+
+    <h2>6. Force majeure</h2>
+    <p>In case of force majeure (natural disasters, pandemics, government restrictions), we apply the following:</p>
+    <ul>
+      <li>Credit valid 12 months for a new booking, OR</li>
+      <li>50% refund (only the processing fee is withheld).</li>
+    </ul>
+
+    <h2>7. Early departure</h2>
+    <p>We do not refund unused nights for voluntary early departure before the confirmed check-out date.</p>
+
+    <h2>8. Non-refundable bookings</h2>
+    <p>If you explicitly choose a "non-refundable" rate (where available), you pay 10% less but get nothing back on cancellation. Currently all bookings are at standard refundable rate.</p>
+
+    <h2>9. Chargeback</h2>
+    <p>If you have a complaint, contact us first. A direct chargeback with no amicable resolution attempt is considered attempted fraud and may be pursued legally. We work with Stripe and your bank to resolve each case fairly.</p>
+  {% endif %}
+  </div>
+</section>

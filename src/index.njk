@@ -143,6 +143,32 @@ eleventyComputed:
         <span class="cap"><b>{{ a[lang].name }}</b><span>{{ a[lang].desc }}</span></span>
       </div>
       {% endfor %}
+      {% for a in site.activity_cards %}
+      <div class="attr-card act">
+        <img src="{{ a.img }}" alt="{{ a[lang].name }} - Sinaia" loading="lazy">
+        <span class="veil"></span>
+        <span class="cap"><b>{{ a[lang].name }}</b><span>{{ a[lang].desc }}</span><a class="attr-tel" href="tel:{{ a.tel }}">{{ a.show }}</a></span>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="attr-note">{{ t.sinaia_attr }} · {{ t.act_note }}</p>
+  </div>
+</section>
+
+<section class="block" id="util" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ t.util_eyebrow }}</span>
+      <h2>{{ t.util_title }}</h2>
+      <p>{{ t.util_sub }}</p>
+    </div>
+    <div class="get-grid">
+      <div class="act-card"><div class="act-ic" aria-hidden="true">🚕</div><h3>{{ t.taxi_t }}</h3><p>{{ t.taxi_d }}</p>
+        <div class="act-contact">{% for x in site.taxi %}<a href="tel:{{ x.tel }}">{{ x.name }}: {{ x.show }}{% if x['note_' ~ lang] %} ({{ x['note_' ~ lang] }}){% endif %}</a>{% endfor %}</div>
+      </div>
+      <div class="act-card"><div class="act-ic" aria-hidden="true">🛒</div><h3>{{ t.shop_t }}</h3><p>{{ t.shop_d }}</p>
+        <div class="act-contact">{% for s in site.shops %}<span>{{ s.name }} — {{ s['note_' ~ lang] }}</span>{% endfor %}</div>
+      </div>
     </div>
   </div>
 </section>

@@ -1,0 +1,62 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/rezervare/succes/index.html' if lang == 'ro' else '/en/booking/success/index.html' }}"
+layout: base.njk
+eleventyComputed:
+  title: "{{ 'Plată confirmată' if lang == 'ro' else 'Payment confirmed' }} - {{ site.name }}"
+  description: "{{ 'Mulțumim! Rezervarea ta a fost confirmată și plătită cu succes.' if lang == 'ro' else 'Thank you! Your booking has been confirmed and paid successfully.' }}"
+  urlRo: "/rezervare/succes/"
+  urlEn: "/en/booking/success/"
+---
+<main class="page-hero page-hero-center">
+  <div class="wrap">
+    <div style="font-size:3.5rem;line-height:1;margin-bottom:.5rem">✅</div>
+    <span class="eyebrow">{{ 'Plată confirmată' if lang == 'ro' else 'Payment confirmed' }}</span>
+    <h1 style="max-width:none;text-align:center;margin:1rem auto">{{ 'Mulțumim!' if lang == 'ro' else 'Thank you!' }}</h1>
+    <p class="lead" style="margin:0 auto;text-align:center">{{ 'Rezervarea ta este confirmată. Îți trimitem pe email codul și detaliile de check-in.' if lang == 'ro' else 'Your booking is confirmed. We will email you the booking code and check-in details.' }}</p>
+  </div>
+</main>
+
+<section class="block">
+  <div class="wrap" style="max-width:62ch;text-align:center">
+    <div class="legal-doc" style="text-align:left">
+      <h2>{{ 'Codul rezervării' if lang == 'ro' else 'Booking code' }}</h2>
+      <p id="booking-code" style="font-size:1.6rem;font-family:'JetBrains Mono',monospace;background:color-mix(in srgb,var(--accent) 12%,transparent);padding:.6rem 1rem;border-radius:8px;display:inline-block;letter-spacing:.08em">—</p>
+
+      <h2>{{ 'Ce urmează' if lang == 'ro' else 'What happens next' }}</h2>
+      <ol>
+        <li>{{ 'Vei primi un email de confirmare cu detalii de check-in (zi, oră, adresă).' if lang == 'ro' else 'You will receive a confirmation email with check-in details (date, time, address).' }}</li>
+        <li>{{ 'La sosire, prezintă actul de identitate și semnezi fișa de cazare.' if lang == 'ro' else 'On arrival, present your ID and sign the lodging form.' }}</li>
+        <li>{{ 'Pentru orice întrebare: scrie-ne pe WhatsApp sau email.' if lang == 'ro' else 'For any question: write us on WhatsApp or email.' }}</li>
+      </ol>
+
+      <p style="margin-top:2rem"><strong>{{ 'Ai nevoie de ajutor?' if lang == 'ro' else 'Need help?' }}</strong><br>
+      WhatsApp: <a href="https://wa.me/40740196718">+40 740 196 718</a><br>
+      Email: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a></p>
+    </div>
+
+    <p style="margin-top:2rem"><a href="{{ '/' if lang == 'ro' else '/en/' }}" class="btn btn-primary">{{ 'Înapoi la pagina principală' if lang == 'ro' else 'Back to home' }}</a></p>
+  </div>
+</section>
+
+<script>
+(async function() {
+  var p = new URLSearchParams(location.search);
+  var el = document.getElementById('booking-code');
+  if (!el) return;
+  var code = p.get('code');
+  if (!code) {
+    var sid = p.get('session_id');
+    if (sid) {
+      try {
+        var r = await fetch('/api/stripe/session/' + encodeURIComponent(sid));
+        if (r.ok) { var j = await r.json(); code = j.code; }
+      } catch {}
+    }
+  }
+  if (code) el.textContent = code;
+})();
+</script>

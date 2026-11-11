@@ -1,0 +1,64 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/rezervare/anulat/index.html' if lang == 'ro' else '/en/booking/cancelled/index.html' }}"
+layout: base.njk
+eleventyComputed:
+  title: "{{ 'Plată anulată' if lang == 'ro' else 'Payment cancelled' }} - {{ site.name }}"
+  description: "{{ 'Plata a fost întreruptă. Poți încerca din nou sau să ne contactezi.' if lang == 'ro' else 'Payment was interrupted. You can retry or contact us.' }}"
+  urlRo: "/rezervare/anulat/"
+  urlEn: "/en/booking/cancelled/"
+---
+<main class="page-hero page-hero-center">
+  <div class="wrap">
+    <div style="font-size:3.5rem;line-height:1;margin-bottom:.5rem">⏸️</div>
+    <span class="eyebrow">{{ 'Plată anulată' if lang == 'ro' else 'Payment cancelled' }}</span>
+    <h1 style="max-width:none;text-align:center;margin:1rem auto">{{ 'Plata a fost întreruptă' if lang == 'ro' else 'Payment was interrupted' }}</h1>
+    <p class="lead" style="margin:0 auto;text-align:center">{{ 'Nu-ți face griji — nu am reținut nimic de pe card. Poți încerca din nou sau să ne contactezi.' if lang == 'ro' else 'No worries — nothing was charged to your card. You can retry or contact us.' }}</p>
+  </div>
+</main>
+
+<section class="block">
+  <div class="wrap" style="max-width:62ch;text-align:center">
+    <div class="legal-doc" style="text-align:left">
+      <h2>{{ 'Codul rezervării' if lang == 'ro' else 'Booking code' }}</h2>
+      <p id="booking-code" style="font-size:1.6rem;font-family:'JetBrains Mono',monospace;background:color-mix(in srgb,var(--accent) 12%,transparent);padding:.6rem 1rem;border-radius:8px;display:inline-block;letter-spacing:.08em">—</p>
+
+      <h2>{{ 'Ce poți face' if lang == 'ro' else 'What you can do' }}</h2>
+      <ul>
+        <li>{{ 'Întoarce-te la pagina apartamentului și încearcă din nou.' if lang == 'ro' else 'Go back to the apartment page and try again.' }}</li>
+        <li>{{ 'Rezervarea rămâne în așteptare 24 de ore — poți plăti oricând în intervalul ăsta.' if lang == 'ro' else 'The booking stays pending for 24 hours — you can pay anytime in this window.' }}</li>
+        <li>{{ 'Dacă ai întrebări, scrie-ne pe WhatsApp sau email.' if lang == 'ro' else 'If you have questions, write us on WhatsApp or email.' }}</li>
+      </ul>
+
+      <p style="margin-top:2rem"><strong>{{ 'Ai nevoie de ajutor?' if lang == 'ro' else 'Need help?' }}</strong><br>
+      WhatsApp: <a href="https://wa.me/40740196718">+40 740 196 718</a><br>
+      Email: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a></p>
+    </div>
+
+    <p style="margin-top:2rem">
+      <a href="{{ '/' if lang == 'ro' else '/en/' }}" class="btn btn-primary">{{ 'Înapoi la pagina principală' if lang == 'ro' else 'Back to home' }}</a>
+    </p>
+  </div>
+</section>
+
+<script>
+(async function() {
+  var p = new URLSearchParams(location.search);
+  var el = document.getElementById('booking-code');
+  if (!el) return;
+  var code = p.get('code');
+  if (!code) {
+    var sid = p.get('session_id');
+    if (sid) {
+      try {
+        var r = await fetch('/api/stripe/session/' + encodeURIComponent(sid));
+        if (r.ok) { var j = await r.json(); code = j.code; }
+      } catch {}
+    }
+  }
+  if (code) el.textContent = code;
+})();
+</script>

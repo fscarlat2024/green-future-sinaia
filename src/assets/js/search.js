@@ -62,7 +62,18 @@
     if (p.tagline) body.append(el("p", "desc", p.tagline));
     body.append(el("span", "tagpill", T.available));
     const side = el("div", "apt-side");
-    side.append(el("div", "price"), el("span", "btn btn-primary apt-go", T.book));
+    // apartamentele noi nu au inca recenzii: acelasi bloc ca nota de pe Booking, ca toate cardurile sa aiba aceeasi inaltime
+    const en = lang === "en";
+    const k = p.booking;
+    // cuvantul de pe Booking dupa nota
+    const word = k && (k.score >= 9.5 ? (en ? "Exceptional" : "Excepțional") : k.score >= 9 ? "Superb" : k.score >= 8.6 ? (en ? "Fabulous" : "Fabulos") : k.score >= 8 ? (en ? "Very good" : "Foarte bine") : k.score >= 7 ? (en ? "Good" : "Bine") : (en ? "Rating" : "Notă"));
+    const rev = el(k?.url ? "a" : "span", k ? "apt-rev" : "apt-rev apt-rev-new");
+    if (k?.url) { rev.href = k.url; rev.target = "_blank"; rev.rel = "noopener"; }
+    const rt = el("span", "apt-rev-t");
+    if (k) rt.append(el("b", null, word), el("small", null, `${k.count} ${en ? "reviews on Booking" : "recenzii pe Booking"}`));
+    else rt.append(el("b", null, T.reviewsEmpty), el("small", null, en ? "No reviews yet" : "Încă fără recenzii"));
+    rev.append(el("span", "apt-score", k ? (Math.round(k.score * 10) / 10).toFixed(1) : "★"), rt);
+    side.append(el("div", "price"), rev, el("span", "btn btn-primary apt-go", T.book));
     card.append(ph, body, side);
     const soon = document.querySelector(".apts .apt:not([data-slug])");
     document.querySelector(".apts").insertBefore(card, soon);

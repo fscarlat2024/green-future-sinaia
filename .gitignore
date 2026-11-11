@@ -7,3 +7,5 @@ _site/
 .wrangler/
 cont-admin.txt
 *.apk
+cont-*.txt
+brevo-key.txt

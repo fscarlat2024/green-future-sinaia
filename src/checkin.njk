@@ -1,0 +1,22 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/checkin/index.html' if lang == 'ro' else '/en/checkin/index.html' }}"
+layout: base.njk
+noindex: true
+scripts: ["/assets/js/checkin.js"]
+eleventyComputed:
+  title: "{{ 'Check-in online' if lang == 'ro' else 'Online check-in' }} - {{ site.name }}"
+  urlRo: "/checkin/"
+  urlEn: "/en/checkin/"
+---
+<main class="block manage-page">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow" id="ci-apt">{{ site.name }}</span><h1>{{ "Check-in online" if lang == "ro" else "Online check-in" }}</h1></div>
+    <div class="manage-card ci-card" id="checkin" data-lang="{{ lang }}">
+      <p>{{ "Se încarcă..." if lang == "ro" else "Loading..." }}</p>
+    </div>
+  </div>
+</main>

@@ -188,7 +188,7 @@ section.block { padding: 5rem 0; }
 .attr-cards { display: grid; gap: 1.2rem; grid-template-columns: 1fr; }
 @media (min-width: 640px) { .attr-cards { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 980px) { .attr-cards { grid-template-columns: repeat(3, 1fr); } }
-.attr-card { position: relative; display: block; border-radius: 16px; overflow: hidden; aspect-ratio: 4/3;
+.attr-card { position: relative; display: block; border-radius: 16px; overflow: hidden; aspect-ratio: 16/10;
   box-shadow: var(--shadow); border: 1px solid var(--line); text-decoration: none; color: #fff; }
 .attr-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
 .attr-card:hover img { transform: scale(1.06); }
@@ -199,6 +199,18 @@ section.block { padding: 5rem 0; }
 .attr-card .cap .go { font-size: .78rem; font-weight: 700; color: #cfeddb; margin-top: .5rem; display: inline-block; opacity: 0; transform: translateY(4px); transition: .2s ease; }
 .attr-card:hover .cap .go { opacity: 1; transform: none; }
 .attr-note { margin-top: 1.4rem; font-size: .8rem; color: var(--muted); }
+.attr-card .cap .attr-tel { display: inline-block; margin-top: .55rem; font-weight: 700; font-size: .82rem; color: var(--on-accent); background: var(--ochre); padding: .32rem .8rem; border-radius: 999px; text-decoration: none; position: relative; z-index: 3; }
+.attr-card .cap .attr-tel::before { content: "\260E"; margin-right: .35rem; }
+.get-grid { display: grid; gap: 1.1rem; grid-template-columns: 1fr; margin-top: 1.6rem; }
+@media (min-width: 760px) { .get-grid { grid-template-columns: 1fr 1fr; } }
+.act-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1.4rem 1.5rem; box-shadow: var(--shadow); }
+.act-card .act-ic { font-size: 1.7rem; }
+.act-card h3 { font-family: "Cormorant Garamond", serif; font-size: 1.35rem; font-weight: 600; margin: .5rem 0 .4rem; }
+.act-card p { color: var(--ink-soft); font-size: .95rem; }
+.act-contact { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--line); }
+.act-contact a { font-size: .88rem; font-weight: 600; color: var(--accent-strong); text-decoration: none; }
+.act-contact a:hover { text-decoration: underline; }
+.act-contact span { font-size: .88rem; color: var(--muted); }
 
 /* bands */
 .band { background: linear-gradient(160deg, var(--accent-strong), var(--accent)); color: #fff; border-radius: 24px;
@@ -720,8 +732,10 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
 }
 .has-search .facts, .has-search #despre { display: none; }
 /* pagina apartamentului: intai pozele, ca pe Booking */
-.ap-gallery { position: relative; height: min(56vh, 620px); min-height: 280px; background: var(--surface-2); overflow: hidden; }
-.ap-gallery .hero-slide { transition: opacity .25s ease; }
+/* galeria are forma unei poze obisnuite (4:3) si arata poza intreaga; inainte, banda lata taia pozele de telefon sus si jos */
+.ap-gallery { position: relative; width: min(100%, 1200px, calc(78vh * 4 / 3)); aspect-ratio: 4 / 3; min-height: 240px; margin: 0 auto; background: var(--surface-2); overflow: hidden; }
+.ap-gallery .hero-slide { transition: opacity .25s ease; background-size: contain; background-repeat: no-repeat; }
+@media (min-width: 900px) { .ap-gallery { margin-top: 1.2rem; border-radius: var(--radius); } }
 .ap-head { display: grid; gap: .5rem; justify-items: start; padding-top: 1.4rem; padding-bottom: .4rem; }
 .ap-head h1 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: clamp(2.1rem, 6vw, 3.2rem); font-weight: 500; line-height: 1.05; }
 .ap-head .loc-tag { position: static; margin: 0; }
@@ -971,3 +985,49 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .mn-item.is-off { opacity: .6; }
 .mn-item .btn { min-height: 38px; padding: .4rem .7rem; }
 .mn-photo { width: 140px; height: 140px; object-fit: cover; border-radius: 10px; }
+
+/* pagini legale: Terms, Privacy, Cancellation */
+.legal-doc { max-width: 76ch; }
+.legal-doc h2 { font-size: 1.35rem; margin-top: 2rem; margin-bottom: .6rem; color: var(--ink); font-weight: 500; }
+.legal-doc h2:first-child { margin-top: 0; }
+.legal-doc p, .legal-doc li { font-size: 1rem; line-height: 1.65; color: var(--ink-soft); }
+.legal-doc ul, .legal-doc ol { margin: .4rem 0 .9rem 1.4rem; }
+.legal-doc li { margin-bottom: .25rem; }
+.legal-doc code { background: color-mix(in srgb, var(--accent) 10%, transparent); padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+.legal-doc a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.legal-doc a:hover { opacity: .8; }
+.cancel-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: .95rem; }
+.cancel-table th, .cancel-table td { border: 1px solid var(--line); padding: .7rem .9rem; text-align: left; }
+.cancel-table thead th { background: color-mix(in srgb, var(--accent) 12%, transparent); font-weight: 500; color: var(--ink); }
+.cancel-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.foot-legal a { color: var(--muted); text-decoration: none; opacity: .8; }
+.foot-legal a:hover { opacity: 1; text-decoration: underline; }
+
+/* alegere metoda de plata la rezervare */
+.bk-pay { margin: 1rem 0; padding: 0; border: 0; }
+.bk-pay legend { font-size: .9rem; color: var(--ink-soft); margin-bottom: .55rem; padding: 0; }
+.bk-pay-opt { display: grid; grid-template-columns: auto 1fr; gap: .4rem .75rem; align-items: start; padding: .75rem .9rem; border: 1px solid var(--line); border-radius: 10px; margin-bottom: .55rem; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.bk-pay-opt:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.bk-pay-opt:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.bk-pay-opt input[type="radio"] { margin-top: .25rem; accent-color: var(--accent); }
+.bk-pay-ttl { font-weight: 500; color: var(--ink); grid-column: 2; }
+.bk-pay-opt small { grid-column: 2; font-size: .8rem; color: var(--ink-soft); line-height: 1.4; }
+
+/* check-in online */
+.ci-card { max-width: 640px; }
+.ci-form { display: grid; gap: 1rem; width: 100%; }
+.ci-form small { font-weight: 400; color: var(--muted); }
+.ci-preview { max-width: 100%; max-height: 280px; border-radius: 10px; border: 1px solid var(--line); object-fit: contain; background: var(--ground); }
+.ci-rules { display: grid; gap: .6rem; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--ground); }
+.ci-rules h2 { margin: 0; font-size: 1.05rem; }
+.ci-rules-text { max-height: 220px; overflow: auto; white-space: pre-line; font-size: .9rem; line-height: 1.5; color: var(--ink-soft); padding-right: .4rem; }
+.ci-done { padding: .8rem 1rem; border-radius: 10px; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.mg-checkin { display: grid; gap: .6rem; justify-items: start; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; width: 100%; }
+.ci-photo { max-width: 100%; max-height: 70vh; border-radius: 10px; display: block; margin-top: .6rem; }
+
+/* notarea oaspetilor */
+.adm-hist { font-size: .88rem; padding: .45rem .7rem; border-radius: 8px; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.adm-hist.is-low { background: color-mix(in srgb, #e5534b 16%, transparent); }
+.adm-rate-box { border: 1px solid var(--line); border-radius: 10px; padding: .6rem .8rem; }
+.adm-rate-box summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.adm-rate { margin-top: .8rem; }

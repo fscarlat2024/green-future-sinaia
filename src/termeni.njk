@@ -1,0 +1,144 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/termeni/index.html' if lang == 'ro' else '/en/terms/index.html' }}"
+layout: base.njk
+eleventyComputed:
+  title: "{{ 'Termeni și condiții' if lang == 'ro' else 'Terms of Service' }} - {{ site.name }}"
+  description: "{{ 'Termenii și condițiile de utilizare a portalului greenfuturesinaia.com și de rezervare a cazării.' if lang == 'ro' else 'Terms and conditions for using greenfuturesinaia.com and booking accommodation.' }}"
+  urlRo: "/termeni/"
+  urlEn: "/en/terms/"
+---
+<main class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">{{ 'Legal' if lang == 'ro' else 'Legal' }}</span>
+    <h1>{{ 'Termeni și condiții' if lang == 'ro' else 'Terms of Service' }}</h1>
+    <p class="lead">{{ 'Ultima actualizare: 10 noiembrie 2026' if lang == 'ro' else 'Last updated: 10 November 2026' }}</p>
+  </div>
+</main>
+
+<section class="block">
+  <div class="wrap legal-doc">
+  {% if lang == 'ro' %}
+    <h2>1. Despre noi</h2>
+    <p>Portalul <strong>greenfuturesinaia.com</strong> (în continuare „Portalul") este operat de <strong>Grow LLC</strong>, o societate înregistrată în statul Delaware, SUA, cu sediul la 16192 Coastal Highway, Lewes, DE 19958, EIN *****0715. Grow LLC acționează ca agenție de rezervări online (online travel agency) pentru apartamente independente situate în complexul Green Future Sinaia, str. Walter Mărăcineanu nr. 20, Sinaia, România.</p>
+
+    <h2>2. Serviciile oferite</h2>
+    <p>Portalul facilitează rezervarea unităților de cazare pe termen scurt listate de proprietarii independenți. Noi procesăm plățile cu cardul prin Stripe, confirmăm rezervarea și transmitem datele către proprietar. Contractul de cazare efectiv se încheie între oaspete și proprietar.</p>
+
+    <h2>3. Procesul de rezervare</h2>
+    <ol>
+      <li>Alegeți apartamentul, perioada și completați datele.</li>
+      <li>Plătiți integral cu cardul la momentul rezervării.</li>
+      <li>Primiți pe email codul de rezervare și detalii de check-in.</li>
+      <li>La sosire prezentați actul de identitate și semnați fișa de cazare.</li>
+    </ol>
+
+    <h2>4. Plăți</h2>
+    <p>Toate plățile cu cardul sunt procesate de <strong>Grow LLC</strong> prin platforma Stripe, Inc. Pe extrasul bancar va apărea <code>GREEN FUTURE SINAIA</code>. Prețurile sunt exprimate în lei (RON) sau euro (EUR) după caz. Suma totală se reține la momentul rezervării.</p>
+
+    <h2>5. Obligațiile oaspetelui</h2>
+    <ul>
+      <li>Să furnizeze informații reale și complete.</li>
+      <li>Să respecte regulile apartamentului și ale complexului.</li>
+      <li>Să nu depășească numărul de oaspeți declarat.</li>
+      <li>Să nu folosească apartamentul pentru activități ilegale sau comerciale.</li>
+      <li>Să predea apartamentul în starea găsită la sosire.</li>
+    </ul>
+
+    <h2>6. Obligațiile noastre</h2>
+    <ul>
+      <li>Să furnizăm informații corecte despre apartament.</li>
+      <li>Să confirmăm rezervarea în maxim 24 de ore.</li>
+      <li>Să procesăm plățile și rambursările conform politicii de anulare.</li>
+      <li>Să păstrăm confidențialitatea datelor personale (vezi Politica de Confidențialitate).</li>
+    </ul>
+
+    <h2>7. Anulare și rambursare</h2>
+    <p>Politica completă este descrisă în pagina <a href="/anulare/">Politica de anulare</a>. Pe scurt:</p>
+    <ul>
+      <li><strong>Peste 7 zile înainte de check-in:</strong> rambursare 100%.</li>
+      <li><strong>Între 2 și 7 zile:</strong> rambursare 50%.</li>
+      <li><strong>Sub 48 de ore sau no-show:</strong> fără rambursare.</li>
+    </ul>
+
+    <h2>8. Limitarea răspunderii</h2>
+    <p>Grow LLC acționează ca intermediar de rezervări. Răspunderea noastră este limitată la suma plătită pentru rezervare. Nu răspundem pentru pierderi indirecte, daune morale sau întreruperi ale serviciilor din complex (piscină, sauna etc.) pe care le operează terți.</p>
+
+    <h2>9. Dispute și chargeback</h2>
+    <p>În caz de nemulțumire, vă rugăm să ne contactați întâi la <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a>. Vom încerca să rezolvăm situația în 48 de ore. Chargeback-ul fraudulos (fără încercare de rezolvare amiabilă) este urmărit juridic.</p>
+
+    <h2>10. Modificări</h2>
+    <p>Rezervăm dreptul de a modifica acești termeni. Modificările se aplică rezervărilor făcute după data publicării.</p>
+
+    <h2>11. Jurisdicție</h2>
+    <p>Acești termeni sunt guvernați de legile statului Delaware, SUA, pentru raporturile cu Grow LLC, și de legea română pentru raporturile cu proprietarii apartamentelor. Orice dispută se soluționează amiabil sau în instanță competentă conform legii.</p>
+
+    <h2>12. Contact</h2>
+    <p>Email: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a><br>
+    Telefon: +40 740 196 718<br>
+    Adresă: Grow LLC, 16192 Coastal Highway, Lewes, DE 19958, SUA</p>
+  {% else %}
+    <h2>1. About us</h2>
+    <p>The <strong>greenfuturesinaia.com</strong> portal (hereinafter "the Portal") is operated by <strong>Grow LLC</strong>, a company registered in the state of Delaware, USA, with address at 16192 Coastal Highway, Lewes, DE 19958, EIN *****0715. Grow LLC acts as an online travel agency for independent apartments located in the Green Future Sinaia complex, Walter Mărăcineanu St. no. 20, Sinaia, Romania.</p>
+
+    <h2>2. Services provided</h2>
+    <p>The Portal facilitates the reservation of short-term lodging units listed by independent owners. We process card payments via Stripe, confirm the reservation, and transmit data to the owner. The actual lodging contract is concluded between the guest and the owner.</p>
+
+    <h2>3. Booking process</h2>
+    <ol>
+      <li>Choose the apartment, dates, and fill in your details.</li>
+      <li>Pay in full by card at the time of booking.</li>
+      <li>Receive the booking code and check-in details by email.</li>
+      <li>On arrival, present your ID and sign the lodging form.</li>
+    </ol>
+
+    <h2>4. Payments</h2>
+    <p>All card payments are processed by <strong>Grow LLC</strong> via Stripe, Inc. Your bank statement will show <code>GREEN FUTURE SINAIA</code>. Prices are in Romanian leu (RON) or euro (EUR) as applicable. The full amount is captured at booking.</p>
+
+    <h2>5. Guest obligations</h2>
+    <ul>
+      <li>Provide true and complete information.</li>
+      <li>Respect the apartment and complex rules.</li>
+      <li>Do not exceed the declared number of guests.</li>
+      <li>Do not use the apartment for illegal or commercial activities.</li>
+      <li>Leave the apartment in the condition found on arrival.</li>
+    </ul>
+
+    <h2>6. Our obligations</h2>
+    <ul>
+      <li>Provide accurate information about the apartment.</li>
+      <li>Confirm the booking within 24 hours.</li>
+      <li>Process payments and refunds per the cancellation policy.</li>
+      <li>Keep personal data confidential (see Privacy Policy).</li>
+    </ul>
+
+    <h2>7. Cancellation and refund</h2>
+    <p>Full policy is in the <a href="/en/cancellation/">Cancellation policy</a> page. Summary:</p>
+    <ul>
+      <li><strong>More than 7 days before check-in:</strong> 100% refund.</li>
+      <li><strong>Between 2 and 7 days:</strong> 50% refund.</li>
+      <li><strong>Less than 48 hours or no-show:</strong> no refund.</li>
+    </ul>
+
+    <h2>8. Limitation of liability</h2>
+    <p>Grow LLC acts as a booking intermediary. Our liability is limited to the amount paid for the reservation. We are not liable for indirect losses, moral damages, or interruptions of complex services (pool, sauna, etc.) operated by third parties.</p>
+
+    <h2>9. Disputes and chargebacks</h2>
+    <p>In case of dissatisfaction, please contact us first at <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a>. We will try to resolve the situation within 48 hours. Fraudulent chargebacks (without amicable resolution attempt) are legally pursued.</p>
+
+    <h2>10. Changes</h2>
+    <p>We reserve the right to change these terms. Changes apply to bookings made after the publication date.</p>
+
+    <h2>11. Jurisdiction</h2>
+    <p>These terms are governed by the laws of the state of Delaware, USA, for the relationship with Grow LLC, and by Romanian law for the relationship with apartment owners. Any dispute is resolved amicably or in a competent court per law.</p>
+
+    <h2>12. Contact</h2>
+    <p>Email: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a><br>
+    Phone: +40 740 196 718<br>
+    Address: Grow LLC, 16192 Coastal Highway, Lewes, DE 19958, USA</p>
+  {% endif %}
+  </div>
+</section>

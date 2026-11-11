@@ -52,5 +52,26 @@
     { "img": "/assets/img/sinaia/oras.jpg",
       "ro": { "name": "Orașul Sinaia", "desc": "Perla Carpaților: cazinoul istoric, parcul Dimitrie Ghica, cafenele cochete și hoteluri de epocă, la poalele Bucegilor." },
       "en": { "name": "Sinaia town", "desc": "The Pearl of the Carpathians - the historic casino, Dimitrie Ghica Park, charming cafes and vintage hotels at the foot of the Bucegi." } }
+  ],
+  "activity_cards": [
+    { "img": "/assets/img/activitati/atv.jpg", "show": "0741 012 129", "tel": "+40741012129",
+      "ro": { "name": "Plimbari cu ATV-ul", "desc": "Ture cu ATV prin Bucegi, pornind din Sinaia." },
+      "en": { "name": "ATV rides", "desc": "ATV tours through the Bucegi, starting from Sinaia." } },
+    { "img": "/assets/img/activitati/snowmobil.jpg", "show": "0749 772 233", "tel": "+40749772233",
+      "ro": { "name": "Plimbari cu snowmobilul", "desc": "Iarna, plimbari cu snowmobilul pe zapada proaspata." },
+      "en": { "name": "Snowmobile rides", "desc": "In winter, snowmobile rides over fresh snow." } },
+    { "img": "/assets/img/activitati/excursii.jpg", "show": "0735 506 111", "tel": "+40735506111",
+      "ro": { "name": "Excursii organizate", "desc": "Tururi ghidate off-road 4x4 spre platoul Bucegi." },
+      "en": { "name": "Guided excursions", "desc": "Guided 4x4 off-road tours to the Bucegi plateau." } }
+  ],
+  "taxi": [
+    { "name": "Taxi Tudor", "show": "0733 448 448", "tel": "+40733448448", "note_ro": "non-stop", "note_en": "24/7" },
+    { "name": "Super Taxi Sinaia", "show": "0729 999 666", "tel": "+40729999666", "note_ro": "", "note_en": "" },
+    { "name": "NIK Taxi", "show": "0731 615 628", "tel": "+40731615628", "note_ro": "non-stop", "note_en": "24/7" }
+  ],
+  "shops": [
+    { "name": "Mega Image", "note_ro": "Bd. Carol I, in centru", "note_en": "Bd. Carol I, in the centre" },
+    { "name": "Penny Market", "note_ro": "Calea Prahovei", "note_en": "Calea Prahovei" },
+    { "name": "Sinaia Plaza", "note_ro": "centru comercial nou, spre Busteni", "note_en": "new retail centre, toward Busteni" }
   ]
 }

@@ -100,6 +100,7 @@ const publicProperty = (p) => ({
   slug: p.slug, name: p.name, capacity: p.capacity, basePrice: p.base_price, cleaningFee: p.cleaning_fee,
   minNights: p.min_nights, instantBook: !!p.instant_book, freeCancelDays: p.free_cancel_days,
   checkinTime: p.checkin_time, checkoutTime: p.checkout_time, currency: "lei", loyalty: !!p.loyalty_enabled,
+  stripeEnabled: !!p.stripe_enabled,
 });
 
 async function loadRates(env, slug, from, to) {
@@ -215,7 +216,10 @@ async function createBooking(req, env, ctx) {
 
   const code = bookingCode();
   const token = randomHex();
-  const status = p.instant_book ? "confirmed" : "pending";
+  // apartamentul ofera plata online daca stripe_enabled=1, DAR oaspetele decide daca plateste acum (payNow:true) sau la cazare (false).
+  const wantsPayNow = b.payNow === true && !!p.stripe_enabled;
+  const needsPayment = wantsPayNow;
+  const status = needsPayment ? "pending" : (p.instant_book ? "confirmed" : "pending");
   const now = Date.now();
   const lang = b.lang === "en" ? "en" : "ro";
   const res = await env.DB.prepare(
@@ -229,12 +233,21 @@ async function createBooking(req, env, ctx) {
   if (!res.meta.changes) fail(409, "unavailable");
 
   const booking = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
-  ctx.waitUntil(Promise.allSettled([
-    mailOwnerNew(env, p, booking),
-    mailGuest(env, p, booking, status === "confirmed" ? "confirmed" : "received", token),
-    pushToStaff(env, p.slug, staffBookingMessage(p, booking, status === "confirmed" ? "Rezervare nouă confirmată" : "Rezervare nouă de confirmat")),
-  ]));
-  return json({ ...publicBooking(booking, p), token, emailSent: !!env.BREVO_API_KEY }, 201);
+  // daca cere plata online, NU trimit confirmare de rezervare acum. Email + push se vor trimite la webhook (plata reusita).
+  if (!needsPayment) {
+    ctx.waitUntil(Promise.allSettled([
+      mailOwnerNew(env, p, booking),
+      mailGuest(env, p, booking, status === "confirmed" ? "confirmed" : "received", token),
+      pushToStaff(env, p.slug, staffBookingMessage(p, booking, status === "confirmed" ? "Rezervare nouă confirmată" : "Rezervare nouă de confirmat")),
+    ]));
+  }
+  return json({
+    ...publicBooking(booking, p),
+    token,
+    emailSent: !needsPayment && !!env.BREVO_API_KEY,
+    requiresPayment: needsPayment,
+    stripeEnabled: !!p.stripe_enabled,
+  }, 201);
 }
 
 const staffBookingMessage = (p, b, title) => ({ title, body: `${p.name}: ${b.guest_name}, ${b.checkin} - ${b.checkout}, ${b.total} lei`, url: "/admin/" });
@@ -296,6 +309,8 @@ async function login(req, env) {
 
 const adminProperty = (p, env) => ({
   ...publicProperty(p), active: !!p.active, basePrice: p.base_price, ownerEmail: p.owner_email, ownerPhone: p.owner_phone,
+  bookingUrl: p.booking_url, bookingScore: p.booking_score, bookingCount: p.booking_count,
+  houseRules: p.house_rules || "", checkinUrl: p.checkin_key ? checkinUrl(env, p, p.checkin_key) : null,
   icalImportUrl: p.ical_import_url, icalExportUrl: `${env.SITE_URL}/ical/${p.ical_token}.ics`,
   icalSyncedAt: p.ical_synced_at, icalError: p.ical_error, icalPaused: !!p.ical_paused,
   dynamic: !!p.dynamic, status: p.status, roomType: p.room_type, tagline: p.tagline, description: p.description, story: p.story, amenities: JSON.parse(p.amenities || "[]"),
@@ -325,10 +340,25 @@ async function adminRoutes(req, env, ctx, parts) {
   const a = await adminAuth(req, env);
   const [first, second, third] = parts;
   // contul bistroului vede doar comenzile si meniul
-  if (a.role === "bistro" && !["logout", "me", "orders", "menu"].includes(first)) fail(403, "forbidden");
+  if (a.role === "bistro" && !["logout", "me", "orders", "menu", "password"].includes(first)) fail(403, "forbidden");
+  if (first === "checkins") return checkinAdminRoutes(req, env, a, parts);
 
   if (first === "logout" && req.method === "POST") {
     await env.DB.prepare("DELETE FROM admin_sessions WHERE token_hash = ?").bind(a.tokenHash).run();
+    return json({ ok: true });
+  }
+  // schimbarea parolei: cere parola actuala; celelalte dispozitive sunt deconectate, cel curent ramane logat
+  if (first === "password" && req.method === "POST") {
+    const b = await readJson(req);
+    await rateLimit(env, `adminpw:${a.id}`, 10, 3600000);
+    const row = await env.DB.prepare("SELECT pass_hash FROM admins WHERE id = ?").bind(a.id).first();
+    if (!row || !(await verifyPassword(String(b.current || ""), row.pass_hash))) fail(400, "wrong_password"); // 400, nu 401: panoul deconecteaza la 401
+    const pw = cleanPassword(b.password);
+    if (pw === String(b.current)) fail(400, "same_password");
+    await env.DB.batch([
+      env.DB.prepare("UPDATE admins SET pass_hash = ? WHERE id = ?").bind(await makePassword(pw), a.id),
+      env.DB.prepare("DELETE FROM admin_sessions WHERE admin_id = ? AND token_hash != ?").bind(a.id, a.tokenHash),
+    ]);
     return json({ ok: true });
   }
   if (first === "me") {
@@ -345,8 +375,13 @@ async function adminRoutes(req, env, ctx, parts) {
       `SELECT b.*, p.name AS property_name FROM bookings b JOIN properties p ON p.slug = b.property_slug
        WHERE b.property_slug IN (${marks}) ORDER BY b.status = 'pending' DESC, b.checkin DESC LIMIT 300`
     ).bind(...slugs).all();
-    return json({ bookings: results.map(({ token_hash, ...b }) => b) });
+    const rows = results.map(({ token_hash, ...b }) => b);
+    // istoricul oaspetelui doar la cererile noi si la sejururile confirmate din ultimele 60 de zile sau viitoare
+    const recent = addDays(today(), -60);
+    return json({ bookings: await withRatings(env, a, rows, "booking_id", (b) => b.guest_email, (b) => b.guest_phone,
+      (b) => b.status === "pending" || (b.status === "confirmed" && b.checkout >= recent)) });
   }
+  if (first === "ratings") return ratingRoutes(req, env, a);
 
   if (first === "bookings" && second && req.method === "POST") {
     const b = await env.DB.prepare("SELECT * FROM bookings WHERE id = ?").bind(Number(second)).first();
@@ -580,8 +615,15 @@ async function adminRoutes(req, env, ctx, parts) {
     }
   }
   if (first === "properties" && second) {
-    const p = await ownedProperty(env, a, second);
+    let p = await ownedProperty(env, a, second);
+    if (!p.checkin_key) { await checkinKey(env, p); p = await getProperty(env, p.slug); }
     if (["listing", "photos", "submit", "approve", "unpublish"].includes(third)) return listingRoutes(req, env, ctx, a, p, third);
+    // regulamentul apartamentului, scris de proprietar; oaspetele il bifeaza la check-in
+    if (third === "rules" && req.method === "PUT") {
+      const text = String((await readJson(req)).text || "").trim().slice(0, 8000);
+      await env.DB.prepare("UPDATE properties SET house_rules = ? WHERE slug = ?").bind(text || null, p.slug).run();
+      return json({ ok: true });
+    }
     if (!third && req.method === "GET") {
       const [rates, blocks, bookings] = await Promise.all([
         env.DB.prepare("SELECT * FROM rates WHERE property_slug = ? AND date_to > ? ORDER BY date_from").bind(p.slug, today()).all(),
@@ -899,6 +941,185 @@ async function menuRoutes(req, env, parts) {
   fail(404, "not_found");
 }
 
+// anunt pe Telegram (botul Anunturi1977_bot); fara secrete nu face nimic
+async function telegram(env, text) {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, disable_web_page_preview: true }),
+    });
+  } catch (e) { console.error("telegram", e); }
+}
+
+// ---------- notarea oaspetilor de catre gazde ----------
+const phoneKey = (s) => { const d = String(s || "").replace(/\D/g, ""); return d.length >= 9 ? d.slice(-9) : null; };
+const emailKey = (s) => { const e = String(s || "").trim().toLowerCase(); return e.includes("@") ? e : null; };
+// istoricul unui oaspete, de la toate gazdele: doar medii si numar, fara notele scrise
+async function guestHistory(env, email, phone) {
+  const e = emailKey(email), ph = phoneKey(phone);
+  if (!e && !ph) return null;
+  const r = await env.DB.prepare(
+    `SELECT COUNT(*) AS n, COUNT(DISTINCT admin_id) AS hosts, AVG(communication) AS communication, AVG(cleanliness) AS cleanliness, AVG(rules) AS rules, SUM(again) AS again
+     FROM guest_ratings WHERE (?1 IS NOT NULL AND guest_email = ?1) OR (?2 IS NOT NULL AND guest_phone = ?2)`
+  ).bind(e, ph).first();
+  if (!r || !r.n) return { n: 0 };
+  const one = (x) => Math.round(x * 10) / 10;
+  return { n: r.n, hosts: r.hosts, communication: one(r.communication), cleanliness: one(r.cleanliness), rules: one(r.rules), again: r.again };
+}
+async function ratingRoutes(req, env, a) {
+  if (req.method !== "POST") fail(405, "method_not_allowed");
+  const b = await readJson(req);
+  const score = (v) => { const n = Number(v); if (!Number.isInteger(n) || n < 1 || n > 5) fail(400, "invalid_value"); return n; };
+  const s = { communication: score(b.communication), cleanliness: score(b.cleanliness), rules: score(b.rules), again: b.again ? 1 : 0, note: String(b.note || "").trim().slice(0, 1000) || null };
+  let src;
+  if (b.bookingId) {
+    const bk = await env.DB.prepare("SELECT * FROM bookings WHERE id = ?").bind(Number(b.bookingId)).first();
+    if (!bk) fail(404, "not_found");
+    if (bk.status !== "confirmed") fail(409, "not_rateable");
+    src = { col: "booking_id", id: bk.id, slug: bk.property_slug, name: bk.guest_name, email: bk.guest_email, phone: bk.guest_phone, checkin: bk.checkin };
+  } else if (b.checkinId) {
+    const c = await env.DB.prepare("SELECT * FROM checkins WHERE id = ?").bind(Number(b.checkinId)).first();
+    if (!c) fail(404, "not_found");
+    src = { col: "checkin_id", id: c.id, slug: c.property_slug, name: c.guest_name, email: null, phone: c.guest_phone, checkin: c.checkin };
+  } else fail(400, "invalid_value");
+  await ownedProperty(env, a, src.slug);
+  if (src.checkin > today()) fail(409, "too_early"); // se noteaza doar dupa sosire
+  const now = Date.now();
+  await env.DB.prepare(
+    `INSERT INTO guest_ratings (${src.col}, property_slug, admin_id, guest_name, guest_email, guest_phone, communication, cleanliness, rules, again, note, created_at, updated_at)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?12)
+     ON CONFLICT(${src.col}) DO UPDATE SET admin_id=?3, communication=?7, cleanliness=?8, rules=?9, again=?10, note=?11, updated_at=?12`
+  ).bind(src.id, src.slug, a.id, src.name, emailKey(src.email), phoneKey(src.phone), s.communication, s.cleanliness, s.rules, s.again, s.note, now).run();
+  return json({ ok: true });
+}
+// nota data de gazda curenta (cu nota scrisa, care e a ei) + istoricul de la toate gazdele
+async function withRatings(env, a, rows, col, emailOf, phoneOf, needHistory = () => true) {
+  if (!rows.length) return rows;
+  const ids = rows.map((r) => r.id);
+  const { results: mine } = await env.DB.prepare(`SELECT * FROM guest_ratings WHERE ${col} IN (${ids.map(() => "?").join(",")})`).bind(...ids).all();
+  return Promise.all(rows.map(async (r) => {
+    const m = mine.find((x) => x[col] === r.id);
+    return { ...r, rating: m ? { communication: m.communication, cleanliness: m.cleanliness, rules: m.rules, again: m.again, note: m.admin_id === a.id || a.role === "admin" ? m.note : null } : null,
+      history: needHistory(r) ? await guestHistory(env, emailOf(r), phoneOf(r)) : null };
+  }));
+}
+
+// ---------- check-in online: buletin + regulament ----------
+const CHECKIN_KEEP_DAYS = 30; // poza se sterge la 30 de zile dupa plecare
+const CHECKIN_MAX_PHOTO = 2000000;
+async function siteText(env, key) {
+  return (await env.DB.prepare("SELECT value FROM site_texts WHERE key = ?").bind(key).first())?.value || "";
+}
+async function checkinKey(env, p) {
+  if (p.checkin_key) return p.checkin_key;
+  const k = randomHex(16);
+  await env.DB.prepare("UPDATE properties SET checkin_key = COALESCE(checkin_key, ?) WHERE slug = ?").bind(k, p.slug).run();
+  return (await getProperty(env, p.slug)).checkin_key;
+}
+const checkinUrl = (env, p, key, lang = "ro") => `${env.SITE_URL}${lang === "en" ? "/en/checkin/" : "/checkin/"}?p=${encodeURIComponent(p.slug)}&k=${key}`;
+// linkul vine fie din rezervarea de pe site (cod + token), fie din linkul apartamentului (pentru Booking/Airbnb)
+async function checkinContext(env, url) {
+  const code = url.searchParams.get("b"), token = url.searchParams.get("t");
+  if (code) {
+    const b = await guestBooking(env, code, token);
+    if (!["pending", "confirmed"].includes(b.status)) fail(409, "booking_closed");
+    return { p: await getProperty(env, b.property_slug), booking: b };
+  }
+  const p = await getProperty(env, String(url.searchParams.get("p") || ""));
+  const key = String(url.searchParams.get("k") || "");
+  if (!p || !p.checkin_key || key.length < 16 || key !== p.checkin_key) fail(404, "not_found");
+  return { p, booking: null };
+}
+async function checkinRoutes(req, env, ctx, url) {
+  await rateLimit(env, `checkin:${clientIp(req)}`, 40, 3600000);
+  const { p, booking } = await checkinContext(env, url);
+  const condoRules = await siteText(env, "condo_rules");
+  const houseRules = p.house_rules || "";
+  if (req.method === "GET") {
+    const done = booking ? await env.DB.prepare("SELECT created_at FROM checkins WHERE booking_code = ? ORDER BY id DESC LIMIT 1").bind(booking.code).first() : null;
+    return json({
+      propertyName: p.name, condoRules, houseRules, doneAt: done?.created_at || null,
+      prefill: booking ? { name: booking.guest_name, phone: booking.guest_phone, checkin: booking.checkin, checkout: booking.checkout, code: booking.code } : null,
+    });
+  }
+  if (req.method !== "POST") fail(405, "method_not_allowed");
+  await rateLimit(env, `checkin-send:${clientIp(req)}`, 10, 3600000);
+  const f = await req.formData().catch(() => fail(400, "invalid_value"));
+  const name = String(f.get("name") || "").trim();
+  if (name.length < 3 || name.length > 100) fail(400, "invalid_name");
+  const phone = String(f.get("phone") || "").trim().slice(0, 30) || null;
+  const checkin = booking ? booking.checkin : String(f.get("checkin") || "");
+  const checkout = booking ? booking.checkout : String(f.get("checkout") || "");
+  if (!isDate(checkin) || !isDate(checkout) || checkin >= checkout || checkout < today() || checkin > addDays(today(), 400)) fail(400, "invalid_dates");
+  if (condoRules && f.get("condo") !== "on") fail(400, "rules_required");
+  if (houseRules && f.get("house") !== "on") fail(400, "rules_required");
+  const file = f.get("photo");
+  if (!file || typeof file === "string") fail(400, "photo_required");
+  const data = new Uint8Array(await file.arrayBuffer());
+  if (data.length > CHECKIN_MAX_PHOTO) fail(413, "photo_too_large");
+  if (data.length < 2000 || data[0] !== 0xff || data[1] !== 0xd8 || data[2] !== 0xff) fail(400, "invalid_photo");
+  const lang = f.get("lang") === "en" ? "en" : "ro";
+  await env.DB.prepare(
+    `INSERT INTO checkins (property_slug, booking_code, guest_name, guest_phone, checkin, checkout, id_photo, condo_rules_ok, house_rules_ok, lang, created_at, delete_after)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+  ).bind(p.slug, booking?.code || null, name, phone, checkin, checkout, data, condoRules ? 1 : 0, houseRules ? 1 : 0, lang, Date.now(), addDays(checkout, CHECKIN_KEEP_DAYS)).run();
+  const text = `${name}, ${checkin} – ${checkout}`;
+  ctx.waitUntil(pushToStaff(env, p.slug, { title: `Check-in nou: ${p.name}`, body: text, url: "/admin/#checkin" }).catch(() => {}));
+  if (p.owner_email) ctx.waitUntil(mailChat(env, p.owner_email, `Check-in nou: ${p.name}`, `${text}. Buletinul și acordul pentru regulament sunt în panou.`, `${env.SITE_URL}/admin/`, "ro").catch(() => {}));
+  return json({ ok: true }, 201);
+}
+async function checkinAdminRoutes(req, env, a, parts) {
+  const [, id, action] = parts;
+  if (!id && req.method === "GET") {
+    const slugs = await adminSlugs(env, a);
+    if (!slugs.length) return json({ checkins: [], condoRules: a.role === "admin" ? await siteText(env, "condo_rules") : undefined });
+    const { results } = await env.DB.prepare(
+      `SELECT c.id, c.property_slug AS slug, p.name AS property_name, c.booking_code, c.guest_name, c.guest_phone, c.checkin, c.checkout,
+         c.condo_rules_ok, c.house_rules_ok, c.created_at, c.seen_at, c.delete_after
+       FROM checkins c JOIN properties p ON p.slug = c.property_slug
+       WHERE c.property_slug IN (${slugs.map(() => "?").join(",")}) ORDER BY c.checkin DESC, c.id DESC LIMIT 200`
+    ).bind(...slugs).all();
+    const recent = addDays(today(), -60);
+    const rows = await withRatings(env, a, results, "checkin_id", () => null, (c) => c.guest_phone, (c) => c.checkout >= recent);
+    return json({ checkins: rows, condoRules: a.role === "admin" ? await siteText(env, "condo_rules") : undefined });
+  }
+  if (id === "condo-rules" && req.method === "PUT") {
+    if (a.role !== "admin") fail(403, "forbidden");
+    const value = String((await readJson(req)).text || "").trim().slice(0, 8000);
+    await env.DB.prepare("INSERT INTO site_texts (key, value, updated_at) VALUES ('condo_rules', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2").bind(value, Date.now()).run();
+    return json({ ok: true });
+  }
+  const row = await env.DB.prepare("SELECT id, property_slug FROM checkins WHERE id = ?").bind(Number(id)).first();
+  if (!row) fail(404, "not_found");
+  await ownedProperty(env, a, row.property_slug);
+  if (action === "photo" && req.method === "GET") {
+    const ph = await env.DB.prepare("SELECT id_photo FROM checkins WHERE id = ?").bind(row.id).first();
+    await env.DB.prepare("UPDATE checkins SET seen_at = COALESCE(seen_at, ?) WHERE id = ?").bind(Date.now(), row.id).run();
+    return new Response(new Uint8Array(ph.id_photo), { headers: { "content-type": "image/jpeg", "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
+  }
+  if (!action && req.method === "DELETE") {
+    await env.DB.prepare("DELETE FROM checkins WHERE id = ?").bind(row.id).run();
+    return json({ ok: true });
+  }
+  fail(404, "not_found");
+}
+async function purgeCheckins(env) {
+  await env.DB.prepare("DELETE FROM checkins WHERE delete_after < ?").bind(today()).run();
+}
+
+// nota de pe Booking: se afiseaza doar daca are si nota si numarul de evaluari
+const bookingOf = (p) => (p.booking_score > 0 && p.booking_count > 0 ? { score: p.booking_score, count: p.booking_count, url: p.booking_url || null } : null);
+function cleanBooking(b) {
+  const score = b.bookingScore === "" || b.bookingScore == null ? null : Number(String(b.bookingScore).replace(",", "."));
+  const count = b.bookingCount === "" || b.bookingCount == null ? null : Number(b.bookingCount);
+  if (score != null && !(score >= 1 && score <= 10)) fail(400, "invalid_value");
+  if (count != null && !(Number.isInteger(count) && count >= 0 && count <= 100000)) fail(400, "invalid_value");
+  const url = String(b.bookingUrl || "").trim();
+  if (url && !/^https:\/\/(www\.)?booking\.com\//.test(url)) fail(400, "invalid_link");
+  return { score: score == null ? null : Math.round(score * 10) / 10, count, url: url.slice(0, 300) || null };
+}
+
 // ---------- apartamente adaugate din panou ----------
 const MIN_PHOTOS = 3, MAX_PHOTOS = 20, MAX_PHOTO_BYTES = 1500000;
 const photoUrl = (id) => `/api/photos/${id}`;
@@ -922,8 +1143,8 @@ async function createListing(env, a, b) {
   let slug = slugFrom(l.name);
   for (let i = 2; await getProperty(env, slug); i++) slug = `${slugFrom(l.name)}-${i}`;
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO properties (slug, name, capacity, ical_token, status, dynamic, room_type, tagline, description, amenities, story) VALUES (?,?,?,?, 'draft', 1, ?,?,?,?,?)`)
-      .bind(slug, l.name, l.capacity, randomHex(20), l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), l.story),
+    env.DB.prepare(`INSERT INTO properties (slug, name, capacity, ical_token, status, dynamic, room_type, tagline, description, amenities, story, checkin_key) VALUES (?,?,?,?, 'draft', 1, ?,?,?,?,?,?)`)
+      .bind(slug, l.name, l.capacity, randomHex(20), l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), l.story, randomHex(16)),
     ...(a.role === "admin" ? [] : [env.DB.prepare("INSERT INTO admin_properties (admin_id, property_slug) VALUES (?,?)").bind(a.id, slug)]),
   ]);
   return slug;
@@ -931,9 +1152,15 @@ async function createListing(env, a, b) {
 async function listingRoutes(req, env, ctx, a, p, action) {
   if (!p.dynamic) fail(409, "static_property");
   if (action === "listing" && req.method === "PATCH") {
-    const l = cleanListing(await readJson(req));
+    const b = await readJson(req);
+    const l = cleanListing(b);
     await env.DB.prepare("UPDATE properties SET name=?, capacity=?, room_type=?, tagline=?, description=?, amenities=?, story=? WHERE slug=?")
       .bind(l.name, l.capacity, l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), l.story, p.slug).run();
+    // nota de pe Booking o poate schimba doar administratorul, ca proprietarul sa nu-si puna singur nota
+    if (a.role === "admin" && "bookingScore" in b) {
+      const k = cleanBooking(b);
+      await env.DB.prepare("UPDATE properties SET booking_url=?, booking_score=?, booking_count=? WHERE slug=?").bind(k.url, k.score, k.count, p.slug).run();
+    }
     return json({ ok: true });
   }
   if (action === "photos" && req.method === "GET") {
@@ -960,6 +1187,7 @@ async function listingRoutes(req, env, ctx, a, p, action) {
     await env.DB.prepare("UPDATE properties SET status = 'pending' WHERE slug = ?").bind(p.slug).run();
     ctx.waitUntil(pushToStaff(env, null, { title: "Apartament de aprobat", body: p.name, url: "/admin/" }).catch(() => {}));
     ctx.waitUntil(mailChat(env, env.MAIL_FROM, `Apartament de aprobat: ${p.name}`, `${a.email} a trimis apartamentul spre publicare.`, `${env.SITE_URL}/admin/`, "ro").catch(() => {}));
+    ctx.waitUntil(telegram(env, `🏠 Apartament de aprobat: ${p.name}\nDe la: ${a.email}\n${env.SITE_URL}/admin/`));
     return json({ status: "pending" });
   }
   if ((action === "approve" || action === "unpublish") && req.method === "POST") {
@@ -1211,10 +1439,12 @@ async function guestRoutes(req, env, ctx, parts) {
     const pw = String(b.password || "");
     const lock = await env.DB.prepare("SELECT until FROM login_fails WHERE email = ?").bind(email).first();
     if (lock && lock.until > Date.now()) fail(429, "too_many_requests");
-    const g = await env.DB.prepare("SELECT id, pass_hash FROM guests WHERE email = ?").bind(email).first();
-    const a = g ? null : await env.DB.prepare("SELECT id, email, role, pass_hash FROM admins WHERE email = ?").bind(email).first();
-    const who = g || a;
-    if (!who || !(await verifyPassword(pw, who.pass_hash))) {
+    // acelasi email poate avea cont de proprietar si de oaspete: decide parola care se potriveste, proprietarul intai
+    const ad = await env.DB.prepare("SELECT id, email, role, pass_hash FROM admins WHERE email = ?").bind(email).first();
+    const gu = await env.DB.prepare("SELECT id, pass_hash FROM guests WHERE email = ?").bind(email).first();
+    const a = ad && (await verifyPassword(pw, ad.pass_hash)) ? ad : null;
+    const g = !a && gu && (await verifyPassword(pw, gu.pass_hash)) ? gu : null;
+    if (!a && !g) {
       await env.DB.prepare(
         `INSERT INTO login_fails (email, count, until) VALUES (?1, 1, 0)
          ON CONFLICT(email) DO UPDATE SET count = count + 1, until = CASE WHEN count + 1 >= 8 THEN ?2 ELSE 0 END`
@@ -1383,6 +1613,7 @@ async function maintain(env, ctx) {
   if (await claim(env, "expire-pending", 10 * 60000)) ctx.waitUntil(expirePending(env));
   if (env.BREVO_API_KEY && await claim(env, "brevo-keepalive", 30 * 86400000)) ctx.waitUntil(brevoKeepAlive(env));
   if (await claim(env, "review-requests", 30 * 60000)) ctx.waitUntil(sendReviewRequests(env).catch((e) => console.error("review", e)));
+  if (await claim(env, "checkin-purge", 6 * 3600000)) ctx.waitUntil(purgeCheckins(env).catch((e) => console.error("checkin purge", e)));
 }
 
 // Cele mai putine apartamente in care incap toti oaspetii; la acelasi numar, cel mai mic pret.
@@ -1420,6 +1651,17 @@ async function api(req, env, ctx, url) {
   const parts = url.pathname.split("/").filter(Boolean).slice(1).map(decodeURIComponent);
   const [first, second, third] = parts;
 
+  // webhook Stripe: fara CORS, fara rate limit, fara maintain (Stripe asteapta raspuns rapid)
+  if (first === "stripe" && second === "webhook" && req.method === "POST") {
+    return handleStripeWebhook(req, env, ctx);
+  }
+  // rezolvare session id -> cod rezervare (folosit de pagina /rezervare/succes cand Stripe trimite doar session_id)
+  if (first === "stripe" && second === "session" && third && req.method === "GET") {
+    const b = await env.DB.prepare("SELECT code, status, payment_status FROM bookings WHERE stripe_session_id = ?").bind(third).first();
+    if (!b) return json({ error: "not_found" }, 404);
+    return json({ code: b.code, status: b.status, paymentStatus: b.payment_status });
+  }
+
   await maintain(env, ctx);
 
   if (first === "admin") return adminRoutes(req, env, ctx, parts.slice(1));
@@ -1442,11 +1684,11 @@ async function api(req, env, ctx, url) {
   }
   if (first === "listings" && req.method === "GET") {
     const { results } = await env.DB.prepare(
-      `SELECT p.slug, p.name, p.capacity, p.room_type, p.tagline, p.base_price,
+      `SELECT p.slug, p.name, p.capacity, p.room_type, p.tagline, p.base_price, p.booking_url, p.booking_score, p.booking_count,
          (SELECT id FROM property_photos f WHERE f.property_slug = p.slug ORDER BY position, id LIMIT 1) AS photo
        FROM properties p WHERE p.status = 'published' AND p.dynamic = 1 ORDER BY p.name`
     ).all();
-    return json({ listings: results.map((p) => ({ slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, basePrice: p.base_price, photo: p.photo ? photoUrl(p.photo) : null })) });
+    return json({ listings: results.map((p) => ({ slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, basePrice: p.base_price, photo: p.photo ? photoUrl(p.photo) : null, booking: bookingOf(p) })) });
   }
 
   if (first === "reviews" && second) {
@@ -1480,7 +1722,7 @@ async function api(req, env, ctx, url) {
       if (!p || !p.dynamic || p.status !== "published") fail(404, "not_found");
       return json({
         slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, description: p.description, story: p.story,
-        amenities: JSON.parse(p.amenities || "[]"), photos: (await photoIds(env, p.slug)).map(photoUrl),
+        amenities: JSON.parse(p.amenities || "[]"), photos: (await photoIds(env, p.slug)).map(photoUrl), booking: bookingOf(p),
       });
     }
     if (third === "reviews") {
@@ -1558,6 +1800,7 @@ async function api(req, env, ctx, url) {
     return json({ ok: true });
   }
 
+  if (first === "checkin" && !second) return checkinRoutes(req, env, ctx, url);
   if (first === "bookings") {
     if (!second && req.method === "POST") return createBooking(req, env, ctx);
     if (second) {
@@ -1580,9 +1823,180 @@ async function api(req, env, ctx, url) {
         ]));
         return json(publicBooking(updated, p));
       }
+      if (third === "pay" && req.method === "POST") {
+        await rateLimit(env, `pay:${clientIp(req)}`, 20, 3600000);
+        const b = await guestBooking(env, second, token);
+        const p = await getProperty(env, b.property_slug);
+        let bodyIn = {};
+        try { bodyIn = await readJson(req); } catch {}
+        const lang = bodyIn && bodyIn.lang === "en" ? "en" : (b.lang === "en" ? "en" : "ro");
+        const returnBaseUrl = bodyIn && typeof bodyIn.returnBaseUrl === "string" ? bodyIn.returnBaseUrl : null;
+        const sess = await createStripeSession(env, b, p, lang, returnBaseUrl);
+        return json(sess);
+      }
     }
   }
   fail(404, "not_found");
+}
+
+// ---------- Stripe payment ----------
+// Plata pentru rezervari se face prin Stripe Checkout cu redirect.
+// Flow: oaspete completeaza formular -> createBooking -> daca property.stripe_enabled=1 -> POST /pay -> redirect Stripe -> webhook confirma plata.
+// returnBaseUrl permite ca site-uri partenere (dandelionsinaia.ro) sa se intoarca pe propriul domeniu dupa plata.
+const STRIPE_ALLOWED_RETURN_HOSTS = [
+  "https://greenfuturesinaia.com",
+  "https://www.greenfuturesinaia.com",
+  "https://dandelionsinaia.ro",
+  "https://www.dandelionsinaia.ro",
+];
+async function createStripeSession(env, booking, property, lang, returnBaseUrl) {
+  if (!env.STRIPE_SECRET_KEY) fail(500, "stripe_not_configured");
+  if (!property.stripe_enabled) fail(400, "stripe_disabled_on_property");
+  if (booking.payment_status === "paid") fail(409, "already_paid");
+  if (booking.status === "cancelled") fail(409, "booking_cancelled");
+
+  const defaultSite = (env.SITE_URL || "https://greenfuturesinaia.com").replace(/\/$/, "");
+  const siteUrl = (returnBaseUrl && STRIPE_ALLOWED_RETURN_HOSTS.includes(returnBaseUrl.replace(/\/$/, ""))) ? returnBaseUrl.replace(/\/$/, "") : defaultSite;
+  const ro = lang !== "en";
+  // Stripe adauga session_id automat prin template {CHECKOUT_SESSION_ID}. Pastram si codul rezervarii ca fallback.
+  const successUrl = ro
+    ? `${siteUrl}/rezervare/succes/?code=${booking.code}&session_id={CHECKOUT_SESSION_ID}`
+    : `${siteUrl}/en/booking/success/?code=${booking.code}&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = ro
+    ? `${siteUrl}/rezervare/anulat/?code=${booking.code}&session_id={CHECKOUT_SESSION_ID}`
+    : `${siteUrl}/en/booking/cancelled/?code=${booking.code}&session_id={CHECKOUT_SESSION_ID}`;
+  const productName = ro ? `Rezervare ${property.name}` : `Reservation ${property.name}`;
+  const productDesc = `${booking.checkin} - ${booking.checkout}, ${booking.adults + (booking.children || 0)} ${ro ? "oaspeti" : "guests"}`;
+
+  const body = new URLSearchParams();
+  body.append("mode", "payment");
+  // payment_method_types nu mai e suportat in versiunea curenta (2026+); metodele vin din Dashboard > Settings > Payment methods
+  body.append("line_items[0][price_data][currency]", "ron");
+  body.append("line_items[0][price_data][product_data][name]", productName);
+  body.append("line_items[0][price_data][product_data][description]", productDesc);
+  body.append("line_items[0][price_data][unit_amount]", String(Math.round(Number(booking.total) * 100)));
+  body.append("line_items[0][quantity]", "1");
+  body.append("success_url", successUrl);
+  body.append("cancel_url", cancelUrl);
+  if (booking.guest_email) body.append("customer_email", booking.guest_email);
+  body.append("client_reference_id", booking.code);
+  body.append("metadata[booking_code]", booking.code);
+  body.append("metadata[property_slug]", property.slug);
+  body.append("metadata[lang]", ro ? "ro" : "en");
+  body.append("locale", ro ? "ro" : "en");
+  body.append("expires_at", String(Math.floor(Date.now() / 1000) + 24 * 3600));
+
+  const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${String(env.STRIPE_SECRET_KEY).trim()}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+  const respText = await resp.text();
+  let data;
+  try { data = JSON.parse(respText); } catch { data = { raw: respText }; }
+  if (!resp.ok) {
+    console.error("stripe_create_session_error", JSON.stringify({ status: resp.status, data, sent: Object.fromEntries(body) }));
+    fail(502, "stripe_error", { message: (data.error && data.error.message) || "unknown", status: resp.status });
+  }
+
+  await env.DB.prepare(
+    "UPDATE bookings SET stripe_session_id = ?, updated_at = ? WHERE id = ?"
+  ).bind(data.id, Date.now(), booking.id).run();
+
+  return { url: data.url, sessionId: data.id, expiresAt: data.expires_at };
+}
+
+// Verifica semnatura Stripe (format: t=timestamp,v1=sig[,v1=sig2])
+async function verifyStripeSignature(rawBody, sigHeader, secret, toleranceSec) {
+  if (!sigHeader || !secret) return false;
+  const parts = { v1: [] };
+  for (const part of sigHeader.split(",")) {
+    const eq = part.indexOf("=");
+    if (eq <= 0) continue;
+    const k = part.slice(0, eq).trim();
+    const v = part.slice(eq + 1).trim();
+    if (k === "t") parts.t = v;
+    else if (k === "v1") parts.v1.push(v);
+  }
+  if (!parts.t || parts.v1.length === 0) return false;
+  const timestamp = Number(parts.t);
+  if (!Number.isFinite(timestamp)) return false;
+  const tolerance = toleranceSec || 300;
+  if (Math.abs(Math.floor(Date.now() / 1000) - timestamp) > tolerance) return false;
+
+  const signedPayload = parts.t + "." + rawBody;
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sigBytes = await crypto.subtle.sign("HMAC", key, enc.encode(signedPayload));
+  const expected = [...new Uint8Array(sigBytes)].map(b => b.toString(16).padStart(2, "0")).join("");
+  for (const provided of parts.v1) {
+    if (provided.length !== expected.length) continue;
+    let match = 0;
+    for (let i = 0; i < provided.length; i++) match |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
+    if (match === 0) return true;
+  }
+  return false;
+}
+
+async function handleStripeWebhook(req, env, ctx) {
+  const raw = await req.text();
+  const sigHeader = req.headers.get("stripe-signature");
+  if (!env.STRIPE_WEBHOOK_SECRET) {
+    console.error("stripe_webhook_secret_missing");
+    return json({ error: "webhook_not_configured" }, 500);
+  }
+  const ok = await verifyStripeSignature(raw, sigHeader, String(env.STRIPE_WEBHOOK_SECRET).trim());
+  if (!ok) {
+    console.error("stripe_webhook_bad_signature");
+    return json({ error: "bad_signature" }, 400);
+  }
+  let event;
+  try { event = JSON.parse(raw); } catch { return json({ error: "bad_json" }, 400); }
+
+  const session = event.data && event.data.object;
+  if (!session) return json({ received: true });
+  const code = session.client_reference_id || (session.metadata && session.metadata.booking_code);
+  if (!code) return json({ received: true, note: "no_booking_code" });
+
+  if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
+    if (session.payment_status === "paid") {
+      const b = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
+      if (b && b.payment_status !== "paid") {
+        await env.DB.prepare(
+          `UPDATE bookings SET payment_status = 'paid', stripe_payment_intent = ?,
+             paid_at = ?, status = CASE WHEN status IN ('pending','confirmed') THEN 'confirmed' ELSE status END,
+             updated_at = ? WHERE id = ?`
+        ).bind(session.payment_intent || null, Date.now(), Date.now(), b.id).run();
+        const p = await getProperty(env, b.property_slug);
+        const updated = await env.DB.prepare("SELECT * FROM bookings WHERE id = ?").bind(b.id).first();
+        ctx.waitUntil(Promise.allSettled([
+          mailGuest(env, p, updated, "confirmed"),
+          mailOwnerNew(env, p, updated),
+          pushToStaff(env, p.slug, staffBookingMessage(p, updated, "Plata confirmata")),
+        ]));
+      }
+    }
+  } else if (event.type === "checkout.session.expired") {
+    const b = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
+    if (b && b.payment_status === "unpaid" && b.status === "pending") {
+      await env.DB.prepare("UPDATE bookings SET status = 'cancelled', updated_at = ? WHERE id = ?").bind(Date.now(), b.id).run();
+    }
+  } else if (event.type === "charge.refunded" || event.type === "refund.updated") {
+    // marchez rambursarea in booking (dar nu modific statusul sejurului - decide owner)
+    const pi = session.payment_intent || session.id;
+    if (pi) {
+      await env.DB.prepare(
+        "UPDATE bookings SET payment_status = 'refunded', updated_at = ? WHERE stripe_payment_intent = ?"
+      ).bind(Date.now(), pi).run();
+    }
+  }
+
+  return json({ received: true });
 }
 
 async function icalExport(env, token) {

@@ -1,0 +1,148 @@
+---
+pagination:
+  data: languages
+  size: 1
+  alias: lang
+permalink: "{{ '/confidentialitate/index.html' if lang == 'ro' else '/en/privacy/index.html' }}"
+layout: base.njk
+eleventyComputed:
+  title: "{{ 'Politica de confidențialitate' if lang == 'ro' else 'Privacy Policy' }} - {{ site.name }}"
+  description: "{{ 'Cum colectăm, folosim și protejăm datele personale ale oaspeților conform GDPR.' if lang == 'ro' else 'How we collect, use and protect guest personal data under GDPR.' }}"
+  urlRo: "/confidentialitate/"
+  urlEn: "/en/privacy/"
+---
+<main class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">{{ 'Legal' if lang == 'ro' else 'Legal' }}</span>
+    <h1>{{ 'Politica de confidențialitate' if lang == 'ro' else 'Privacy Policy' }}</h1>
+    <p class="lead">{{ 'Ultima actualizare: 10 noiembrie 2026' if lang == 'ro' else 'Last updated: 10 November 2026' }}</p>
+  </div>
+</main>
+
+<section class="block">
+  <div class="wrap legal-doc">
+  {% if lang == 'ro' %}
+    <h2>1. Cine suntem</h2>
+    <p>Operator de date: <strong>Grow LLC</strong>, 16192 Coastal Highway, Lewes, DE 19958, SUA. Contact: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a>.</p>
+
+    <h2>2. Ce date colectăm</h2>
+    <ul>
+      <li><strong>Date de contact:</strong> nume complet, email, telefon.</li>
+      <li><strong>Date rezervare:</strong> perioada, număr oaspeți, observații.</li>
+      <li><strong>Date card:</strong> procesate direct de Stripe, Inc. - noi NU stocăm numărul cardului sau CVV.</li>
+      <li><strong>Date tehnice:</strong> adresa IP, browser, cookie-uri funcționale.</li>
+    </ul>
+
+    <h2>3. Scopul prelucrării</h2>
+    <ul>
+      <li>Executarea contractului de rezervare (GDPR Art. 6(1)(b))</li>
+      <li>Respectarea obligațiilor legale fiscale și de evidență turistică (Art. 6(1)(c))</li>
+      <li>Trimiterea confirmărilor și a instrucțiunilor de check-in</li>
+      <li>Prevenirea fraudei (Art. 6(1)(f) - interes legitim)</li>
+    </ul>
+
+    <h2>4. Cui transmitem datele</h2>
+    <ul>
+      <li><strong>Proprietarul apartamentului</strong> - nume, număr oaspeți, perioada (necesar pentru check-in)</li>
+      <li><strong>Stripe, Inc.</strong> - procesator plăți (<a href="https://stripe.com/privacy" target="_blank" rel="noopener">politica Stripe</a>)</li>
+      <li><strong>Cloudflare, Inc.</strong> - hosting și securitate (<a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">politica Cloudflare</a>)</li>
+      <li><strong>Brevo</strong> - trimitere emailuri tranzacționale</li>
+      <li><strong>Autorități</strong> - la cerere legală (poliție, fisc)</li>
+    </ul>
+
+    <h2>5. Transfer internațional</h2>
+    <p>Datele pot fi transferate către SUA (Grow LLC, Stripe, Cloudflare). Toate aceste companii aplică măsuri de protecție conforme GDPR (Standard Contractual Clauses).</p>
+
+    <h2>6. Cât timp păstrăm datele</h2>
+    <ul>
+      <li>Date rezervare: 5 ani (obligație contabilă)</li>
+      <li>Date fiscale: 10 ani (obligație fiscală RO)</li>
+      <li>Log-uri tehnice: 90 de zile</li>
+      <li>Email marketing: până la dezabonare</li>
+    </ul>
+
+    <h2>7. Drepturile dumneavoastră (GDPR)</h2>
+    <p>Aveți dreptul la:</p>
+    <ul>
+      <li>Acces la datele personale</li>
+      <li>Rectificare date incorecte</li>
+      <li>Ștergere ("dreptul de a fi uitat"), cu excepția obligațiilor legale</li>
+      <li>Restricționarea prelucrării</li>
+      <li>Portabilitatea datelor</li>
+      <li>Opoziție la prelucrare</li>
+      <li>Reclamație la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (ANSPDCP)</li>
+    </ul>
+    <p>Solicitările se trimit la <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a> și le soluționăm în maxim 30 de zile.</p>
+
+    <h2>8. Cookie-uri</h2>
+    <p>Folosim cookie-uri funcționale necesare pentru operarea site-ului și preferințele dumneavoastră (limba, tema). Nu folosim cookie-uri de publicitate sau tracking. Cookie-urile de la Stripe apar doar pe pagina de plată.</p>
+
+    <h2>9. Securitate</h2>
+    <p>Datele sunt stocate criptat (TLS 1.3, bazele de date Cloudflare D1), accesul este restricționat prin autentificare și 2FA, iar card-urile nu ating serverele noastre (sunt procesate direct de Stripe prin PCI DSS Level 1).</p>
+
+    <h2>10. Contact DPO</h2>
+    <p>Orice întrebare despre datele dumneavoastră: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a>.</p>
+  {% else %}
+    <h2>1. Who we are</h2>
+    <p>Data controller: <strong>Grow LLC</strong>, 16192 Coastal Highway, Lewes, DE 19958, USA. Contact: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a>.</p>
+
+    <h2>2. What data we collect</h2>
+    <ul>
+      <li><strong>Contact data:</strong> full name, email, phone.</li>
+      <li><strong>Booking data:</strong> dates, number of guests, notes.</li>
+      <li><strong>Card data:</strong> processed directly by Stripe, Inc. - we do NOT store the card number or CVV.</li>
+      <li><strong>Technical data:</strong> IP address, browser, functional cookies.</li>
+    </ul>
+
+    <h2>3. Purpose of processing</h2>
+    <ul>
+      <li>Performance of the booking contract (GDPR Art. 6(1)(b))</li>
+      <li>Compliance with fiscal and tourism registration obligations (Art. 6(1)(c))</li>
+      <li>Sending confirmations and check-in instructions</li>
+      <li>Fraud prevention (Art. 6(1)(f) - legitimate interest)</li>
+    </ul>
+
+    <h2>4. Who we share data with</h2>
+    <ul>
+      <li><strong>The apartment owner</strong> - name, number of guests, dates (needed for check-in)</li>
+      <li><strong>Stripe, Inc.</strong> - payment processor (<a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe privacy</a>)</li>
+      <li><strong>Cloudflare, Inc.</strong> - hosting and security (<a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare privacy</a>)</li>
+      <li><strong>Brevo</strong> - transactional email delivery</li>
+      <li><strong>Authorities</strong> - upon legal request (police, tax)</li>
+    </ul>
+
+    <h2>5. International transfer</h2>
+    <p>Data may be transferred to the USA (Grow LLC, Stripe, Cloudflare). All these companies apply GDPR-compliant safeguards (Standard Contractual Clauses).</p>
+
+    <h2>6. How long we keep data</h2>
+    <ul>
+      <li>Booking data: 5 years (accounting obligation)</li>
+      <li>Fiscal data: 10 years (RO fiscal obligation)</li>
+      <li>Technical logs: 90 days</li>
+      <li>Email marketing: until unsubscribe</li>
+    </ul>
+
+    <h2>7. Your rights (GDPR)</h2>
+    <p>You have the right to:</p>
+    <ul>
+      <li>Access to your personal data</li>
+      <li>Rectification of incorrect data</li>
+      <li>Erasure ("right to be forgotten"), except legal obligations</li>
+      <li>Restriction of processing</li>
+      <li>Data portability</li>
+      <li>Object to processing</li>
+      <li>Complaint to the National Authority for the Supervision of Personal Data Processing (ANSPDCP, Romania)</li>
+    </ul>
+    <p>Requests go to <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a> and we resolve them within 30 days.</p>
+
+    <h2>8. Cookies</h2>
+    <p>We use functional cookies necessary for site operation and your preferences (language, theme). We do not use advertising or tracking cookies. Stripe cookies only appear on the payment page.</p>
+
+    <h2>9. Security</h2>
+    <p>Data is stored encrypted (TLS 1.3, Cloudflare D1 databases), access is restricted via authentication and 2FA, and cards never touch our servers (processed directly by Stripe via PCI DSS Level 1).</p>
+
+    <h2>10. DPO contact</h2>
+    <p>Any question about your data: <a href="mailto:rezervari@greenfuturesinaia.com">rezervari@greenfuturesinaia.com</a>.</p>
+  {% endif %}
+  </div>
+</section>
