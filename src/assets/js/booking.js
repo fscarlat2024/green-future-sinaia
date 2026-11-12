@@ -276,6 +276,7 @@
 
   async function submit(ev) {
     ev.preventDefault();
+    if (root.hasAttribute("data-test")) { state.error = lang === "en" ? "TEST mode on green-future — bookings don't complete here. For real bookings use dandelionsinaia.ro" : "Mod TEST pe green-future — rezervarea nu se finalizeaza aici. Pentru rezervari reale foloseste dandelionsinaia.ro"; renderForm(); return; }
     const form = ev.currentTarget;
     const btn = form.querySelector("[type=submit]");
     const f = new FormData(form);
