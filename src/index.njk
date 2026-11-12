@@ -155,14 +155,18 @@ eleventyComputed:
   </div>
 </section>
 
-<section class="block" id="util" style="padding-top:1rem">
+<section class="block" id="transport" style="padding-top:1rem">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">{{ t.util_eyebrow }}</span>
-      <h2>{{ t.util_title }}</h2>
-      <p>{{ t.util_sub }}</p>
+      <span class="eyebrow">{{ t.travel_eyebrow }}</span>
+      <h2>{{ t.travel_title }}</h2>
+      <p>{{ t.travel_sub }}</p>
     </div>
     <div class="get-grid">
+      <div class="act-card"><div class="act-ic" aria-hidden="true">🚆</div><h3>{{ t.travel_station_t }}</h3><p>{{ t.travel_station_d }}</p></div>
+      <div class="act-card"><div class="act-ic" aria-hidden="true">🚌</div><h3>{{ t.travel_local_t }}</h3><p>{{ t.travel_local_d }}</p>
+        <div class="act-contact"><a href="https://sinaiago.ro/wp-content/uploads/2023/03/TUS-harta-1_nob2.png" target="_blank" rel="noopener">🗺️ {{ t.travel_map }}</a><a href="https://sinaiago.ro/transport-urban/trasee/" target="_blank" rel="noopener">🕒 {{ t.travel_routes }}</a></div>
+      </div>
       <div class="act-card"><div class="act-ic" aria-hidden="true">🚕</div><h3>{{ t.taxi_t }}</h3><p>{{ t.taxi_d }}</p>
         <div class="act-contact">{% for x in site.taxi %}<a href="tel:{{ x.tel }}">{{ x.name }}: {{ x.show }}{% if x['note_' ~ lang] %} ({{ x['note_' ~ lang] }}){% endif %}</a>{% endfor %}</div>
       </div>
@@ -170,6 +174,7 @@ eleventyComputed:
         <div class="act-contact">{% for s in site.shops %}<span>{{ s.name }} — {{ s['note_' ~ lang] }}</span>{% endfor %}</div>
       </div>
     </div>
+    <p class="attr-note">{{ t.travel_note }}</p>
   </div>
 </section>
 
