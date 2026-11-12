@@ -126,7 +126,7 @@ header.nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srg
 .fact b { display: block; font-family: "Cormorant Garamond", serif; font-size: 1.05rem; font-weight: 600; line-height: 1.1; }
 .fact span { font-size: .82rem; color: var(--muted); }
 
-section.block { padding: 5rem 0; }
+section.block { padding: 2.75rem 0; }
 .sec-head { display: grid; gap: .7rem; max-width: 640px; margin-bottom: 2.4rem; }
 .sec-head h2 { font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 600; letter-spacing: -.01em; }
 .sec-head p { color: var(--ink-soft); font-size: 1.08rem; margin: 0; }
@@ -397,7 +397,7 @@ header.nav { background: color-mix(in srgb, var(--ground) 78%, transparent); }
 .facts { border-radius: var(--radius); box-shadow: none; }
 .fact .fi { display: none; }
 .fact b { font-size: 1.2rem; font-weight: 500; }
-section.block { padding: clamp(4.5rem, 9vw, 7.5rem) 0; }
+section.block { padding: clamp(2.25rem, 4.5vw, 3.75rem) 0; }
 .sec-head { max-width: 720px; margin-bottom: 3rem; }
 .sec-head h2, .band h2 { font-size: clamp(2.3rem, 5vw, 3.6rem); font-weight: 400; line-height: 1.05; }
 .sec-head p, .split .copy p { font-weight: 300; }
