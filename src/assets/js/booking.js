@@ -276,7 +276,6 @@
 
   async function submit(ev) {
     ev.preventDefault();
-    if (root.hasAttribute("data-test")) { state.error = lang === "en" ? "TEST mode on green-future — bookings don't complete here. For real bookings use dandelionsinaia.ro" : "Mod TEST pe green-future — rezervarea nu se finalizeaza aici. Pentru rezervari reale foloseste dandelionsinaia.ro"; renderForm(); return; }
     const form = ev.currentTarget;
     const btn = form.querySelector("[type=submit]");
     const f = new FormData(form);
@@ -286,7 +285,7 @@
       method: "POST", headers: { "content-type": "application/json", ...authHeader() },
       body: JSON.stringify({
         slug: root.dataset.slug, checkin: state.checkin, checkout: state.checkout, adults: state.adults, children: state.children, lang,
-        name: f.get("name"), email: f.get("email"), phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token, payNow: f.get("payMethod") === "now",
+        name: f.get("name"), email: f.get("email"), phone: f.get("phone"), note: f.get("note"), website: f.get("website"), accept: f.get("accept") === "on", pushToken: window.GF_NATIVE_PUSH?.token, payNow: f.get("payMethod") === "now", test: root.hasAttribute("data-test"),
       }),
     }).catch(() => null);
     const data = r ? await r.json().catch(() => ({})) : {};

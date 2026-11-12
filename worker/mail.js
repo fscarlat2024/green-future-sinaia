@@ -85,8 +85,17 @@ const COPY = {
 export function mailGuest(env, p, b, kind, token) {
   const lang = b.lang === "en" ? "en" : "ro";
   const brand = brandOf(p);
-  const [title, textTpl] = COPY[kind][lang];
+  const isTest = b.status === "test";
+  const [titleTpl, textTpl] = isTest
+    ? (lang === "en"
+        ? ["Test booking — not real", "This was only a test of the booking system. No real booking was made and nothing was charged."]
+        : ["Rezervare de TEST — nu e reală", "Aceasta a fost doar o testare a sistemului de rezervări. Nu s-a făcut nicio rezervare reală și nu s-a reţinut nicio sumă."])
+    : COPY[kind][lang];
+  const title = titleTpl;
   const text = textTpl.replace("__BRAND__", brand.name);
+  const testBanner = isTest
+    ? `<div style="background:#c0392b;color:#fff;padding:14px 16px;border-radius:10px;margin:0 0 16px;font-size:15px;font-weight:bold">${lang === "en" ? "⚠ TEST — no real booking was made. The Green Future system is still being tested." : "⚠ TEST — nu s-a făcut nicio rezervare reală. Sistemul Green Future este încă în teste."}</div>`
+    : "";
   const path = lang === "en" ? "/en/booking/" : "/rezervare/";
   const site = brandSiteUrl(env, brand);
   const manage = token
@@ -99,7 +108,7 @@ export function mailGuest(env, p, b, kind, token) {
   const checkin = (kind === "confirmed" || kind === "received") && checkinHref
     ? `<p style="margin-top:18px">${lang === "en" ? "Save time on arrival: send a photo of your ID and confirm the house rules online." : "Câștigi timp la sosire: trimite poza buletinului și confirmă regulamentul online."}</p><p><a href="${esc(checkinHref)}" style="background:${brand.buttonBg};color:${brand.buttonFg};padding:10px 18px;border-radius:999px;text-decoration:none">${lang === "en" ? "Online check-in" : "Check-in online"}</a></p>`
     : "";
-  return send(env, b.guest_email, `${title} - ${b.code}`, wrap(esc(title), `<p>${esc(text)}</p>${details(p, b, lang, brand)}${manage}${checkin}`, brand), p.owner_email, brand.name);
+  return send(env, b.guest_email, `${isTest ? "[TEST] " : ""}${title} - ${b.code}`, wrap(esc(title), `${testBanner}<p>${esc(text)}</p>${details(p, b, lang, brand)}${isTest ? "" : manage}${isTest ? "" : checkin}`, brand), p.owner_email, brand.name);
 }
 
 export function mailOwnerNew(env, p, b, cancelled = false) {

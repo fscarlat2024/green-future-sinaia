@@ -210,31 +210,46 @@ async function createBooking(req, env, ctx) {
   await freshen(env, ctx, p, ICAL_BOOKING_AGE_MS);
   const account = await optionalGuest(req, env);
   const q = await quote(env, p, b.checkin, b.checkout, adults + children, await guestDeal(env, account, "stay"));
-  if (!q.available) fail(409, "unavailable");
+  if (b.test !== true && !q.available) fail(409, "unavailable");
   // dupa validari, ca o greseala de tastare sa nu consume din limita
   await rateLimit(env, `book:${clientIp(req)}`, 5, 3600000);
 
   const code = bookingCode();
   const token = randomHex();
+  // Rezervari de TEST (green-future, sistem inca neactiv): status 'test' -> nu intra in disponibilitate (ACTIVE) si nici in iCal (confirmed),
+  // deci NU afecteaza site-ul real Dandelion. Nu se plateste online, nu se anunta proprietarul, doar email de test catre oaspete (banner rosu).
+  const isTest = b.test === true;
   // apartamentul ofera plata online daca stripe_enabled=1, DAR oaspetele decide daca plateste acum (payNow:true) sau la cazare (false).
-  const wantsPayNow = b.payNow === true && !!p.stripe_enabled;
+  const wantsPayNow = !isTest && b.payNow === true && !!p.stripe_enabled;
   const needsPayment = wantsPayNow;
-  const status = needsPayment ? "pending" : (p.instant_book ? "confirmed" : "pending");
+  const status = isTest ? "test" : (needsPayment ? "pending" : (p.instant_book ? "confirmed" : "pending"));
   const now = Date.now();
   const lang = b.lang === "en" ? "en" : "ro";
-  const res = await env.DB.prepare(
-    `INSERT INTO bookings (code, token_hash, property_slug, checkin, checkout, adults, children, guest_name,
-       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at, push_token, guest_id, discount, offer_id)
-     SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18,?19,?20,?21
-     WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE property_slug = ?3 AND status IN ${ACTIVE} AND checkin < ?5 AND checkout > ?4)
-       AND NOT EXISTS (SELECT 1 FROM blocks WHERE property_slug = ?3 AND date_from < ?5 AND date_to > ?4)`
-  ).bind(code, await sha256(token), p.slug, q.checkin, q.checkout, adults, children, guest.name, guest.email,
-    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now, validPushToken(b.pushToken), account ? account.id : null, q.discount, q.offerId || null).run();
-  if (!res.meta.changes) fail(409, "unavailable");
+  const vals = [code, await sha256(token), p.slug, q.checkin, q.checkout, adults, children, guest.name, guest.email,
+    guest.phone, guest.note, lang, q.subtotal, q.cleaningFee, q.total, status, now, validPushToken(b.pushToken), account ? account.id : null, q.discount, q.offerId || null];
+  const COLS = `(code, token_hash, property_slug, checkin, checkout, adults, children, guest_name,
+       guest_email, guest_phone, note, lang, subtotal, cleaning_fee, total, status, created_at, updated_at, push_token, guest_id, discount, offer_id)`;
+  if (isTest) {
+    // rezervarea de test se insereaza direct (nu are nevoie de perioada libera si nu blocheaza datele reale)
+    await env.DB.prepare(
+      `INSERT INTO bookings ${COLS}
+       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18,?19,?20,?21)`
+    ).bind(...vals).run();
+  } else {
+    const res = await env.DB.prepare(
+      `INSERT INTO bookings ${COLS}
+       SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?17,?18,?19,?20,?21
+       WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE property_slug = ?3 AND status IN ${ACTIVE} AND checkin < ?5 AND checkout > ?4)
+         AND NOT EXISTS (SELECT 1 FROM blocks WHERE property_slug = ?3 AND date_from < ?5 AND date_to > ?4)`
+    ).bind(...vals).run();
+    if (!res.meta.changes) fail(409, "unavailable");
+  }
 
   const booking = await env.DB.prepare("SELECT * FROM bookings WHERE code = ?").bind(code).first();
-  // daca cere plata online, NU trimit confirmare de rezervare acum. Email + push se vor trimite la webhook (plata reusita).
-  if (!needsPayment) {
+  if (isTest) {
+    ctx.waitUntil(mailGuest(env, p, booking, "confirmed", token)); // email de test (banner rosu), fara proprietar/push
+  } else if (!needsPayment) {
+    // daca cere plata online, NU trimit confirmare de rezervare acum. Email + push se vor trimite la webhook (plata reusita).
     ctx.waitUntil(Promise.allSettled([
       mailOwnerNew(env, p, booking),
       mailGuest(env, p, booking, status === "confirmed" ? "confirmed" : "received", token),
@@ -244,9 +259,10 @@ async function createBooking(req, env, ctx) {
   return json({
     ...publicBooking(booking, p),
     token,
-    emailSent: !needsPayment && !!env.BREVO_API_KEY,
+    test: isTest,
+    emailSent: (isTest || !needsPayment) && !!env.BREVO_API_KEY,
     requiresPayment: needsPayment,
-    stripeEnabled: !!p.stripe_enabled,
+    stripeEnabled: !isTest && !!p.stripe_enabled,
   }, 201);
 }
 
