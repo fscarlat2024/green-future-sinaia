@@ -635,7 +635,7 @@ section.menu-section { padding: 0 0 8rem; }
 /* aplicatia iOS */
 html.gf-app footer, html.gf-app .m-nav, html.gf-app .nav-book { display: none; }
 html.gf-app body { padding-bottom: 66px; }
-.gf-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: grid; grid-template-columns: repeat(5, 1fr); height: 58px; background: var(--surface); border-top: 1px solid var(--line); }
+.gf-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; height: 58px; background: var(--surface); border-top: 1px solid var(--line); }
 .gf-tabs a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: .68rem; color: var(--ink-soft); text-decoration: none; }
 .gf-tabs a.on { color: var(--accent); }
 .gf-tabs svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -652,7 +652,7 @@ html.gf-app { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: n
 html.gf-app, html.gf-app body { overscroll-behavior-y: none; }
 html.gf-app body { -webkit-user-select: none; user-select: none; }
 html.gf-app input, html.gf-app textarea, html.gf-app select { -webkit-user-select: text; user-select: text; font-size: 16px; }
-html.gf-app .gf-tabs a { min-width: 0; letter-spacing: 0; }
+html.gf-app .gf-tabs a { min-width: 0; letter-spacing: 0; text-align: center; line-height: 1.1; white-space: nowrap; }
 /* ecranul de cont */
 html.gf-app:has(#acc) header.nav { display: none; }
 .acc-page { padding-top: 2.5rem; }
@@ -952,8 +952,8 @@ html.gf-app .cl-qty button { width: 36px; height: 36px; border-radius: 10px; }
 html.gf-app .mi-add, html.gf-app .mi-sub { width: 34px; height: 34px; }
 /* bara de jos din aplicatie: pagina curenta intr-o forma rotunjita, peste zona de gesturi a telefonului */
 html.gf-app .gf-tabs { height: calc(64px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); }
-html.gf-app .gf-tabs a { gap: 2px; font-size: .7rem; font-weight: 500; transition: color .15s ease; }
-html.gf-app .gf-tabs svg { box-sizing: content-box; width: 22px; height: 22px; padding: 4px 16px; border-radius: 999px; transition: background .15s ease; }
+html.gf-app .gf-tabs a { gap: 2px; font-size: .64rem; font-weight: 500; transition: color .15s ease; }
+html.gf-app .gf-tabs svg { box-sizing: content-box; width: 22px; height: 22px; padding: 4px 12px; border-radius: 999px; transition: background .15s ease; }
 html.gf-app .gf-tabs a.on { color: var(--accent); font-weight: 600; }
 html.gf-app .gf-tabs a.on svg { background: color-mix(in srgb, var(--accent) 22%, transparent); stroke-width: 1.8; }
 html.gf-app .gf-tabs a:active svg { background: color-mix(in srgb, var(--accent) 14%, transparent); }
@@ -966,7 +966,7 @@ html.gf-app:has(#chat) body { padding-bottom: 0; }
 @media (max-width: 719px) {
   html.gf-app .pn-nav { height: calc(64px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); }
   html.gf-app .pn-nav .adm-tab { gap: 2px; font-size: .7rem; font-weight: 500; }
-  html.gf-app .pn-nav .adm-tab svg { box-sizing: content-box; width: 22px; height: 22px; padding: 4px 16px; border-radius: 999px; transition: background .15s ease; }
+  html.gf-app .pn-nav .adm-tab svg { box-sizing: content-box; width: 22px; height: 22px; padding: 4px 12px; border-radius: 999px; transition: background .15s ease; }
   html.gf-app .pn-nav .adm-tab.on { font-weight: 600; }
   html.gf-app .pn-nav .adm-tab.on svg { background: color-mix(in srgb, var(--accent) 22%, transparent); stroke-width: 1.8; }
   html.gf-app body.adm:has(#adm-nav:not([hidden])) .pn-body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
@@ -1034,3 +1034,34 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .adm-rate-box { border: 1px solid var(--line); border-radius: 10px; padding: .6rem .8rem; }
 .adm-rate-box summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
 .adm-rate { margin-top: .8rem; }
+
+/* butonul RO | EN din panou, vizibil si la intrare */
+.pn-top .pn-lang { margin-left: auto; margin-right: .45rem; }
+#adm-nav[hidden] ~ .pn-body .pn-exit.pn-lang { display: inline-block; }
+
+/* intrebari frecvente pe prima pagina */
+.faq-list { display: grid; gap: .6rem; max-width: 820px; }
+.faq-item { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: .9rem 1.1rem; }
+.faq-item summary { cursor: pointer; font-weight: 600; font-size: 1.02rem; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: "+"; color: var(--accent); font-size: 1.3rem; line-height: 1; }
+.faq-item[open] summary::after { content: "−"; }
+.faq-item p { margin: .6rem 0 0; color: var(--ink-soft); line-height: 1.55; }
+
+/* recenzii pe categorii, ca pe Booking */
+.rv-hint { margin: 0; color: var(--ink-soft); }
+.rv-cat .score-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.rv-cat .score-btn { min-height: 40px; padding: 0; font-size: .92rem; }
+.rv-total { display: flex; align-items: baseline; gap: .45rem; padding: .7rem 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.rv-total span:first-child { color: var(--ink-soft); margin-right: auto; }
+.rv-total-num { font-family: "Cormorant Garamond", serif; font-size: 2rem; color: var(--accent); line-height: 1; }
+.rv-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .7rem 1.6rem; margin: 0 0 1.4rem; }
+.rv-bar-top { display: flex; justify-content: space-between; font-size: .92rem; margin-bottom: .3rem; }
+.rv-bar-line { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.rv-bar-line i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+
+/* abonamente in panou */
+.pass-edit-list { display: grid; gap: .7rem; }
+.pass-edit { background: var(--ground); }
+.pass-extra { align-items: end; }
+.pass-save { position: sticky; bottom: 70px; background: var(--ground); padding: .6rem 0; z-index: 2; }
