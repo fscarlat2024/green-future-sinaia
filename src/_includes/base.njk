@@ -1,7 +1,7 @@
 {% set t = i18n[lang] %}
 {% set home = "/" if lang == "ro" else "/en/" %}
 <!doctype html>
-<html lang="{{ lang }}">
+<html lang="{{ lang }}"{% if urlRo and urlEn %} data-url-ro="{{ urlRo }}" data-url-en="{{ urlEn }}"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -26,11 +26,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css?v={{ build }}">
+  <script src="/assets/js/lang.js?v={{ build }}"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "LodgingBusiness",
     "name": "{{ site.name }}",
+    "alternateName": ["Aparthotel Green Future Sinaia", "Green Future Sinaia Aparthotel"],
+    "keywords": "{{ 'cazare Sinaia, aparthotel Sinaia, cazare cu piscină Sinaia, cazare cu sală de forță Sinaia, cazare liniștită Sinaia' if lang == 'ro' else 'Sinaia accommodation, aparthotel Sinaia, Sinaia hotel with pool, Sinaia accommodation with gym' }}",
+    "email": "{{ site.email }}",
     "description": "{{ site[lang].intro }}",
     "address": { "@type": "PostalAddress", "streetAddress": "{{ site.address }}", "addressLocality": "Sinaia", "addressCountry": "RO" },
     "url": "{{ site.url }}",
@@ -38,7 +42,11 @@
     "amenityFeature": [
       { "@type": "LocationFeatureSpecification", "name": "Indoor pool", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "Sauna", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Fitness room", "value": true }
+      { "@type": "LocationFeatureSpecification", "name": "Fitness room", "value": true },
+      { "@type": "LocationFeatureSpecification", "name": "Gym", "value": true },
+      { "@type": "LocationFeatureSpecification", "name": "Hot tub", "value": true },
+      { "@type": "LocationFeatureSpecification", "name": "Parking", "value": true },
+      { "@type": "LocationFeatureSpecification", "name": "Restaurant", "value": true }
     ]
   }
   </script>
@@ -54,7 +62,7 @@
         {% if backLink %}<a href="{{ backLink }}" class="back-pill">&larr; <span class="hide-sm">{{ t.back_apts }}</span></a>{% endif %}
         <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a>
         <a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a>
-        <a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a>
+        <a href="{{ '/abonamente/#spa' if lang == 'ro' else '/en/passes/#spa' }}">{{ "Piscină & Spa" if lang == "ro" else "Pool & Spa" }}</a><a href="{{ '/abonamente/#sala' if lang == 'ro' else '/en/passes/#sala' }}">Fitness</a>
         <a href="{{ home }}#sinaia" class="hide-sm">{{ t.nav_sinaia }}</a>
         <a href="{{ '/cont/' if lang == 'ro' else '/en/account/' }}">{{ "Cont" if lang == "ro" else "Account" }}</a>
         {% if urlRo and urlEn %}
@@ -70,7 +78,7 @@
     <nav class="m-nav" aria-label="Meniu">
       <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a>
       <a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a>
-      <a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a>
+      <a href="{{ '/abonamente/#spa' if lang == 'ro' else '/en/passes/#spa' }}">{{ "Piscină & Spa" if lang == "ro" else "Pool & Spa" }}</a><a href="{{ '/abonamente/#sala' if lang == 'ro' else '/en/passes/#sala' }}">Fitness</a>
       <a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a>
       <a href="{{ '/cont/' if lang == 'ro' else '/en/account/' }}">{{ "Cont" if lang == "ro" else "Account" }}</a>
     </nav>
@@ -86,7 +94,7 @@
           <span><b style="font-family:'Cormorant Garamond',serif;font-size:1.05rem">{{ site.name }}</b><small style="display:block;font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)">{{ site.address }}</small></span>
         </div>
         <nav style="display:flex;gap:1.3rem;flex-wrap:wrap">
-          <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a><a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a><a href="{{ '/abonamente/' if lang == 'ro' else '/en/passes/' }}">{{ "Abonamente" if lang == "ro" else "Passes" }}</a><a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a><a href="{{ home }}#proprietari">{{ t.nav_owners }}</a>
+          <a href="{{ home }}#apartamente">{{ t.nav_apartments }}</a><a href="{{ '/restaurant/' if lang == 'ro' else '/en/restaurant/' }}">Bistro</a><a href="{{ '/abonamente/#spa' if lang == 'ro' else '/en/passes/#spa' }}">{{ "Piscină & Spa" if lang == "ro" else "Pool & Spa" }}</a><a href="{{ '/abonamente/#sala' if lang == 'ro' else '/en/passes/#sala' }}">Fitness</a><a href="{{ home }}#sinaia">{{ t.nav_sinaia }}</a><a href="{{ home }}#proprietari">{{ t.nav_owners }}</a>
         </nav>
       </div>
       <nav class="foot-legal" style="display:flex;gap:1.1rem;flex-wrap:wrap;margin-top:1rem;font-size:.78rem">
