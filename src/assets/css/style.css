@@ -438,6 +438,10 @@ footer { margin-top: 0; }
 .m-nav { display: flex; gap: 1.5rem; justify-content: center; overflow-x: auto; padding: .55rem 1rem; border-top: 1px solid var(--line); scrollbar-width: none; }
 .m-nav a { flex: none; font-size: .78rem; letter-spacing: .06em; color: var(--ink-soft); text-decoration: none; }
 .m-nav a:hover { color: var(--accent-strong); }
+@media (max-width: 640px) {
+  .m-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; padding: .55rem .75rem .65rem; overflow: visible; }
+  .m-nav a { padding: .45rem .2rem; border: 1px solid var(--line); border-radius: 999px; text-align: center; font-size: .76rem; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 @media (min-width: 960px) {
   .nav-links > a:not(.back-pill):not(.nav-book) { display: inline; }
   .m-nav { display: none; }
