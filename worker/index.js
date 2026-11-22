@@ -2,8 +2,9 @@
 // Auth panou: parola PBKDF2 + token Bearer (merge si in site, si in viitoarea aplicatie mobila).
 // Disponibilitatea e verificata in aceeasi instructiune SQL cu rezervarea, ca doi oaspeti
 // sa nu poata prinde aceeasi perioada.
-import { mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailVerifyCode, mailChat, mailReview, brevoKeepAlive } from "./mail.js";
+import { mailSpa, mailSpaStaff, mailOwnerNew, mailGuest, mailConflict, mailOrder, mailGuestReset, mailVerifyCode, mailChat, mailReview, brevoKeepAlive } from "./mail.js";
 import restaurant from "../src/_data/restaurant.json";
+import passesDefault from "../src/_data/passes.json";
 import { parseIcal, buildIcal } from "./ical.js";
 import { pushEnabled, validPushToken, pushTo, pushToStaff, pushToBistro, guestBookingMessage, guestOrderMessage } from "./push.js";
 
@@ -191,7 +192,7 @@ const publicBooking = (b, p) => ({
   subtotal: b.subtotal, discount: b.discount, cleaningFee: b.cleaning_fee, total: b.total, currency: "lei", status: b.status, lang: b.lang,
   checkinTime: p?.checkin_time, checkoutTime: p?.checkout_time, freeCancelDays: p?.free_cancel_days,
   ownerPhone: b.status === "confirmed" ? p?.owner_phone : undefined,
-  canCancel: guestCanCancel(b, p),
+  canCancel: guestCanCancel(b, p), paid: b.payment_status === "paid",
 });
 function guestCanCancel(b, p) {
   if (b.status === "pending") return true;
@@ -356,8 +357,19 @@ async function adminRoutes(req, env, ctx, parts) {
   const a = await adminAuth(req, env);
   const [first, second, third] = parts;
   // contul bistroului vede doar comenzile si meniul
-  if (a.role === "bistro" && !["logout", "me", "orders", "menu", "password"].includes(first)) fail(403, "forbidden");
+  if (a.role === "bistro" && !["logout", "me", "orders", "menu", "password", "passes", "push", "spa"].includes(first)) fail(403, "forbidden");
+  // abonamentele: doar administratorul si contul Attitude (bistro + piscina + sala)
+  if (first === "passes") {
+    if (a.role !== "admin" && a.role !== "bistro") fail(403, "forbidden");
+    if (req.method === "GET") return json(await loadPasses(env));
+    if (req.method === "PUT") {
+      const doc = cleanPasses(await readJson(req));
+      await env.DB.prepare("INSERT INTO site_texts (key, value, updated_at) VALUES ('passes', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2").bind(JSON.stringify(doc), Date.now()).run();
+      return json(doc);
+    }
+  }
   if (first === "checkins") return checkinAdminRoutes(req, env, a, parts);
+  if (first === "spa") return spaAdminRoutes(req, env, ctx, parts);
 
   if (first === "logout" && req.method === "POST") {
     await env.DB.prepare("DELETE FROM admin_sessions WHERE token_hash = ?").bind(a.tokenHash).run();
@@ -453,7 +465,7 @@ async function adminRoutes(req, env, ctx, parts) {
     if (!second && req.method === "GET") {
       if (!slugs.length) return json({ reviews: [] });
       const { results } = await env.DB.prepare(
-        `SELECT r.id, r.score, r.body, r.author, r.hidden, r.created_at, b.code, b.checkin, b.checkout, p.name AS property_name
+        `SELECT r.id, r.score, r.body, r.author, r.hidden, r.created_at, r.cleanliness, r.comfort, r.facilities, r.location, r.host, r.value, b.code, b.checkin, b.checkout, p.name AS property_name
          FROM reviews r JOIN bookings b ON b.id = r.booking_id JOIN properties p ON p.slug = r.property_slug
          WHERE r.property_slug IN (${slugs.map(() => "?").join(",")}) ORDER BY r.created_at DESC LIMIT 200`
       ).bind(...slugs).all();
@@ -594,10 +606,16 @@ async function adminRoutes(req, env, ctx, parts) {
   }
 
   if (first === "push") {
-    if (a.role !== "admin") fail(403, "forbidden");
+    // anunturi: administratorul si contul Attitude. Doua publicuri: toti utilizatorii Green Future
+    // sau doar clientii Attitude (telefoanele care au comandat la bistro din aplicatie).
+    if (a.role !== "admin" && a.role !== "bistro") fail(403, "forbidden");
+    const ATT = "token IN (SELECT push_token FROM orders WHERE push_token IS NOT NULL)";
     if (req.method === "GET") {
-      const r = await env.DB.prepare("SELECT COUNT(*) AS n FROM push_devices").first();
-      return json({ devices: r.n, enabled: pushEnabled(env) });
+      const [all, att] = await Promise.all([
+        env.DB.prepare("SELECT COUNT(*) AS n FROM push_devices").first(),
+        env.DB.prepare(`SELECT COUNT(*) AS n FROM push_devices WHERE ${ATT}`).first(),
+      ]);
+      return json({ devices: all.n, attitude: att.n, enabled: pushEnabled(env) });
     }
     if (req.method === "POST") {
       const b = await readJson(req);
@@ -608,14 +626,17 @@ async function adminRoutes(req, env, ctx, parts) {
       if (!/^\/(?!\/)/.test(link) || link.length > 200) fail(400, "invalid_link");
       if (!pushEnabled(env)) fail(409, "push_off");
       // cate 40 odata (limita Workers); panoul cere urmatorul grup pana se termina
-      const { results } = await env.DB.prepare("SELECT token FROM push_devices WHERE token > ? ORDER BY token LIMIT 40").bind(String(b.after || "")).all();
+      const where = b.audience === "attitude" ? ` AND ${ATT}` : "";
+      const { results } = await env.DB.prepare(`SELECT token FROM push_devices WHERE token > ?${where} ORDER BY token LIMIT 40`).bind(String(b.after || "")).all();
       const r = await pushTo(env, results.map((d) => d.token), { title, body, url: link });
       return json({ ...r, next: results.length === 40 ? results[39].token : null });
     }
   }
 
   if (first === "properties" && !second && req.method === "POST") {
-    return json({ slug: await createListing(env, a, await readJson(req)) }, 201);
+    const slug = await createListing(env, a, await readJson(req));
+    ctx.waitUntil(translateListing(env, slug).catch((e) => console.error("traducere", e)));
+    return json({ slug }, 201);
   }
   if (first === "photos" && second) {
     const row = await env.DB.prepare("SELECT property_slug FROM property_photos WHERE id = ?").bind(Number(second)).first();
@@ -968,6 +989,84 @@ async function telegram(env, text) {
   } catch (e) { console.error("telegram", e); }
 }
 
+// ---------- SEO pentru apartamentele adaugate din panou ----------
+const aptPath = (slug, lang) => `${lang === "en" ? "/en/apartment/" : "/apartament/"}?p=${encodeURIComponent(slug)}`;
+// sitemap-ul fix (din Eleventy) + toate apartamentele publicate din panou
+async function seoSitemap(req, env) {
+  const base = await env.ASSETS.fetch(new Request(new URL("/sitemap.xml", req.url)));
+  let xml = await base.text();
+  try {
+    const { results } = await env.DB.prepare("SELECT slug FROM properties WHERE status = 'published' AND dynamic = 1 ORDER BY name").all();
+    const esc = (s) => s.replace(/&/g, "&amp;");
+    const extra = results.flatMap((p) => ["ro", "en"].map((l) => `  <url><loc>${esc(env.SITE_URL + aptPath(p.slug, l))}</loc></url>`)).join("\n");
+    if (extra) xml = xml.replace("</urlset>", `${extra}\n</urlset>`);
+  } catch (e) { console.error("sitemap", e); }
+  return new Response(xml, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
+}
+// pagina unui apartament din panou: titlu, descriere si adresa canonica proprii, indexabila doar daca e publicat
+async function seoApartment(req, env, url) {
+  const page = await env.ASSETS.fetch(new Request(new URL(url.pathname, req.url), { headers: req.headers }));
+  const p = await getProperty(env, String(url.searchParams.get("p")));
+  if (!page.ok || !p || !p.dynamic || p.status !== "published") return page;
+  const lang = url.pathname.startsWith("/en/") ? "en" : "ro";
+  const tx = listingText(p, lang);
+  const title = lang === "en" ? `${p.name} – accommodation in Sinaia with pool | Green Future Sinaia` : `${p.name} – cazare în Sinaia cu piscină | Green Future Sinaia`;
+  const firstLine = (tx.tagline || tx.description || "").replace(/\s+/g, " ").trim();
+  const desc = (firstLine.length > 150 ? firstLine.slice(0, 147).replace(/\s\S*$/, "") + "…" : firstLine) || (lang === "en" ? `Apartment in Green Future Sinaia, with indoor pool, saunas and gym in the complex.` : `Apartament în Green Future Sinaia, cu piscină interioară, saune și sală de forță în complex.`);
+  const canon = env.SITE_URL + aptPath(p.slug, lang);
+  const photo = (await photoIds(env, p.slug))[0];
+  const setAttr = (attr, value) => ({ element(e) { e.setAttribute(attr, value); } });
+  return new HTMLRewriter()
+    .on('meta[name="robots"]', { element(e) { e.remove(); } })
+    .on("title", { element(e) { e.setInnerContent(title); } })
+    .on('meta[name="description"]', setAttr("content", desc))
+    .on('meta[property="og:title"]', setAttr("content", title))
+    .on('meta[property="og:description"]', setAttr("content", desc))
+    .on('meta[property="og:url"]', setAttr("content", canon))
+    .on('meta[property="og:image"]', photo ? setAttr("content", env.SITE_URL + photoUrl(photo)) : {})
+    .on('link[rel="canonical"]', setAttr("href", canon))
+    .on('link[hreflang="ro"]', setAttr("href", env.SITE_URL + aptPath(p.slug, "ro")))
+    .on('link[hreflang="en"]', setAttr("href", env.SITE_URL + aptPath(p.slug, "en")))
+    .on('link[hreflang="x-default"]', setAttr("href", env.SITE_URL + aptPath(p.slug, "ro")))
+    .transform(page);
+}
+
+// ---------- traducerea automata in engleza a textelor apartamentelor ----------
+const TRANSLATE_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const listingSource = (p) => ({ roomType: p.room_type || "", tagline: p.tagline || "", description: p.description || "", story: p.story || "", amenities: JSON.parse(p.amenities || "[]") });
+async function translateListing(env, slug) {
+  if (!env.AI) return;
+  const p = await getProperty(env, slug);
+  if (!p) return;
+  const src = listingSource(p);
+  const stamp = await sha256(JSON.stringify(src));
+  const old = (() => { try { return JSON.parse(p.text_en || "null"); } catch { return null; } })();
+  if (old?.src === stamp) return; // textul nu s-a schimbat
+  const prompt = `Translate this Romanian holiday-apartment listing into natural, warm, fluent English for tourists. Keep the meaning, keep line breaks, do not add anything. Answer ONLY with JSON having exactly these keys: roomType (string), tagline (string), description (string), story (string), amenities (array of strings, same order and count). Empty strings stay empty.\n\n${JSON.stringify(src)}`;
+  const r = await env.AI.run(TRANSLATE_MODEL, { messages: [{ role: "user", content: prompt }], max_tokens: 3000, temperature: 0.2 });
+  const text = typeof r?.response === "string" ? r.response : JSON.stringify(r?.response || "");
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("traducere fara JSON");
+  const t = JSON.parse(m[0]);
+  const str = (v, max) => String(v || "").trim().slice(0, max);
+  const en = {
+    roomType: src.roomType ? str(t.roomType, 60) : "", tagline: src.tagline ? str(t.tagline, 160) : "",
+    description: src.description ? str(t.description, 6000) : "", story: src.story ? str(t.story, 2000) : "",
+    amenities: Array.isArray(t.amenities) && t.amenities.length === src.amenities.length ? t.amenities.map((a) => str(a, 80)) : src.amenities,
+    src: stamp,
+  };
+  await env.DB.prepare("UPDATE properties SET text_en = ? WHERE slug = ?").bind(JSON.stringify(en), slug).run();
+}
+// textele pentru pagina in engleza; ce nu s-a tradus inca ramane in romana
+function listingText(p, lang) {
+  const ro = listingSource(p);
+  if (lang !== "en") return ro;
+  let en = null;
+  try { en = JSON.parse(p.text_en || "null"); } catch {}
+  if (!en) return ro;
+  return { roomType: en.roomType || ro.roomType, tagline: en.tagline || ro.tagline, description: en.description || ro.description, story: en.story || ro.story, amenities: en.amenities?.length ? en.amenities : ro.amenities };
+}
+
 // ---------- notarea oaspetilor de catre gazde ----------
 const phoneKey = (s) => { const d = String(s || "").replace(/\D/g, ""); return d.length >= 9 ? d.slice(-9) : null; };
 const emailKey = (s) => { const e = String(s || "").trim().toLowerCase(); return e.includes("@") ? e : null; };
@@ -1021,6 +1120,173 @@ async function withRatings(env, a, rows, col, emailOf, phoneOf, needHistory = ()
   }));
 }
 
+// ---------- abonamente piscina si sala (le editeaza contul Attitude din panou) ----------
+// Pana la prima salvare din panou se folosesc preturile din src/_data/passes.json.
+function passesFromDefault() {
+  const d = passesDefault;
+  return {
+    groups: d.groups.map((g) => ({
+      id: g.id, desc_ro: g.ro.desc, desc_en: g.en.desc, status_ro: g.ro.status || "", status_en: g.en.status || "",
+      plans: g.plans.map((p) => ({ id: p.id, adult: p.adult, other: p.other, featured: !!p.featured, name_ro: p.ro.name, name_en: p.en.name, period_ro: p.ro.period, period_en: p.en.period })),
+    })),
+    extras: d.extras.map((e) => ({ price: e.price, ro: e.ro, en: e.en })),
+  };
+}
+async function loadPasses(env) {
+  const v = await siteText(env, "passes");
+  if (v) { try { return JSON.parse(v); } catch {} }
+  return passesFromDefault();
+}
+function cleanPasses(b) {
+  const str = (v, max) => String(v ?? "").trim().slice(0, max);
+  const price = (v) => { const n = Number(v); if (!Number.isInteger(n) || n < 0 || n > 100000) fail(400, "invalid_value"); return n; };
+  const groupIds = passesDefault.groups.map((g) => g.id);
+  const groups = (Array.isArray(b.groups) ? b.groups : []).filter((g) => groupIds.includes(g.id)).map((g) => ({
+    id: g.id, desc_ro: str(g.desc_ro, 400), desc_en: str(g.desc_en, 400), status_ro: str(g.status_ro, 200), status_en: str(g.status_en, 200),
+    plans: (Array.isArray(g.plans) ? g.plans : []).slice(0, 20).map((p, i) => {
+      const name_ro = str(p.name_ro, 80);
+      if (!name_ro) fail(400, "invalid_name");
+      return { id: str(p.id, 40) || `${g.id}-${i}`, adult: price(p.adult), other: price(p.other), featured: !!p.featured,
+        name_ro, name_en: str(p.name_en, 80) || name_ro, period_ro: str(p.period_ro, 80), period_en: str(p.period_en, 80) || str(p.period_ro, 80) };
+    }),
+  }));
+  if (groups.length !== groupIds.length) fail(400, "invalid_value");
+  const extras = (Array.isArray(b.extras) ? b.extras : []).slice(0, 30).map((e) => {
+    const ro = str(e.ro, 80);
+    if (!ro) fail(400, "invalid_name");
+    return { price: price(e.price), ro, en: str(e.en, 80) || ro };
+  });
+  return { groups, extras };
+}
+
+// ---------- programari online la piscina si spa ----------
+// Ziua e impartita in intervale egale (ex. 10:00-12:00), fiecare cu un numar de locuri.
+// Locul se ocupa in aceeasi instructiune SQL care verifica capacitatea, ca doua programari sa nu depaseasca limita.
+const SPA_DEFAULT = { enabled: true, open: "10:00", close: "20:00", length: 120, capacity: 10, maxPeople: 6, days: 30, note_ro: "", note_en: "" };
+const toMin = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+const toTime = (n) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+async function loadSpa(env) {
+  const v = await siteText(env, "spa_schedule");
+  try { return { ...SPA_DEFAULT, ...(v ? JSON.parse(v) : {}) }; } catch { return { ...SPA_DEFAULT }; }
+}
+function cleanSpa(b) {
+  const t = (v) => { const s = String(v || ""); if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(s)) fail(400, "invalid_hours"); return s; };
+  const int = (v, min, max) => { const n = Number(v); if (!Number.isInteger(n) || n < min || n > max) fail(400, "invalid_value"); return n; };
+  const s = { enabled: !!b.enabled, open: t(b.open), close: t(b.close), length: int(b.length, 15, 600), capacity: int(b.capacity, 1, 200),
+    maxPeople: int(b.maxPeople, 1, 50), days: int(b.days, 1, 365), note_ro: String(b.note_ro || "").trim().slice(0, 300), note_en: String(b.note_en || "").trim().slice(0, 300) };
+  if (toMin(s.open) + s.length > toMin(s.close)) fail(400, "invalid_hours");
+  return s;
+}
+function spaSlots(s) {
+  const out = [];
+  for (let m = toMin(s.open); m + s.length <= toMin(s.close); m += s.length) out.push({ time: toTime(m), end: toTime(m + s.length) });
+  return out;
+}
+const nowMinutes = () => toMin(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Bucharest", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()));
+function spaDayOk(s, day) {
+  const t = today();
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) && day >= t && day <= addDays(t, s.days);
+}
+async function spaDay(env, s, day) {
+  const { results } = await env.DB.prepare("SELECT slot, SUM(people) n FROM spa_bookings WHERE day = ? AND status = 'confirmed' GROUP BY slot").bind(day).all();
+  const taken = new Map(results.map((r) => [r.slot, r.n]));
+  const past = day === today() ? nowMinutes() : -1;
+  return spaSlots(s).filter((x) => toMin(x.time) > past).map((x) => ({ ...x, free: Math.max(0, s.capacity - (taken.get(x.time) || 0)) }));
+}
+function spaCode() {
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return "SPA-" + [...crypto.getRandomValues(new Uint8Array(6))].map((b) => abc[b % abc.length]).join("");
+}
+async function spaRoutes(req, env, ctx, url, parts) {
+  const s = await loadSpa(env);
+  const [, second] = parts;
+  if (!second && req.method === "GET") {
+    const day = url.searchParams.get("day") || today();
+    const pub = { enabled: s.enabled, open: s.open, close: s.close, length: s.length, maxPeople: s.maxPeople, days: s.days, today: today(), note_ro: s.note_ro, note_en: s.note_en };
+    if (!s.enabled) return json(pub);
+    if (!spaDayOk(s, day)) fail(400, "invalid_dates");
+    return json({ ...pub, day, slots: await spaDay(env, s, day) });
+  }
+  if (second === "book" && req.method === "POST") {
+    const b = await readJson(req);
+    if (b.website) return json({ code: "SPA-000000", demo: true }, 201); // capcana pentru boti
+    if (!s.enabled) fail(409, "spa_closed");
+    const day = String(b.day || "");
+    const slot = spaSlots(s).find((x) => x.time === String(b.time || ""));
+    const people = Number(b.people);
+    const name = String(b.name || "").trim();
+    const phone = String(b.phone || "").trim();
+    const email = String(b.email || "").trim().toLowerCase();
+    const lang = b.lang === "en" ? "en" : "ro";
+    if (!spaDayOk(s, day) || !slot || (day === today() && toMin(slot.time) <= nowMinutes())) fail(400, "invalid_dates");
+    if (!Number.isInteger(people) || people < 1 || people > s.maxPeople) fail(400, "invalid_guests");
+    if (name.length < 2 || name.length > 100) fail(400, "invalid_name");
+    if (phone.replace(/\D/g, "").length < 6 || phone.length > 30) fail(400, "invalid_phone");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 200) fail(400, "invalid_email");
+    await rateLimit(env, `spa:${clientIp(req)}`, 6, 3600000);
+    const now = Date.now();
+    const code = spaCode();
+    const token = randomHex(16);
+    const note = String(b.note || "").trim().slice(0, 300);
+    const r = await env.DB.prepare(
+      `INSERT INTO spa_bookings (code, token, day, slot, people, name, phone, email, note, lang, status, created_at, updated_at)
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'confirmed', ?11, ?11
+       WHERE (SELECT COALESCE(SUM(people), 0) FROM spa_bookings WHERE day = ?3 AND slot = ?4 AND status = 'confirmed') + ?5 <= ?12`
+    ).bind(code, token, day, slot.time, people, name, phone, email, note, lang, now, s.capacity).run();
+    if (!r.meta.changes) fail(409, "spa_full");
+    const sb = { code, token, day, slot: slot.time, end: slot.end, people, name, phone, email, note, lang };
+    const when = `${day} ${slot.time}-${slot.end}`;
+    ctx.waitUntil(Promise.allSettled([
+      mailSpa(env, sb, "booked"),
+      mailSpaStaff(env, sb, "booked"),
+      pushToBistro(env, { title: "Programare nouă la spa", body: `${when}, ${people} pers., ${name}`, url: "/admin/" }),
+      telegram(env, `Programare spa: ${when}, ${people} pers., ${name}, ${phone} (${code})`),
+    ]));
+    return json({ code, day, time: slot.time, end: slot.end, people }, 201);
+  }
+  if (second === "cancel" && req.method === "POST") {
+    const b = await readJson(req);
+    const row = await env.DB.prepare("SELECT * FROM spa_bookings WHERE code = ? AND token = ?").bind(String(b.code || ""), String(b.token || "")).first();
+    if (!row) fail(404, "not_found");
+    if (row.status !== "confirmed") return json({ ok: true, already: true });
+    await env.DB.prepare("UPDATE spa_bookings SET status = 'cancelled', updated_at = ? WHERE id = ?").bind(Date.now(), row.id).run();
+    const end = toTime(toMin(row.slot) + s.length);
+    const sb = { ...row, end };
+    ctx.waitUntil(Promise.allSettled([
+      mailSpa(env, sb, "cancelled"),
+      mailSpaStaff(env, sb, "cancelled"),
+      pushToBistro(env, { title: "Programare spa anulată", body: `${row.day} ${row.slot}, ${row.people} pers., ${row.name}`, url: "/admin/" }),
+      telegram(env, `Programare spa ANULATA de client: ${row.day} ${row.slot}, ${row.people} pers., ${row.name} (${row.code})`),
+    ]));
+    return json({ ok: true });
+  }
+  fail(404, "not_found");
+}
+async function spaAdminRoutes(req, env, ctx, parts) {
+  const [, second, third] = parts;
+  if (!second && req.method === "GET") {
+    const { results } = await env.DB.prepare(
+      "SELECT id, code, day, slot, people, name, phone, email, note, status FROM spa_bookings WHERE day >= ? ORDER BY day, slot, created_at LIMIT 300"
+    ).bind(today()).all();
+    return json({ settings: await loadSpa(env), slots: spaSlots(await loadSpa(env)), bookings: results });
+  }
+  if (second === "settings" && req.method === "PUT") {
+    const s = cleanSpa(await readJson(req));
+    await env.DB.prepare("INSERT INTO site_texts (key, value, updated_at) VALUES ('spa_schedule', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2").bind(JSON.stringify(s), Date.now()).run();
+    return json(s);
+  }
+  if (second && third === "cancel" && req.method === "POST") {
+    const row = await env.DB.prepare("SELECT * FROM spa_bookings WHERE id = ?").bind(Number(second)).first();
+    if (!row) fail(404, "not_found");
+    if (row.status !== "confirmed") fail(409, "wrong_status");
+    await env.DB.prepare("UPDATE spa_bookings SET status = 'cancelled', updated_at = ? WHERE id = ?").bind(Date.now(), row.id).run();
+    const s = await loadSpa(env);
+    ctx.waitUntil(mailSpa(env, { ...row, end: toTime(toMin(row.slot) + s.length) }, "cancelled_by_spa"));
+    return json({ ok: true });
+  }
+  fail(404, "not_found");
+}
+
 // ---------- check-in online: buletin + regulament ----------
 const CHECKIN_KEEP_DAYS = 30; // poza se sterge la 30 de zile dupa plecare
 const CHECKIN_MAX_PHOTO = 2000000;
@@ -1033,7 +1299,9 @@ async function checkinKey(env, p) {
   await env.DB.prepare("UPDATE properties SET checkin_key = COALESCE(checkin_key, ?) WHERE slug = ?").bind(k, p.slug).run();
   return (await getProperty(env, p.slug)).checkin_key;
 }
-const checkinUrl = (env, p, key, lang = "ro") => `${env.SITE_URL}${lang === "en" ? "/en/checkin/" : "/checkin/"}?p=${encodeURIComponent(p.slug)}&k=${key}`;
+// Studio Dandelion are site-ul lui, cu pagina de check-in proprie
+const siteOf = (env, p) => (p.slug === "studio-dandelion" ? "https://dandelionsinaia.ro" : env.SITE_URL);
+const checkinUrl = (env, p, key, lang = "ro") => `${siteOf(env, p)}${lang === "en" ? "/en/checkin/" : "/checkin/"}?p=${encodeURIComponent(p.slug)}&k=${key}`;
 // linkul vine fie din rezervarea de pe site (cod + token), fie din linkul apartamentului (pentru Booking/Airbnb)
 async function checkinContext(env, url) {
   const code = url.searchParams.get("b"), token = url.searchParams.get("t");
@@ -1177,6 +1445,7 @@ async function listingRoutes(req, env, ctx, a, p, action) {
       const k = cleanBooking(b);
       await env.DB.prepare("UPDATE properties SET booking_url=?, booking_score=?, booking_count=? WHERE slug=?").bind(k.url, k.score, k.count, p.slug).run();
     }
+    ctx.waitUntil(translateListing(env, p.slug).catch((e) => console.error("traducere", e)));
     return json({ ok: true });
   }
   if (action === "photos" && req.method === "GET") {
@@ -1245,12 +1514,15 @@ async function reviewBooking(env, code, token) {
   if (!b) fail(404, "not_found");
   return b;
 }
+const REVIEW_CATS = ["cleanliness", "comfort", "facilities", "location", "host", "value"];
 async function publicReviews(env, slug) {
   const [list, sum] = await Promise.all([
     env.DB.prepare("SELECT score, body, author, created_at FROM reviews WHERE property_slug = ? AND hidden = 0 ORDER BY created_at DESC LIMIT 30").bind(slug).all(),
-    env.DB.prepare("SELECT COUNT(*) AS n, AVG(score) AS avg FROM reviews WHERE property_slug = ? AND hidden = 0").bind(slug).first(),
+    env.DB.prepare(`SELECT COUNT(*) AS n, AVG(score) AS avg, ${REVIEW_CATS.map((k) => `AVG(${k}) AS ${k}`).join(", ")} FROM reviews WHERE property_slug = ? AND hidden = 0`).bind(slug).first(),
   ]);
-  return { count: sum.n, average: sum.avg || 0, reviews: list.results.map((r) => ({ score: r.score, body: r.body, author: r.author, date: r.created_at })) };
+  // media pe fiecare categorie, doar din recenziile care au note pe categorii
+  const categories = Object.fromEntries(REVIEW_CATS.filter((k) => sum[k] != null).map((k) => [k, Math.round(sum[k] * 10) / 10]));
+  return { count: sum.n, average: sum.avg || 0, categories, reviews: list.results.map((r) => ({ score: r.score, body: r.body, author: r.author, date: r.created_at })) };
 }
 
 // ---------- tabloul proprietarilor ----------
@@ -1630,6 +1902,11 @@ async function maintain(env, ctx) {
   if (env.BREVO_API_KEY && await claim(env, "brevo-keepalive", 30 * 86400000)) ctx.waitUntil(brevoKeepAlive(env));
   if (await claim(env, "review-requests", 30 * 60000)) ctx.waitUntil(sendReviewRequests(env).catch((e) => console.error("review", e)));
   if (await claim(env, "checkin-purge", 6 * 3600000)) ctx.waitUntil(purgeCheckins(env).catch((e) => console.error("checkin purge", e)));
+  // reia traducerile lipsa sau esuate (si pe cele vechi, de dinainte de traducere)
+  if (env.AI && await claim(env, "translate-listings", 15 * 60000)) ctx.waitUntil((async () => {
+    const { results } = await env.DB.prepare("SELECT slug FROM properties WHERE dynamic = 1 ORDER BY (text_en IS NULL) DESC LIMIT 20").all();
+    for (const r of results) await translateListing(env, r.slug).catch((e) => console.error("traducere", r.slug, e));
+  })());
 }
 
 // Cele mai putine apartamente in care incap toti oaspetii; la acelasi numar, cel mai mic pret.
@@ -1700,11 +1977,12 @@ async function api(req, env, ctx, url) {
   }
   if (first === "listings" && req.method === "GET") {
     const { results } = await env.DB.prepare(
-      `SELECT p.slug, p.name, p.capacity, p.room_type, p.tagline, p.base_price, p.booking_url, p.booking_score, p.booking_count,
+      `SELECT p.slug, p.name, p.capacity, p.room_type, p.tagline, p.base_price, p.booking_url, p.booking_score, p.booking_count, p.text_en, p.description, p.story, p.amenities,
          (SELECT id FROM property_photos f WHERE f.property_slug = p.slug ORDER BY position, id LIMIT 1) AS photo
        FROM properties p WHERE p.status = 'published' AND p.dynamic = 1 ORDER BY p.name`
     ).all();
-    return json({ listings: results.map((p) => ({ slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, basePrice: p.base_price, photo: p.photo ? photoUrl(p.photo) : null, booking: bookingOf(p) })) });
+    const lang = url.searchParams.get("lang") === "en" ? "en" : "ro";
+    return json({ listings: results.map((p) => ({ slug: p.slug, name: p.name, capacity: p.capacity, roomType: listingText(p, lang).roomType, tagline: listingText(p, lang).tagline, basePrice: p.base_price, photo: p.photo ? photoUrl(p.photo) : null, booking: bookingOf(p) })) });
   }
 
   if (first === "reviews" && second) {
@@ -1718,16 +1996,25 @@ async function api(req, env, ctx, url) {
     if (req.method === "POST") {
       if (existing) fail(409, "already_reviewed");
       const body = await readJson(req);
-      const score = Number(body.score);
-      if (!Number.isInteger(score) || score < 1 || score > 10) fail(400, "invalid_score");
+      // note pe categorii, ca pe Booking; nota generala e media lor
+      const cats = {};
+      for (const k of REVIEW_CATS) {
+        const n = Number(body.scores?.[k]);
+        if (!Number.isInteger(n) || n < 1 || n > 10) fail(400, "invalid_score");
+        cats[k] = n;
+      }
+      const score = Math.round(REVIEW_CATS.reduce((s, k) => s + cats[k], 0) / REVIEW_CATS.length * 10) / 10; // cu o zecimala, ca pe Booking
       const text = String(body.body || "").trim().slice(0, 1000);
       const author = b.guest_name.trim().split(/\s+/)[0].slice(0, 40);
       const r = await env.DB.prepare(
-        "INSERT OR IGNORE INTO reviews (booking_id, property_slug, score, body, author, lang, created_at) VALUES (?,?,?,?,?,?,?)"
-      ).bind(b.id, b.property_slug, score, text, author, b.lang, Date.now()).run();
+        `INSERT OR IGNORE INTO reviews (booking_id, property_slug, score, body, author, lang, created_at, ${REVIEW_CATS.join(", ")}) VALUES (?,?,?,?,?,?,?${",?".repeat(REVIEW_CATS.length)})`
+      ).bind(b.id, b.property_slug, score, text, author, b.lang, Date.now(), ...REVIEW_CATS.map((k) => cats[k])).run();
       if (!r.meta.changes) fail(409, "already_reviewed");
       const p = await getProperty(env, b.property_slug);
-      ctx.waitUntil(pushToStaff(env, p.slug, { title: `Recenzie nouă: ${score}/10, ${p.name}`, body: text.slice(0, 180), url: "/admin/" }).catch(() => {}));
+      const line = `Curățenie ${cats.cleanliness} · confort ${cats.comfort} · facilități ${cats.facilities} · locație ${cats.location} · gazda ${cats.host} · calitate-preț ${cats.value}`;
+      ctx.waitUntil(pushToStaff(env, p.slug, { title: `Recenzie nouă: ${score}/10, ${p.name}`, body: (text || line).slice(0, 180), url: "/admin/#recenzii" }).catch(() => {}));
+      ctx.waitUntil(telegram(env, `⭐ Recenzie nouă: ${score}/10 · ${p.name}\nDe la: ${author}\n${line}${text ? `\n„${text.slice(0, 600)}”` : ""}`));
+      if (p.owner_email) ctx.waitUntil(mailChat(env, p.owner_email, `Recenzie nouă: ${score}/10 · ${p.name}`, `${author}: ${line}.${text ? ` „${text}”` : ""}`, `${env.SITE_URL}/admin/`, "ro").catch(() => {}));
       return json({ ok: true }, 201);
     }
   }
@@ -1736,9 +2023,10 @@ async function api(req, env, ctx, url) {
     if (third === "details") {
       const p = await getProperty(env, second);
       if (!p || !p.dynamic || p.status !== "published") fail(404, "not_found");
+      const tx = listingText(p, url.searchParams.get("lang") === "en" ? "en" : "ro");
       return json({
-        slug: p.slug, name: p.name, capacity: p.capacity, roomType: p.room_type, tagline: p.tagline, description: p.description, story: p.story,
-        amenities: JSON.parse(p.amenities || "[]"), photos: (await photoIds(env, p.slug)).map(photoUrl), booking: bookingOf(p),
+        slug: p.slug, name: p.name, capacity: p.capacity, roomType: tx.roomType, tagline: tx.tagline, description: tx.description, story: tx.story,
+        amenities: tx.amenities, photos: (await photoIds(env, p.slug)).map(photoUrl), booking: bookingOf(p),
       });
     }
     if (third === "reviews") {
@@ -1817,6 +2105,8 @@ async function api(req, env, ctx, url) {
   }
 
   if (first === "checkin" && !second) return checkinRoutes(req, env, ctx, url);
+  if (first === "passes" && !second && req.method === "GET") return json(await loadPasses(env));
+  if (first === "spa") return spaRoutes(req, env, ctx, url, parts);
   if (first === "bookings") {
     if (!second && req.method === "POST") return createBooking(req, env, ctx);
     if (second) {
@@ -2034,6 +2324,8 @@ export default {
     const url = new URL(req.url);
     const ics = url.pathname.match(/^\/ical\/([a-f0-9]{40})\.ics$/);
     if (ics) return icalExport(env, ics[1]);
+    if (url.pathname === "/sitemap.xml") return seoSitemap(req, env);
+    if ((url.pathname === "/apartament/" || url.pathname === "/en/apartment/") && url.searchParams.get("p")) return seoApartment(req, env, url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     try {
