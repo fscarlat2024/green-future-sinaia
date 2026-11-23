@@ -30,7 +30,7 @@ async function send(env, to, subject, html, replyTo, senderName) {
     method: "POST",
     headers: { "api-key": key, accept: "application/json", "content-type": "application/json" },
     body: JSON.stringify({
-      sender: { name: senderName || "Green Future Sinaia", email: env.MAIL_FROM }, to: [{ email: to }], subject, htmlContent: html,
+      sender: { name: senderName || "Green Future Sinaia", email: env.MAIL_FROM }, to: String(to).split(",").map((e) => e.trim()).filter(Boolean).map((email) => ({ email })), subject, htmlContent: html,
       ...(replyTo ? { replyTo: { email: replyTo } } : {}),
     }),
   });
