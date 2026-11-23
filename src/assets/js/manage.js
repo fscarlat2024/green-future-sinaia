@@ -4,10 +4,10 @@
   if (!root) return;
   const lang = root.dataset.lang === "en" ? "en" : "ro";
   const T = lang === "en"
-    ? { missing: "This link is not valid. Please use the link from your booking email.", code: "Booking code", apt: "Apartment", in: "Check-in", out: "Check-out", guests: "Guests", total: "Total", pay: "pay at the property", host: "Host phone",
+    ? { missing: "This link is not valid. Please use the link from your booking email.", code: "Booking code", apt: "Apartment", in: "Check-in", out: "Check-out", guests: "Guests", total: "Total", pay: "pay at the property", paid: "paid online", host: "Host phone",
         status: { pending: "Waiting for the owner's confirmation", confirmed: "Confirmed", declined: "Not confirmed", cancelled: "Cancelled", expired: "Expired" },
         cancel: "Cancel booking", sure: "Are you sure you want to cancel this booking?", noCancel: "The free cancellation period has ended. Please contact the host.", failed: "We could not complete this. Please try again." }
-    : { missing: "Linkul nu este valid. Folosește linkul din emailul de rezervare.", code: "Cod rezervare", apt: "Apartament", in: "Sosire", out: "Plecare", guests: "Oaspeți", total: "Total", pay: "plată la proprietate", host: "Telefon gazdă",
+    : { missing: "Linkul nu este valid. Folosește linkul din emailul de rezervare.", code: "Cod rezervare", apt: "Apartament", in: "Sosire", out: "Plecare", guests: "Oaspeți", total: "Total", pay: "plată la proprietate", paid: "plătit online", host: "Telefon gazdă",
         status: { pending: "Așteaptă confirmarea proprietarului", confirmed: "Confirmată", declined: "Neconfirmată", cancelled: "Anulată", expired: "Expirată" },
         cancel: "Anulează rezervarea", sure: "Sigur vrei să anulezi această rezervare?", noCancel: "Perioada de anulare gratuită s-a încheiat. Te rugăm să contactezi gazda.", failed: "Nu am putut finaliza. Te rugăm să încerci din nou." };
   const q = new URLSearchParams(location.search);
@@ -46,7 +46,7 @@
     const list = document.createElement("dl");
     list.className = "mg-list";
     const rows = [[T.code, b.code], [T.apt, b.propertyName], [T.in, `${date(b.checkin)}, ${b.checkinTime}`], [T.out, `${date(b.checkout)}, ${b.checkoutTime}`],
-      [T.guests, b.adults + b.children], [T.total, `${b.total} lei (${T.pay})`]];
+      [T.guests, b.adults + b.children], [T.total, `${b.total} lei (${b.paid ? T.paid : T.pay})`]];
     if (b.ownerPhone) rows.push([T.host, b.ownerPhone]);
     for (const [k, v] of rows) {
       const dt = document.createElement("dt"); dt.textContent = k;

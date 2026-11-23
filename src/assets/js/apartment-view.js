@@ -10,8 +10,9 @@
   $("ap-chat").href = `${lang === "en" ? "/en/messages/" : "/mesaje/"}?p=${encodeURIComponent(slug)}`;
   const missing = () => { $("ap-missing").hidden = false; };
   if (!slug) { missing(); return; }
-  fetch(`/api/properties/${encodeURIComponent(slug)}/details`).then((r) => (r.ok ? r.json() : Promise.reject())).then((p) => {
-    document.title = `${p.name} - Green Future Sinaia`;
+  fetch(`/api/properties/${encodeURIComponent(slug)}/details?lang=${lang}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((p) => {
+    // titlul complet (pentru Google) il pune serverul; aici doar daca lipseste
+    if (!document.title.includes(p.name)) document.title = `${p.name} - Green Future Sinaia`;
     $("ap-name").textContent = p.name;
     $("ap-sub").textContent = [lang === "en" ? `${p.capacity} guests` : `${p.capacity} persoane`, p.roomType].filter(Boolean).join(" · ");
     $("ap-tagline").textContent = p.tagline || "";

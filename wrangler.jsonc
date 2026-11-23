@@ -7,7 +7,7 @@
   "assets": {
     "directory": "./_site",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/ical/*"]
+    "run_worker_first": ["/api/*", "/ical/*", "/sitemap.xml", "/apartament/*", "/en/apartment/*"]
   },
   "vars": {
     "SITE_URL": "https://greenfuturesinaia.com",
@@ -25,5 +25,6 @@
     }
   ],
   // fara cron: contul a atins limita gratuita de 5; vezi maintain() in worker/index.js
+  "ai": { "binding": "AI" },
   "observability": { "enabled": true }
 }

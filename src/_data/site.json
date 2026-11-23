@@ -6,72 +6,285 @@
   "whatsapp": "40700000000",
   "url": "https://greenfuturesinaia.com",
   "heroImage": "/assets/img/complex/hero-toamna.jpg",
-  "heroCredit": { "author": "Magda Constantin", "license": "CC BY-SA 3.0 RO", "url": "https://commons.wikimedia.org/wiki/File:Castelul_Peles_in_culori_de_toamna.jpg" },
-  "collage": ["/assets/img/complex/panorama-sinaia.jpg", "/assets/img/complex/panorama-complex.jpg", "/assets/img/complex/complex-fatada.jpg", "/assets/img/complex/complex-terasa.jpg", "/assets/img/complex/complex-spa.jpg", "/assets/img/complex/complex-living.jpg"],
+  "heroCredit": {
+    "author": "Magda Constantin",
+    "license": "CC BY-SA 3.0 RO",
+    "url": "https://commons.wikimedia.org/wiki/File:Castelul_Peles_in_culori_de_toamna.jpg"
+  },
+  "collage": [
+    "/assets/img/complex/panorama-sinaia.jpg",
+    "/assets/img/complex/panorama-complex.jpg",
+    "/assets/img/complex/complex-fatada.jpg",
+    "/assets/img/complex/complex-terasa.jpg",
+    "/assets/img/complex/complex-spa.jpg",
+    "/assets/img/complex/complex-living.jpg"
+  ],
   "exteriorImage": "/assets/img/complex/exterior.jpg",
   "ro": {
-    "tagline": "Apartamente cu wellness, la poalele Bucegilor.",
-    "intro": "Un complex rezidențial modern, la poalele Bucegilor, cu apartamente luminoase, spa, sală de fitness și bistro. Rezervi direct de la proprietari, fără comision de intermediar.",
+    "tagline": "Cazare în Sinaia, cu piscină și sală de forță.",
+    "intro": "Aparthotel liniștit la poalele Bucegilor: apartamente moderne, cu piscină interioară, saune, jacuzzi, sală de forță și bistro în complex. Rezervi direct de la proprietari, fără comision.",
     "about_title": "Aici, timpul începe să treacă mai încet",
     "about_p1": "Îți lași bagajul, deschizi ușa balconului și, pentru prima dată în ziua aceea, nu te mai grăbește nimic. Afară sunt Bucegii, iar centrul Sinaiei și pârtiile rămân la câțiva pași, pentru când ai chef de ele.",
     "about_p2": "Seara, după schi sau după drumeții, te așteaptă apa caldă a piscinei, căldura saunei și o masă la bistro. Le alegi doar pe cele de care ai nevoie, contra cost, la Attitude Wellness, chiar în complex.",
     "about_note": "Green Future Sinaia · Str. Walter Mărăcineanu nr. 20",
-    "sinaia_title": "Sinaia, Perla Carpaților"
+    "sinaia_title": "Sinaia, Perla Carpaților",
+    "seoTitle": "Cazare Sinaia cu piscină și sală de forță | Aparthotel Green Future"
   },
   "en": {
-    "tagline": "Apartments with wellness, at the foot of the Bucegi mountains.",
-    "intro": "Green Future Sinaia is a modern residential complex in the heart of the resort, with bright apartments, an indoor pool, sauna and mountain views. Book directly from the owners, with no middleman commission.",
+    "tagline": "Accommodation in Sinaia, with a pool and a gym.",
+    "intro": "A quiet aparthotel at the foot of the Bucegi mountains: modern apartments with an indoor pool, saunas, jacuzzi, gym and bistro in the complex. Book directly from the owners, with no commission.",
     "about_title": "Here, time starts to slow down",
     "about_p1": "You put down your bags, open the balcony door and, for the first time that day, nothing is rushing you. The Bucegi are right outside, and the centre of Sinaia and the slopes stay a few steps away, for whenever you feel like them.",
     "about_p2": "In the evening, after skiing or hiking, the warm water of the pool, the heat of the sauna and a table at the bistro are waiting. You choose only what you need, at extra cost, at Attitude Wellness, right in the complex.",
     "about_note": "Green Future Sinaia · 20 Walter Mărăcineanu St.",
-    "sinaia_title": "Sinaia - The Pearl of the Carpathians"
+    "sinaia_title": "Sinaia - The Pearl of the Carpathians",
+    "seoTitle": "Sinaia accommodation with pool and gym | Green Future Aparthotel"
   },
   "wellness": [
-    { "img": "/assets/img/complex/pool.jpg", "ro": { "title": "Piscina interioară", "note": "140 m², apa la 29–30 °C" }, "en": { "title": "Indoor pool", "note": "140 m², water at 29–30 °C" } },
-    { "img": "/assets/img/complex/jacuzzi.jpg", "ro": { "title": "Jacuzzi", "note": "și fântână de gheață" }, "en": { "title": "Jacuzzi", "note": "and an ice fountain" } },
-    { "img": "/assets/img/complex/sauna.jpg", "ro": { "title": "Saune", "note": "umedă și uscată" }, "en": { "title": "Saunas", "note": "wet and dry" } },
-    { "img": "/assets/img/complex/gym.jpg", "ro": { "title": "Sala de fitness", "note": "deschisă zilnic, 8–21" }, "en": { "title": "Fitness room", "note": "open daily, 8–21" } }
+    {
+      "img": "/assets/img/complex/pool.jpg",
+      "ro": {
+        "title": "Piscina interioară",
+        "note": "140 m², apa la 29–30 °C"
+      },
+      "en": {
+        "title": "Indoor pool",
+        "note": "140 m², water at 29–30 °C"
+      }
+    },
+    {
+      "img": "/assets/img/complex/jacuzzi.jpg",
+      "ro": {
+        "title": "Jacuzzi",
+        "note": "și fântână de gheață"
+      },
+      "en": {
+        "title": "Jacuzzi",
+        "note": "and an ice fountain"
+      }
+    },
+    {
+      "img": "/assets/img/complex/sauna.jpg",
+      "ro": {
+        "title": "Saune",
+        "note": "umedă și uscată"
+      },
+      "en": {
+        "title": "Saunas",
+        "note": "wet and dry"
+      }
+    },
+    {
+      "img": "/assets/img/complex/gym.jpg",
+      "ro": {
+        "title": "Sala de forță și fitness",
+        "note": "deschisă zilnic, 8–21"
+      },
+      "en": {
+        "title": "Gym and fitness room",
+        "note": "open daily, 8–21"
+      }
+    }
   ],
   "attractions": [
-    { "img": "/assets/img/sinaia/peles.jpg",
-      "ro": { "name": "Castelul Peleș", "desc": "Prima reședință regală a României, capodoperă neo-renascentistă cu peste 160 de camere, grădini în terase și o colecție de artă impresionantă." },
-      "en": { "name": "Peles Castle", "desc": "Romania's first royal residence - a neo-Renaissance masterpiece with over 160 rooms, terraced gardens and an impressive art collection." } },
-    { "img": "/assets/img/sinaia/pelisor.jpg",
-      "ro": { "name": "Castelul Pelișor", "desc": "Reședința de vară a Reginei Maria, în delicatul stil Art Nouveau, cu celebrul Dormitor de Aur, mai intim și mai romantic decât Peleșul." },
-      "en": { "name": "Pelisor Castle", "desc": "Queen Marie's summer residence in delicate Art Nouveau style, home to the famous Golden Room - more intimate and romantic than Peles." } },
-    { "img": "/assets/img/sinaia/manastire.jpg",
-      "ro": { "name": "Mănăstirea Sinaia", "desc": "Ctitorită în 1695, mănăstirea care a dat numele orașului: liniște, fresce vechi și prima vatră monahală din Valea Prahovei." },
-      "en": { "name": "Sinaia Monastery", "desc": "Founded in 1695, the monastery that gave the town its name - peace, old frescoes and the first monastic settlement in the Prahova Valley." } },
-    { "img": "/assets/img/sinaia/bucegi.jpg",
-      "ro": { "name": "Munții Bucegi", "desc": "Telecabina urcă la peste 2000 m, spre platoul Bucegi: trasee spectaculoase, aer curat și priveliște asupra întregii Văi a Prahovei." },
-      "en": { "name": "Bucegi Mountains", "desc": "The cable car climbs above 2000 m to the Bucegi plateau - spectacular trails, fresh air and views over the whole Prahova Valley." } },
-    { "img": "/assets/img/sinaia/sfinx.jpg",
-      "ro": { "name": "Sfinxul din Bucegi", "desc": "Megalit natural de aproape 8 metri, sculptat de vânt și vreme, unul dintre cele mai fotografiate monumente ale Carpaților, lângă Babele." },
-      "en": { "name": "The Bucegi Sphinx", "desc": "A nearly 8-metre natural megalith carved by wind and weather - one of the most photographed monuments in the Carpathians, next to Babele." } },
-    { "img": "/assets/img/sinaia/oras.jpg",
-      "ro": { "name": "Orașul Sinaia", "desc": "Perla Carpaților: cazinoul istoric, parcul Dimitrie Ghica, cafenele cochete și hoteluri de epocă, la poalele Bucegilor." },
-      "en": { "name": "Sinaia town", "desc": "The Pearl of the Carpathians - the historic casino, Dimitrie Ghica Park, charming cafes and vintage hotels at the foot of the Bucegi." } }
+    {
+      "img": "/assets/img/sinaia/peles.jpg",
+      "ro": {
+        "name": "Castelul Peleș",
+        "desc": "Prima reședință regală a României, capodoperă neo-renascentistă cu peste 160 de camere, grădini în terase și o colecție de artă impresionantă."
+      },
+      "en": {
+        "name": "Peles Castle",
+        "desc": "Romania's first royal residence - a neo-Renaissance masterpiece with over 160 rooms, terraced gardens and an impressive art collection."
+      }
+    },
+    {
+      "img": "/assets/img/sinaia/pelisor.jpg",
+      "ro": {
+        "name": "Castelul Pelișor",
+        "desc": "Reședința de vară a Reginei Maria, în delicatul stil Art Nouveau, cu celebrul Dormitor de Aur, mai intim și mai romantic decât Peleșul."
+      },
+      "en": {
+        "name": "Pelisor Castle",
+        "desc": "Queen Marie's summer residence in delicate Art Nouveau style, home to the famous Golden Room - more intimate and romantic than Peles."
+      }
+    },
+    {
+      "img": "/assets/img/sinaia/manastire.jpg",
+      "ro": {
+        "name": "Mănăstirea Sinaia",
+        "desc": "Ctitorită în 1695, mănăstirea care a dat numele orașului: liniște, fresce vechi și prima vatră monahală din Valea Prahovei."
+      },
+      "en": {
+        "name": "Sinaia Monastery",
+        "desc": "Founded in 1695, the monastery that gave the town its name - peace, old frescoes and the first monastic settlement in the Prahova Valley."
+      }
+    },
+    {
+      "img": "/assets/img/sinaia/bucegi.jpg",
+      "ro": {
+        "name": "Munții Bucegi",
+        "desc": "Telecabina urcă la peste 2000 m, spre platoul Bucegi: trasee spectaculoase, aer curat și priveliște asupra întregii Văi a Prahovei."
+      },
+      "en": {
+        "name": "Bucegi Mountains",
+        "desc": "The cable car climbs above 2000 m to the Bucegi plateau - spectacular trails, fresh air and views over the whole Prahova Valley."
+      }
+    },
+    {
+      "img": "/assets/img/sinaia/sfinx.jpg",
+      "ro": {
+        "name": "Sfinxul din Bucegi",
+        "desc": "Megalit natural de aproape 8 metri, sculptat de vânt și vreme, unul dintre cele mai fotografiate monumente ale Carpaților, lângă Babele."
+      },
+      "en": {
+        "name": "The Bucegi Sphinx",
+        "desc": "A nearly 8-metre natural megalith carved by wind and weather - one of the most photographed monuments in the Carpathians, next to Babele."
+      }
+    },
+    {
+      "img": "/assets/img/sinaia/oras.jpg",
+      "ro": {
+        "name": "Orașul Sinaia",
+        "desc": "Perla Carpaților: cazinoul istoric, parcul Dimitrie Ghica, cafenele cochete și hoteluri de epocă, la poalele Bucegilor."
+      },
+      "en": {
+        "name": "Sinaia town",
+        "desc": "The Pearl of the Carpathians - the historic casino, Dimitrie Ghica Park, charming cafes and vintage hotels at the foot of the Bucegi."
+      }
+    }
   ],
   "activity_cards": [
-    { "img": "/assets/img/activitati/atv.jpg", "show": "0741 012 129", "tel": "+40741012129",
-      "ro": { "name": "Plimbari cu ATV-ul", "desc": "Ture cu ATV prin Bucegi, pornind din Sinaia." },
-      "en": { "name": "ATV rides", "desc": "ATV tours through the Bucegi, starting from Sinaia." } },
-    { "img": "/assets/img/activitati/snowmobil.jpg", "show": "0749 772 233", "tel": "+40749772233",
-      "ro": { "name": "Plimbari cu snowmobilul", "desc": "Iarna, plimbari cu snowmobilul pe zapada proaspata." },
-      "en": { "name": "Snowmobile rides", "desc": "In winter, snowmobile rides over fresh snow." } },
-    { "img": "/assets/img/activitati/excursii.jpg", "show": "0735 506 111", "tel": "+40735506111",
-      "ro": { "name": "Excursii organizate", "desc": "Tururi ghidate off-road 4x4 spre platoul Bucegi." },
-      "en": { "name": "Guided excursions", "desc": "Guided 4x4 off-road tours to the Bucegi plateau." } }
+    {
+      "img": "/assets/img/activitati/atv.jpg",
+      "show": "0741 012 129",
+      "tel": "+40741012129",
+      "ro": {
+        "name": "Plimbari cu ATV-ul",
+        "desc": "Ture cu ATV prin Bucegi, pornind din Sinaia."
+      },
+      "en": {
+        "name": "ATV rides",
+        "desc": "ATV tours through the Bucegi, starting from Sinaia."
+      }
+    },
+    {
+      "img": "/assets/img/activitati/snowmobil.jpg",
+      "show": "0749 772 233",
+      "tel": "+40749772233",
+      "ro": {
+        "name": "Plimbari cu snowmobilul",
+        "desc": "Iarna, plimbari cu snowmobilul pe zapada proaspata."
+      },
+      "en": {
+        "name": "Snowmobile rides",
+        "desc": "In winter, snowmobile rides over fresh snow."
+      }
+    },
+    {
+      "img": "/assets/img/activitati/excursii.jpg",
+      "show": "0735 506 111",
+      "tel": "+40735506111",
+      "ro": {
+        "name": "Excursii organizate",
+        "desc": "Tururi ghidate off-road 4x4 spre platoul Bucegi."
+      },
+      "en": {
+        "name": "Guided excursions",
+        "desc": "Guided 4x4 off-road tours to the Bucegi plateau."
+      }
+    }
   ],
   "taxi": [
-    { "name": "Taxi Tudor", "show": "0733 448 448", "tel": "+40733448448", "note_ro": "non-stop", "note_en": "24/7" },
-    { "name": "Super Taxi Sinaia", "show": "0729 999 666", "tel": "+40729999666", "note_ro": "", "note_en": "" },
-    { "name": "NIK Taxi", "show": "0731 615 628", "tel": "+40731615628", "note_ro": "non-stop", "note_en": "24/7" }
+    {
+      "name": "Taxi Tudor",
+      "show": "0733 448 448",
+      "tel": "+40733448448",
+      "note_ro": "non-stop",
+      "note_en": "24/7"
+    },
+    {
+      "name": "Super Taxi Sinaia",
+      "show": "0729 999 666",
+      "tel": "+40729999666",
+      "note_ro": "",
+      "note_en": ""
+    },
+    {
+      "name": "NIK Taxi",
+      "show": "0731 615 628",
+      "tel": "+40731615628",
+      "note_ro": "non-stop",
+      "note_en": "24/7"
+    }
   ],
   "shops": [
-    { "name": "Mega Image", "note_ro": "Bd. Carol I, in centru", "note_en": "Bd. Carol I, in the centre" },
-    { "name": "Penny Market", "note_ro": "Calea Prahovei", "note_en": "Calea Prahovei" },
-    { "name": "Sinaia Plaza", "note_ro": "centru comercial nou, spre Busteni", "note_en": "new retail centre, toward Busteni" }
+    {
+      "name": "Mega Image",
+      "note_ro": "Bd. Carol I, in centru",
+      "note_en": "Bd. Carol I, in the centre"
+    },
+    {
+      "name": "Penny Market",
+      "note_ro": "Calea Prahovei",
+      "note_en": "Calea Prahovei"
+    },
+    {
+      "name": "Sinaia Plaza",
+      "note_ro": "centru comercial nou, spre Busteni",
+      "note_en": "new retail centre, toward Busteni"
+    }
+  ],
+  "faq": [
+    {
+      "ro": [
+        "Unde găsesc cazare în Sinaia cu piscină?",
+        "În Green Future Sinaia, pe Str. Walter Mărăcineanu nr. 20. Complexul are piscină interioară de 140 m², cu apa la 29–30 °C, plus saune, jacuzzi și fântână de gheață, la Attitude Wellness, chiar în clădire. Accesul se plătește separat, cu intrare sau abonament."
+      ],
+      "en": [
+        "Where can I find accommodation in Sinaia with a pool?",
+        "At Green Future Sinaia, 20 Walter Mărăcineanu St. The complex has a 140 m² indoor pool with water at 29–30 °C, plus saunas, a jacuzzi and an ice fountain at Attitude Wellness, right in the building. Access is paid separately, with a single entry or a pass."
+      ]
+    },
+    {
+      "ro": [
+        "Există sală de forță?",
+        "Da. În complex este o sală de forță și fitness, deschisă zilnic între 8 și 21, la câțiva pași de apartament. Intrarea se plătește separat sau prin abonament."
+      ],
+      "en": [
+        "Is there a gym?",
+        "Yes. The complex has a gym and fitness room, open daily from 8 to 21, a few steps from your apartment. Entry is paid separately or with a pass."
+      ]
+    },
+    {
+      "ro": [
+        "Este o cazare liniștită?",
+        "Da. Green Future e un complex rezidențial nou, cu apartamente private, nu un hotel aglomerat. Ai vedere spre Bucegi și liniște seara, iar gara și centrul Sinaiei rămân la câteva minute."
+      ],
+      "en": [
+        "Is it a quiet place to stay?",
+        "Yes. Green Future is a new residential complex with private apartments, not a crowded hotel. You get views of the Bucegi mountains and quiet evenings, while the station and the centre of Sinaia stay a few minutes away."
+      ]
+    },
+    {
+      "ro": [
+        "Ce înseamnă aparthotel?",
+        "Stai într-un apartament complet, cu bucătărie și spațiu ca acasă, dar ai la dispoziție facilitățile unui hotel: piscină, saune, sală de forță și bistro cu comandă la apartament."
+      ],
+      "en": [
+        "What is an aparthotel?",
+        "You stay in a complete apartment, with a kitchen and the space of a home, but with hotel facilities at hand: pool, saunas, gym and a bistro that delivers to your apartment."
+      ]
+    },
+    {
+      "ro": [
+        "Cum rezerv și pot veni cu mașina?",
+        "Rezervi direct de pe site sau din aplicația Green Future, de la proprietar, fără comision de intermediar. Ai parcare la fața locului, iar gara e la câteva minute."
+      ],
+      "en": [
+        "How do I book, and can I come by car?",
+        "You book directly on the site or in the Green Future app, from the owner, with no middleman commission. There is on-site parking, and the station is a few minutes away."
+      ]
+    }
   ]
 }

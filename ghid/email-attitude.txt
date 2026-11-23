@@ -1,0 +1,19 @@
+Bună ziua,
+
+V-am creat contul Attitude în aplicația Green Future Sinaia. Din el actualizați meniul bistroului, prețurile la piscină, spa și sală și trimiteți notificări pe telefoanele utilizatorilor.
+
+Pașii:
+1. Cheia contului e în fișierul atașat, cont-attitude.txt (emailul și parola). Păstrați-l doar pentru dumneavoastră.
+2. Intrați pe https://greenfuturesinaia.com/admin, de pe calculator sau telefon, cu datele din fișier.
+3. După prima intrare schimbați parola, din „Parola mea”.
+4. Folosiți meniurile Comenzi, Meniu, Abonamente și Notificări. Modificările apar imediat pe site și în aplicație.
+
+La notificări puteți alege cui trimiteți: doar clienților Attitude (cei care au comandat la bistro din aplicație) sau tuturor utilizatorilor Green Future.
+
+Ghidul detaliat, cu fiecare pas, e atașat: Ghid-Attitude-Green-Future.pdf.
+
+Pentru orice întrebare, răspundeți la acest email.
+
+Cu stimă,
+Green Future Sinaia
+rezervari@greenfuturesinaia.com

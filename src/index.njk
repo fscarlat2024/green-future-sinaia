@@ -7,7 +7,7 @@ permalink: "{{ '/index.html' if lang == 'ro' else '/en/index.html' }}"
 layout: base.njk
 scripts: ["/assets/js/search.js"]
 eleventyComputed:
-  title: "{{ site.name }} - {{ site[lang].tagline }}"
+  title: "{{ site[lang].seoTitle }}"
   description: "{{ site[lang].intro }}"
   urlRo: "/"
   urlEn: "/en/"
@@ -178,6 +178,21 @@ eleventyComputed:
   </div>
 </section>
 
+<section class="block" id="intrebari" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">{{ "Întrebări frecvente" if lang == "ro" else "FAQ" }}</span>
+      <h2>{{ "Cazare în Sinaia, pe scurt" if lang == "ro" else "Staying in Sinaia, in short" }}</h2>
+    </div>
+    <div class="faq-list">
+      {% for q in site.faq %}<details class="faq-item"><summary>{{ q[lang][0] }}</summary><p>{{ q[lang][1] }}</p></details>
+      {% endfor %}
+    </div>
+  </div>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{% for q in site.faq %}{"@type":"Question","name":{{ q[lang][0] | dump | safe }},"acceptedAnswer":{"@type":"Answer","text":{{ q[lang][1] | dump | safe }}}}{% if not loop.last %},{% endif %}{% endfor %}]}
+  </script>
+</section>
 <section class="block" id="proprietari" style="padding-top:1rem">
   <div class="wrap">
     <div class="band">

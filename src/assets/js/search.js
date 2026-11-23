@@ -79,7 +79,7 @@
     document.querySelector(".apts").insertBefore(card, soon);
     cards.set(p.slug, card);
   };
-  fetch("/api/listings").then((r) => (r.ok ? r.json() : { listings: [] })).then((d) => d.listings.forEach(addListing)).catch(() => {}).then(() => fetch("/api/properties")).then((r) => (r.ok ? r.json() : null)).then((data) => {
+  fetch(`/api/listings?lang=${lang}`).then((r) => (r.ok ? r.json() : { listings: [] })).then((d) => d.listings.forEach(addListing)).catch(() => {}).then(() => fetch("/api/properties")).then((r) => (r.ok ? r.json() : null)).then((data) => {
     if (!data || !data.properties.length) return;
     form.hidden = false;
     for (const p of data.properties) {
