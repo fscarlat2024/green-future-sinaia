@@ -1304,3 +1304,10 @@ html.gf-app footer .foot-has-map > :not(.foot-map) { display: none !important; }
 .gh-card b { color: var(--ink); font-size: 1.05rem; line-height: 1.3; }
 .gh-card small { color: var(--ink-soft); font-size: .9rem; line-height: 1.5; }
 .gh-home-link { margin-top: 1.4rem; }
+
+/* facilitati de bifat in panou */
+.adm-ticks { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .35rem .8rem; margin: .4rem 0 .9rem; }
+.adm-tick { display: flex; align-items: center; gap: .55rem; padding: .45rem .6rem; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: .92rem; color: var(--ink); background: var(--surface-2); }
+.adm-tick:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.adm-tick input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); margin: 0; flex: none; }
+.adm-sub { display: block; font-size: .85rem; color: var(--ink-soft); margin-top: .2rem; }

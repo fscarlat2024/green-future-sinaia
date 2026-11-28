@@ -553,27 +553,49 @@
 
   // ---------- facilitati: proprietarul adauga cate vrea, fiecare cu "x" ----------
   // tine lista intr-un textarea ascuns (name="amenities"), ca formularele sa o citeasca la fel ca inainte
+  // facilitatile cele mai des intalnite: se bifeaza; restul se scriu in campul de jos
+  const COMMON_AMEN = [
+    "Wi-Fi", "Smart TV", "Bucătărie complet utilată", "Espressor", "Mașină de spălat vase", "Mașină de spălat rufe",
+    "Uscător de rufe", "Fier de călcat", "Uscător de păr", "Aer condiționat", "Balcon", "Terasă", "Vedere la munte",
+    "Parcare gratuită", "Parcare subterană", "Lift", "Lenjerie și prosoape incluse", "Pat matrimonial", "Canapea extensibilă",
+    "Pătuț pentru copii", "Duș walk-in", "Cadă", "Birou de lucru", "Animale de companie acceptate", "Nefumători",
+  ];
   function amenityEditor(list) {
     const items = [...(list || [])];
     const hidden = h("textarea", { name: "amenities", hidden: true });
     const chips = h("div", { class: "adm-chips" });
+    const low = (x) => x.toLowerCase();
+    const has = (v) => items.some((x) => low(x) === low(v));
+    const boxes = COMMON_AMEN.map((v) => {
+      const cb = h("input", { type: "checkbox", value: v, on: { change: (e) => {
+        if (e.target.checked) { if (!has(v) && items.length < 100) items.push(v); }
+        else { const i = items.findIndex((x) => low(x) === low(v)); if (i >= 0) items.splice(i, 1); }
+        draw();
+      } } });
+      return { v, cb, el: h("label", { class: "adm-tick" }, cb, h("span", null, v)) };
+    });
     const draw = () => {
       hidden.value = items.join("\n");
-      chips.replaceChildren(...items.map((a, i) => h("span", { class: "adm-chip" }, a,
+      for (const b of boxes) b.cb.checked = has(b.v);
+      // in etichete apar doar cele scrise de proprietar; cele bifate se vad in lista de mai sus
+      const own = items.map((a, i) => ({ a, i })).filter(({ a }) => !COMMON_AMEN.some((v) => low(v) === low(a)));
+      chips.replaceChildren(...own.map(({ a, i }) => h("span", { class: "adm-chip" }, a,
         h("button", { type: "button", "aria-label": `Șterge ${a}`, on: { click: () => { items.splice(i, 1); draw(); } } }, "×"))));
-      if (!items.length) chips.append(h("span", { class: "adm-chip-empty" }, "Nicio facilitate încă."));
+      chips.hidden = !own.length;
     };
-    const input = h("input", { maxlength: 80, placeholder: "Ex.: Balcon cu vedere la munte", "aria-label": "Facilitate nouă" });
+    const input = h("input", { maxlength: 80, placeholder: "Ex.: Balcon cu vedere la Bucegi", "aria-label": "Facilitate nouă" });
     const add = () => {
       // se pot lipi mai multe deodata, cate una pe rand sau separate prin virgula
-      for (const v of input.value.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean)) if (items.length < 100 && !items.includes(v)) items.push(v.slice(0, 80));
+      for (const v of input.value.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean)) if (items.length < 100 && !has(v)) items.push(v.slice(0, 80));
       input.value = "";
       draw();
       input.focus();
     };
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
     draw();
-    return h("div", { class: "bk-field" }, h("span", null, "Facilități (adaugă câte vrei; piscina, spa-ul și sala apar automat)"), chips,
+    return h("div", { class: "bk-field" }, h("span", null, "Facilități (bifează ce ai; piscina, spa-ul și sala apar automat)"),
+      h("div", { class: "adm-ticks" }, boxes.map((b) => b.el)),
+      h("span", { class: "adm-sub" }, "Altele, scrise de tine"), chips,
       h("div", { class: "adm-chip-add" }, input, h("button", { type: "button", class: "btn btn-ghost", on: { click: add } }, "Adaugă")), hidden);
   }
 
