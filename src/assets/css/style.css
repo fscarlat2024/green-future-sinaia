@@ -1262,3 +1262,8 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 /* in aplicatie subsolul e ascuns, dar harta de pe paginile de apartament ramane */
 html.gf-app footer:has(.foot-map) { display: block; border-top: 0; padding-top: 0; }
 html.gf-app footer .foot-has-map > :not(.foot-map) { display: none !important; }
+/* telefon: meniul cu butoane se strange la derulare in jos */
+@media (max-width: 959px) {
+  .m-nav { max-height: 140px; transition: max-height .25s ease, padding .25s ease, opacity .2s ease, border-color .25s; }
+  html.nav-hide .m-nav { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; overflow: hidden; border-top-color: transparent; pointer-events: none; }
+}
