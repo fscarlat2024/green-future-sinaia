@@ -397,8 +397,8 @@ header.nav { background: color-mix(in srgb, var(--ground) 78%, transparent); }
 .facts { border-radius: var(--radius); box-shadow: none; }
 .fact .fi { display: none; }
 .fact b { font-size: 1.2rem; font-weight: 500; }
-section.block { padding: clamp(2.25rem, 4.5vw, 3.75rem) 0; }
-.sec-head { max-width: 720px; margin-bottom: 3rem; }
+section.block { padding: clamp(1.4rem, 3vw, 2.4rem) 0; }
+.sec-head { max-width: 720px; margin-bottom: 1.6rem; }
 .sec-head h2, .band h2 { font-size: clamp(2.3rem, 5vw, 3.6rem); font-weight: 400; line-height: 1.05; }
 .sec-head p, .split .copy p { font-weight: 300; }
 .split h2 { font-size: clamp(2.3rem, 5vw, 3.6rem) !important; font-weight: 400 !important; line-height: 1.05; }
@@ -995,7 +995,8 @@ button.pn-kpi { cursor: pointer; }
   .ap-story { margin-top: 0; }
 }
 @media (max-width: 520px) { .ap-story.has-motif { padding-right: 4.6rem; } .ap-story-flower { width: 4.8rem; right: .2rem; } .ap-story-seeds { right: 1.6rem; width: 4rem; } }
-section.block#dotari { padding-top: clamp(1.75rem, 3vw, 2.5rem); }
+section.block#dotari { padding-top: clamp(1.2rem, 2.5vw, 1.8rem); padding-bottom: .6rem; }
+section.block#despre { padding-top: .6rem; }
 section.block#experiente { padding-bottom: clamp(1.75rem, 3vw, 3rem); }
 section.block#sinaia { padding-top: clamp(1.75rem, 3vw, 3rem); }
 section.block#transport { padding-top: clamp(1.75rem, 3vw, 3rem); }
@@ -1173,3 +1174,5 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .pass-extra { align-items: end; }
 .pass-save { position: sticky; bottom: 70px; background: var(--ground); padding: .6rem 0; z-index: 2; }
 .ap-top:has(.pg-card) .ap-head .apt-rev { display: none; }
+#despre .article-intro { max-width: var(--maxw); }
+#despre .article-intro .rich { max-width: 820px; }

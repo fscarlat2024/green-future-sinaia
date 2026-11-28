@@ -28,13 +28,22 @@ layout: base.njk
 {% if amenities and amenities.length %}
 <section class="block" id="dotari">
   <div class="wrap">
-    <div class="sec-head"><span class="eyebrow">{{ t.ap_amen_eyebrow }}</span><h2>{{ t.ap_amen_title }}</h2></div>
+    <div class="sec-head"><h2>{{ t.ap_amen_title }}</h2></div>
     <div class="amen">
       {% for a in amenities %}<div><span class="ck">✓</span> {{ a }}</div>{% endfor %}
     </div>
   </div>
 </section>
 {% endif %}
+
+<section class="block" id="despre">
+  <div class="wrap article-intro">
+    <span class="eyebrow">{{ t.ap_welcome }}</span>
+    <div class="rich">
+      {% for p in desc %}<p>{{ p }}</p>{% endfor %}
+    </div>
+  </div>
+</section>
 
 {% if reviewScore %}
 <section class="block" id="recenzii" style="background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
@@ -68,15 +77,6 @@ layout: base.njk
     <div class="reviews-wrap">
       <div class="review-score"><div class="rs-num"><span id="direct-reviews-score" style="font:inherit;color:inherit"></span><span>/10</span></div><div class="rs-meta"><span class="rs-count" id="direct-reviews-count"></span></div></div>
       <div class="review-quotes" id="direct-reviews" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}"></div>
-    </div>
-  </div>
-</section>
-
-<section class="block" id="despre">
-  <div class="wrap article-intro">
-    <span class="eyebrow">{{ t.ap_welcome }}</span>
-    <div class="rich">
-      {% for p in desc %}<p>{{ p }}</p>{% endfor %}
     </div>
   </div>
 </section>
