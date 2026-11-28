@@ -1176,3 +1176,5 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .ap-top:has(.pg-card) .ap-head .apt-rev { display: none; }
 #despre .article-intro { max-width: var(--maxw); }
 #despre .article-intro .rich { max-width: 820px; }
+#despre .article-intro { gap: .5rem; }
+#despre .rich > p:first-child { margin-top: 0; }
