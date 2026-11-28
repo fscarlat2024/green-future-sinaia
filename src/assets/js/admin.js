@@ -219,8 +219,8 @@
 
   // ---------- anunt in aplicatie ----------
   async function renderPush() {
-    const { devices, attitude, enabled } = await api("push");
-    const countFor = (aud) => (aud === "attitude" ? attitude : devices);
+    const { devices, attitude, ownersNew, enabled } = await api("push");
+    const countFor = (aud) => (aud === "attitude" ? attitude : aud === "owners_new" ? ownersNew : devices);
     const status = h("p", { role: "status" });
     const send = async (ev) => {
       ev.preventDefault();
@@ -248,10 +248,11 @@
         enabled ? null : h("p", { class: "bk-err" }, "Cheia pentru notificări nu e pusă pe server."),
         h("label", { class: "bk-field" }, h("span", null, "Cui trimiți"), h("select", { name: "audience" },
           h("option", { value: "all" }, `Toți utilizatorii Green Future (${devices})`),
-          h("option", { value: "attitude" }, `Clienții Attitude: au comandat la bistro din aplicație (${attitude})`))),
+          h("option", { value: "attitude" }, `Clienții Attitude: au comandat la bistro din aplicație (${attitude})`),
+          isAdmin ? h("option", { value: "owners_new" }, `Proprietarii fără apartament publicat (${ownersNew})`) : null)),
         h("label", { class: "bk-field" }, h("span", null, "Titlu"), h("input", { name: "title", required: true, maxlength: 80 })),
         h("label", { class: "bk-field" }, h("span", null, "Mesaj"), h("textarea", { name: "body", rows: 3, maxlength: 240 })),
-        h("label", { class: "bk-field" }, h("span", null, "Pagina deschisă la apăsare"), h("select", { name: "url" }, [["/", "Prima pagină"], ["/#apartamente", "Apartamente"], ["/restaurant/", "Bistro"], ["/abonamente/", "Abonamente"]].map(([v, t]) => h("option", { value: v }, t)))),
+        h("label", { class: "bk-field" }, h("span", null, "Pagina deschisă la apăsare"), h("select", { name: "url" }, [["/", "Prima pagină"], ["/#apartamente", "Apartamente"], ["/restaurant/", "Bistro"], ["/abonamente/", "Abonamente"], ["/admin/", "Panoul proprietarului"]].map(([v, t]) => h("option", { value: v }, t)))),
         status,
         h("button", { class: "btn btn-primary btn-lg", type: "submit", disabled: !enabled || !devices }, "Trimite")));
   }

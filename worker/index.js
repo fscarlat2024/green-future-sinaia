@@ -611,11 +611,12 @@ async function adminRoutes(req, env, ctx, parts) {
     if (a.role !== "admin" && a.role !== "bistro") fail(403, "forbidden");
     const ATT = "token IN (SELECT push_token FROM orders WHERE push_token IS NOT NULL)";
     if (req.method === "GET") {
-      const [all, att] = await Promise.all([
+      const [all, att, own] = await Promise.all([
         env.DB.prepare("SELECT COUNT(*) AS n FROM push_devices").first(),
         env.DB.prepare(`SELECT COUNT(*) AS n FROM push_devices WHERE ${ATT}`).first(),
+        env.DB.prepare(`SELECT COUNT(*) AS n FROM push_devices WHERE ${OWNERS_NEW}`).first(),
       ]);
-      return json({ devices: all.n, attitude: att.n, enabled: pushEnabled(env) });
+      return json({ devices: all.n, attitude: att.n, ownersNew: a.role === "admin" ? own.n : 0, enabled: pushEnabled(env) });
     }
     if (req.method === "POST") {
       const b = await readJson(req);
@@ -626,7 +627,8 @@ async function adminRoutes(req, env, ctx, parts) {
       if (!/^\/(?!\/)/.test(link) || link.length > 200) fail(400, "invalid_link");
       if (!pushEnabled(env)) fail(409, "push_off");
       // cate 40 odata (limita Workers); panoul cere urmatorul grup pana se termina
-      const where = b.audience === "attitude" ? ` AND ${ATT}` : "";
+      if (b.audience === "owners_new" && a.role !== "admin") fail(403, "forbidden");
+      const where = b.audience === "attitude" ? ` AND ${ATT}` : b.audience === "owners_new" ? ` AND ${OWNERS_NEW}` : "";
       const { results } = await env.DB.prepare(`SELECT token FROM push_devices WHERE token > ?${where} ORDER BY token LIMIT 40`).bind(String(b.after || "")).all();
       const r = await pushTo(env, results.map((d) => d.token), { title, body, url: link });
       return json({ ...r, next: results.length === 40 ? results[39].token : null });
@@ -1918,6 +1920,7 @@ async function freshen(env, ctx, p, maxAgeMs) {
 
 async function maintain(env, ctx) {
   if (await claim(env, "expire-pending", 10 * 60000)) ctx.waitUntil(expirePending(env));
+  if (pushEnabled(env) && await claim(env, "owner-notices", 60000)) ctx.waitUntil(sendOwnerNotices(env).catch((e) => console.error("owner notices", e)));
   if (env.BREVO_API_KEY && await claim(env, "brevo-keepalive", 30 * 86400000)) ctx.waitUntil(brevoKeepAlive(env));
   if (await claim(env, "review-requests", 30 * 60000)) ctx.waitUntil(sendReviewRequests(env).catch((e) => console.error("review", e)));
   if (await claim(env, "checkin-purge", 6 * 3600000)) ctx.waitUntil(purgeCheckins(env).catch((e) => console.error("checkin purge", e)));
@@ -1926,6 +1929,21 @@ async function maintain(env, ctx) {
     const { results } = await env.DB.prepare("SELECT slug FROM properties WHERE dynamic = 1 ORDER BY (text_en IS NULL) DESC LIMIT 20").all();
     for (const r of results) await translateListing(env, r.slug).catch((e) => console.error("traducere", r.slug, e));
   })());
+}
+
+// Proprietarii care inca nu au un apartament publicat (fara conturile complexului, @green-future.ro).
+const OWNERS_NEW = `admin_id IN (SELECT a.id FROM admins a WHERE a.role = 'owner' AND a.email NOT LIKE '%@green-future.ro'
+  AND NOT EXISTS (SELECT 1 FROM admin_properties ap JOIN properties p ON p.slug = ap.property_slug WHERE ap.admin_id = a.id AND p.status = 'published'))`;
+
+// Anunturi catre proprietari puse direct in baza de date (tabela owner_notices); pleaca la urmatoarea cerere.
+async function sendOwnerNotices(env) {
+  const { results } = await env.DB.prepare("SELECT * FROM owner_notices WHERE sent_at IS NULL ORDER BY id LIMIT 3").all();
+  for (const n of results) {
+    const where = n.audience === "owners_new" ? `WHERE ${OWNERS_NEW}` : "WHERE admin_id IS NOT NULL";
+    const { results: devs } = await env.DB.prepare(`SELECT token FROM push_devices ${where}`).all();
+    const r = devs.length ? await pushTo(env, devs.map((d) => d.token), { title: n.title, body: n.body, url: n.url || "/admin/" }) : { sent: 0, failed: 0 };
+    await env.DB.prepare("UPDATE owner_notices SET sent_at = ?, sent = ?, failed = ? WHERE id = ?").bind(Date.now(), r.sent || 0, r.failed || 0, n.id).run();
+  }
 }
 
 // Cele mai putine apartamente in care incap toti oaspetii; la acelasi numar, cel mai mic pret.
