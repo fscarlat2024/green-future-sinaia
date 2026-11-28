@@ -1250,5 +1250,15 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 /* miniaturile pe toata latimea; butonul catre proprietar sub cardul cu recenzii */
 @media (min-width: 700px) { .pg-bottom { grid-template-columns: minmax(0, 1fr); } }
 .pg-aside > .pg-owner { justify-self: stretch; align-self: stretch; text-align: center; }
-@media (max-width: 999px) { .pg-aside > .pg-owner { justify-self: start; } }
+.pg-aside > .pg-owner { width: 100%; }
 @media (min-width: 1000px) { .pg-thumb { aspect-ratio: 16 / 10; } }
+/* telefon: in cardul cu nota, textul si butonul trec sub cifra, pe toata latimea */
+@media (max-width: 619px) {
+  .review-score { flex-wrap: wrap; padding: 1.1rem 1.2rem; gap: .6rem 1rem; }
+  .rs-meta { flex: 1 1 100%; }
+  .rs-meta .btn { width: 100%; text-align: center; }
+}
+@media (max-width: 619px) { .rs-meta .btn { font-size: .76rem; letter-spacing: .08em; padding-inline: .8rem; } }
+/* in aplicatie subsolul e ascuns, dar harta de pe paginile de apartament ramane */
+html.gf-app footer:has(.foot-map) { display: block; border-top: 0; padding-top: 0; }
+html.gf-app footer .foot-has-map > :not(.foot-map) { display: none !important; }
