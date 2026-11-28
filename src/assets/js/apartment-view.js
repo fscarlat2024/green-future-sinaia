@@ -38,6 +38,7 @@
         f.append(q, c);
         return f;
       }));
+      $("bk-block").hidden = false;
       $("recenzii").hidden = false;
     }
     // prima recenzie directa, daca exista, apare in cardul cu nota

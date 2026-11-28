@@ -39,12 +39,14 @@
             h("div", { class: "rv-bar-top" }, h("span", null, c[en ? "en" : "ro"]), h("b", null, v.toFixed(1))),
             h("div", { class: "rv-bar-line" }, h("i", { style: `width:${Math.max(0, Math.min(100, v * 10))}%` })));
         }));
-        list.before(bars);
+        (list.closest(".reviews-wrap") || list).before(bars);
       }
       list.replaceChildren(...data.reviews.map((r) => h("figure", { class: "quote" },
         h("div", { class: "review-mark" }, String(r.score)),
         r.body ? h("blockquote", null, r.body) : null,
         h("figcaption", null, `${r.author}, ${fmt(r.date)}`))));
+      const blk = list.closest(".rv-direct");
+      if (blk) blk.hidden = false;
       list.closest("section").hidden = false;
     }).catch(() => {});
   }

@@ -12,13 +12,12 @@
       b.addEventListener("click", () => { pause(); step(dir); });
       return b;
     };
-    const nav = document.createElement("div");
-    nav.className = "rq-arrows";
-    nav.append(btn("rq-prev", en ? "Previous review" : "Recenzia anterioară", "\u2039", -1), btn("rq-next", en ? "Next review" : "Recenzia următoare", "\u203A", 1));
+    const prev = btn("rq-prev", en ? "Previous review" : "Recenzia anterioară", "\u2039", -1);
+    const next = btn("rq-next", en ? "Next review" : "Recenzia următoare", "\u203A", 1);
     const box = document.createElement("div");
     box.className = "rq-box";
     list.before(box);
-    box.append(list, nav);
+    box.append(prev, list, next);
     const card = () => { const f = list.firstElementChild; return f ? f.getBoundingClientRect().width + parseFloat(getComputedStyle(list).columnGap || 0) : list.clientWidth; };
     const step = (dir) => {
       const max = list.scrollWidth - list.clientWidth;
@@ -28,7 +27,7 @@
       else if (to < -2) to = max;
       list.scrollTo({ left: Math.max(0, Math.min(to, max)), behavior: still ? "auto" : "smooth" });
     };
-    const fit = () => { nav.hidden = list.scrollWidth - list.clientWidth <= 2; };
+    const fit = () => { const no = list.scrollWidth - list.clientWidth <= 2; prev.hidden = no; next.hidden = no; box.classList.toggle("rq-off", no); };
     new ResizeObserver(fit).observe(list);
     new MutationObserver(fit).observe(list, { childList: true });
     fit();
