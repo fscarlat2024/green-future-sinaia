@@ -1247,3 +1247,8 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .rv-direct { margin-top: 2.4rem; padding-top: 2rem; border-top: 1px solid var(--line); }
 .rv-direct > .eyebrow { display: block; margin-bottom: 1.2rem; }
 .rv-direct .rv-bars { margin-bottom: 1rem; }
+/* miniaturile pe toata latimea; butonul catre proprietar sub cardul cu recenzii */
+@media (min-width: 700px) { .pg-bottom { grid-template-columns: minmax(0, 1fr); } }
+.pg-aside > .pg-owner { justify-self: stretch; align-self: stretch; text-align: center; }
+@media (max-width: 999px) { .pg-aside > .pg-owner { justify-self: start; } }
+@media (min-width: 1000px) { .pg-thumb { aspect-ratio: 16 / 10; } }

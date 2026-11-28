@@ -84,7 +84,7 @@
       owner = el("a", "btn btn-outline pg-owner", lang === "en" ? "Message the owner" : "Scrie proprietarului");
       owner.href = o.ownerHref;
     }
-    const bottom = shown.length || owner ? el("div", "pg-bottom", shown.length ? thumbs : el("span"), owner) : null;
+    const bottom = shown.length ? el("div", "pg-bottom", thumbs) : null;
 
     const side = el("aside", "pg-aside");
     if (o.score) {
@@ -150,6 +150,8 @@
       side.append(card);
     }
     // harta e acum jos, in subsolul paginii
+    // "Scrie proprietarului" sta in coloana din dreapta, chiar deasupra capatului randului de miniaturi
+    if (owner) side.append(owner);
     box.replaceChildren(grid, side, bottom || "");
     box.hidden = false;
   }
