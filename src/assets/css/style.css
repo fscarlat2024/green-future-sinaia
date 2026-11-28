@@ -1178,3 +1178,17 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 #despre .article-intro .rich { max-width: 820px; }
 #despre .article-intro { gap: .5rem; }
 #despre .rich > p:first-child { margin-top: 0; }
+/* titlul deasupra pozelor, facilitatile mici sub poze */
+.ap-title { display: grid; gap: .35rem; justify-items: start; padding-top: 1.2rem; }
+.ap-title h1 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 500; line-height: 1.05; }
+.ap-title .loc-tag { position: static; margin: 0; }
+.ap-title .ap-sub, .ap-title .ap-tag { margin: 0; }
+.ap-title .ap-tag { color: var(--ink-soft); max-width: 70ch; }
+.ap-amen { display: flex; flex-wrap: wrap; gap: .45rem; padding-top: .9rem; padding-bottom: .2rem; }
+.ap-amen[hidden] { display: none; }
+.ap-amen > span { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; font-size: .84rem; color: var(--ink-soft); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; }
+.ap-amen .ck { width: auto; height: auto; padding: 0; background: none; border: 0; color: var(--accent); font-size: .8rem; }
+.ap-top .ap-head { padding-top: 1rem; }
+.ap-top .ap-head:not(:has(.ap-story:not([hidden]))) { display: none; }
+.ap-top .ap-head, .ap-top .ap-head:has(.ap-story:not([hidden])) { grid-template-columns: 1fr; }
+.ap-top .ap-story { width: 100%; }

@@ -6,35 +6,28 @@ layout: base.njk
   {% set gp = [hero] %}{% for g in gallery %}{% set gp = (gp.push(g.src), gp) %}{% endfor %}
   {% set qs = [] %}{% for r in reviews %}{% set qs = (qs.push({ text: r["text_" ~ lang], author: r.author }), qs) %}{% endfor %}
   {% set gdata = { photos: gp, name: name, score: reviewScore, count: reviewCount, url: bookingUrl, reviewsHref: "#recenzii", quotes: qs } %}
-  <div class="pg-wrap" data-photo-grid data-photos="{{ gdata | dump | urlencode }}"></div>
-  <div class="wrap ap-head">
-    <div class="ap-info">
+  <div class="wrap ap-title">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>
     <h1>{{ name }}</h1>
     <p class="ap-sub">{{ capacity }} · {{ roomType }}{% if metaExtra %} · {{ metaExtra }}{% endif %}</p>
-    {% if reviewScore %}<a class="apt-rev" href="#recenzii"><span class="apt-score">{{ reviewScore }}</span><span class="apt-rev-t"><b>{{ reviewWord_ro if lang == "ro" else reviewWord_en }}</b><small>{{ reviewCount }} {{ "recenzii pe Booking" if lang == "ro" else "reviews on Booking" }}</small></span></a>{% endif %}
     <p class="ap-tag">{{ tagline }}</p>
-    </div>
-    {% if story %}
+  </div>
+  <div class="pg-wrap" data-photo-grid data-photos="{{ gdata | dump | urlencode }}"></div>
+  {% if amenities and amenities.length %}
+  <div class="wrap ap-amen" id="dotari">
+    {% for a in amenities %}<span><span class="ck">✓</span>{{ a }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% if story %}
+  <div class="wrap ap-head">
     <aside class="ap-story{% if storyMotif %} has-motif{% endif %}">
       {% if storyMotif %}<img class="ap-story-flower" src="/assets/img/brand/papadie.svg" alt="" loading="lazy"><img class="ap-story-seeds" src="/assets/img/brand/seminte.svg" alt="" loading="lazy">{% endif %}
       <span class="eyebrow">{{ "Povestea acestui loc" if lang == "ro" else "The story of this place" }}</span>
       {% for p in story %}<p>{{ p }}</p>{% endfor %}
     </aside>
-    {% endif %}
   </div>
+  {% endif %}
 </main>
-
-{% if amenities and amenities.length %}
-<section class="block" id="dotari">
-  <div class="wrap">
-    <div class="sec-head"><h2>{{ t.ap_amen_title }}</h2></div>
-    <div class="amen">
-      {% for a in amenities %}<div><span class="ck">✓</span> {{ a }}</div>{% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
 
 <section class="block" id="despre">
   <div class="wrap article-intro">

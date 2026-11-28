@@ -14,27 +14,21 @@ eleventyComputed:
 ---
 {% set t = i18n[lang] %}
 <main id="top" class="ap-top" data-apartment data-lang="{{ lang }}" hidden>
-  <div class="pg-wrap" id="ap-grid" data-photo-grid hidden></div>
-  <div class="wrap ap-head">
-    <div class="ap-info">
+  <div class="wrap ap-title">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>
     <h1 id="ap-name"></h1>
     <p class="ap-sub" id="ap-sub"></p>
     <p class="ap-tag" id="ap-tagline"></p>
-    </div>
+  </div>
+  <div class="pg-wrap" id="ap-grid" data-photo-grid hidden></div>
+  <div class="wrap ap-amen" id="dotari" hidden></div>
+  <div class="wrap ap-head">
     <aside class="ap-story" id="ap-story" hidden>
       <span class="eyebrow">{{ "Povestea acestui loc" if lang == "ro" else "The story of this place" }}</span>
     </aside>
   </div>
 </main>
 <p class="wrap chat-note" id="ap-missing" hidden>{{ "Apartamentul nu a fost găsit." if lang == "ro" else "This apartment was not found." }}</p>
-
-<section class="block" id="dotari" hidden>
-  <div class="wrap">
-    <div class="sec-head"><h2>{{ t.ap_amen_title }}</h2></div>
-    <div class="amen" id="ap-amenities"></div>
-  </div>
-</section>
 
 <section class="block" id="despre" hidden>
   <div class="wrap article-intro"><span class="eyebrow">{{ t.ap_welcome }}</span><div class="rich" id="ap-desc"></div></div>

@@ -30,12 +30,12 @@
       if (quotes.length) window.gfPhotoGrid?.($("ap-grid"), { ...grid, quotes: [...quotes, ...bk], reviewsHref: "#recenzii-directe" });
     }).catch(() => {});
     if (p.amenities.length) {
-      $("ap-amenities").append(...p.amenities.map((a) => {
-        const d = document.createElement("div");
+      $("dotari").append(...p.amenities.map((a) => {
+        const d = document.createElement("span");
         const c = document.createElement("span");
         c.className = "ck";
         c.textContent = "✓";
-        d.append(c, ` ${a}`);
+        d.append(c, a);
         return d;
       }));
       $("dotari").hidden = false;
