@@ -21,8 +21,26 @@
       $("ap-story").hidden = false;
     }
     const bk = (p.bookingReviews || []).map((r) => ({ text: r.text, author: r.author }));
-    const grid = { photos: p.photos, name: p.name, score: p.booking?.score, count: p.booking?.count, url: p.booking?.url, quotes: bk };
+    const grid = { photos: p.photos, name: p.name, score: p.booking?.score, count: p.booking?.count, url: p.booking?.url, quotes: bk, reviewsHref: p.booking?.score ? "#recenzii" : "" };
     window.gfPhotoGrid?.($("ap-grid"), grid);
+    // sectiunea "Ce spun oaspetii" de jos, cu nota si recenziile de pe Booking ale acestei proprietati
+    if (p.booking?.score) {
+      const s = Math.round(Number(p.booking.score) * 10) / 10;
+      const W = lang === "en" ? ["Exceptional", "Superb", "Fabulous", "Very good", "Good"] : ["Excepțional", "Superb", "Fabulos", "Foarte bine", "Bine"];
+      $("bk-score").textContent = String(s).replace(".", lang === "en" ? "." : ",");
+      $("bk-word").textContent = s >= 9.5 ? W[0] : s >= 9 ? W[1] : s >= 8.5 ? W[2] : s >= 8 ? W[3] : W[4];
+      $("bk-count").textContent = p.booking.count || 0;
+      if (p.booking.url) { $("bk-link").href = p.booking.url; $("bk-link").hidden = false; }
+      $("bk-quotes").append(...bk.map((r) => {
+        const f = document.createElement("figure"), q = document.createElement("blockquote"), c = document.createElement("figcaption");
+        f.className = "quote";
+        q.textContent = r.text;
+        c.textContent = "— " + (r.author || (lang === "en" ? "Booking guest" : "Oaspete pe Booking"));
+        f.append(q, c);
+        return f;
+      }));
+      $("recenzii").hidden = false;
+    }
     // prima recenzie directa, daca exista, apare in cardul cu nota
     fetch(`/api/properties/${encodeURIComponent(slug)}/reviews`).then((r) => (r.ok ? r.json() : null)).then((rv) => {
       const quotes = (rv?.reviews || []).filter((x) => x.body && x.body.length > 20).slice(0, 8)
