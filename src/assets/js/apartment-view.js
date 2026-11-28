@@ -24,8 +24,9 @@
     window.gfPhotoGrid?.($("ap-grid"), grid);
     // prima recenzie directa, daca exista, apare in cardul cu nota
     fetch(`/api/properties/${encodeURIComponent(slug)}/reviews`).then((r) => (r.ok ? r.json() : null)).then((rv) => {
-      const r = rv?.reviews?.find((x) => x.body && x.body.length > 20);
-      if (r) window.gfPhotoGrid?.($("ap-grid"), { ...grid, quote: r.body.length > 180 ? r.body.slice(0, 177) + "…" : r.body, author: r.author, reviewsHref: "#recenzii-directe" });
+      const quotes = (rv?.reviews || []).filter((x) => x.body && x.body.length > 20).slice(0, 8)
+        .map((x) => ({ text: x.body.length > 180 ? x.body.slice(0, 177) + "…" : x.body, author: x.author }));
+      if (quotes.length) window.gfPhotoGrid?.($("ap-grid"), { ...grid, quotes, reviewsHref: "#recenzii-directe" });
     }).catch(() => {});
     if (p.amenities.length) {
       $("ap-amenities").append(...p.amenities.map((a) => {

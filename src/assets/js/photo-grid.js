@@ -7,6 +7,7 @@
     ? { more: (n) => `+${n} photos`, all: "Show all photos", close: "Close", prev: "Previous photo", next: "Next photo", on: (n) => `${n} reviews on Booking`, read: "Read the reviews", map: "Show on map", addr: "Str. Walter Mărăcineanu 20, Sinaia", liked: "Guests who stayed here loved" }
     : { more: (n) => `+${n} fotografii`, all: "Vezi toate fotografiile", close: "Închide", prev: "Poza anterioară", next: "Poza următoare", on: (n) => `${n} evaluări pe Booking`, read: "Citește recenziile", map: "Arată pe hartă", addr: "Str. Walter Mărăcineanu 20, Sinaia", liked: "Oaspeții cazați aici au apreciat" };
   const MAP = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("Strada Walter Mărăcineanu 20, Sinaia");
+  const EMBED = "https://www.google.com/maps?q=" + encodeURIComponent("Strada Walter Mărăcineanu 20, Sinaia") + "&z=15&hl=" + lang + "&output=embed";
   const word = (s) => {
     const W = lang === "en" ? ["Exceptional", "Superb", "Fabulous", "Very good", "Good"] : ["Excepțional", "Superb", "Fabulos", "Foarte bine", "Bine"];
     return s >= 9.5 ? W[0] : s >= 9 ? W[1] : s >= 8.5 ? W[2] : s >= 8 ? W[3] : W[4];
@@ -81,7 +82,25 @@
       const s = Math.round(Number(o.score) * 10) / 10;
       const head = el("div", "pg-score", el("div", "pg-score-t", el("b", null, word(s)), el("small", null, T.on(o.count || 0))), el("span", "pg-score-n", String(s).replace(".", lang === "en" ? "." : ",")));
       const card = el("div", "pg-card", head);
-      if (o.quote) card.append(el("div", "pg-quote", el("small", null, T.liked), el("p", null, `„${o.quote}”`), o.author ? el("span", "pg-author", o.author) : null));
+      // recenziile se schimba singure, cu derulare in sus; pauza cand e mouse-ul pe ele
+      const quotes = (o.quotes && o.quotes.length ? o.quotes : o.quote ? [{ text: o.quote, author: o.author }] : []).filter((q) => q && q.text);
+      if (quotes.length) {
+        const items = quotes.map((q, k) => el("div", `pg-q${k ? "" : " is-on"}`, el("p", null, `„${q.text}”`), q.author ? el("span", "pg-author", q.author) : null));
+        const list = el("div", "pg-qlist", ...items);
+        const dots = quotes.length > 1 ? el("div", "pg-qdots", ...quotes.map((_, k) => el("span", k ? "" : "is-on"))) : null;
+        card.append(el("div", "pg-quote", el("small", null, T.liked), list, dots));
+        if (quotes.length > 1 && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          let cur = 0, paused = false;
+          list.addEventListener("mouseenter", () => { paused = true; });
+          list.addEventListener("mouseleave", () => { paused = false; });
+          setInterval(() => {
+            if (paused || !list.isConnected) return;
+            items[cur].classList.remove("is-on"); dots.children[cur].classList.remove("is-on");
+            cur = (cur + 1) % items.length;
+            items[cur].classList.add("is-on"); dots.children[cur].classList.add("is-on");
+          }, 5000);
+        }
+      }
       const href = o.reviewsHref || o.url;
       if (href) {
         const a = el("a", "pg-read", T.read + " →");
@@ -91,9 +110,13 @@
       }
       side.append(card);
     }
-    const map = el("a", "pg-map", el("span", "pg-pin"), el("span", "pg-map-addr", T.addr), el("span", "pg-map-btn", T.map));
-    map.href = MAP; map.target = "_blank"; map.rel = "noopener";
-    side.append(map);
+    // harta Google reala (fara cheie); click oriunde deschide Google Maps
+    const frame = el("iframe", "pg-map-frame");
+    frame.src = EMBED; frame.loading = "lazy"; frame.referrerPolicy = "no-referrer-when-downgrade";
+    frame.title = T.addr; frame.tabIndex = -1; frame.setAttribute("aria-hidden", "true");
+    const btn = el("a", "pg-map-btn", T.map);
+    btn.href = MAP; btn.target = "_blank"; btn.rel = "noopener";
+    side.append(el("div", "pg-map", frame, btn));
     box.replaceChildren(grid, side);
     box.hidden = false;
   }

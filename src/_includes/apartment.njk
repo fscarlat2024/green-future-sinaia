@@ -4,8 +4,8 @@ layout: base.njk
 {% set t = i18n[lang] %}
 <main id="top" class="ap-top">
   {% set gp = [hero] %}{% for g in gallery %}{% set gp = (gp.push(g.src), gp) %}{% endfor %}
-  {% set q = reviews[0] if reviews and reviews.length else null %}
-  {% set gdata = { photos: gp, name: name, score: reviewScore, count: reviewCount, url: bookingUrl, reviewsHref: "#recenzii", quote: (q['text_' ~ lang] if q else ""), author: (q.author if q else "") } %}
+  {% set qs = [] %}{% for r in reviews %}{% set qs = (qs.push({ text: r["text_" ~ lang], author: r.author }), qs) %}{% endfor %}
+  {% set gdata = { photos: gp, name: name, score: reviewScore, count: reviewCount, url: bookingUrl, reviewsHref: "#recenzii", quotes: qs } %}
   <div class="pg-wrap" data-photo-grid data-photos="{{ gdata | dump | urlencode }}"></div>
   <div class="wrap ap-head">
     <div class="ap-info">
