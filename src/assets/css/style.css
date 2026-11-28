@@ -1192,3 +1192,5 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .ap-top .ap-head:not(:has(.ap-story:not([hidden]))) { display: none; }
 .ap-top .ap-head, .ap-top .ap-head:has(.ap-story:not([hidden])) { grid-template-columns: 1fr; }
 .ap-top .ap-story { width: 100%; }
+#despre .article-intro .rich { max-width: none; }
+#despre .rich p, .ap-top .ap-story p, .pg-quote p { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
