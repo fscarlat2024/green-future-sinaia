@@ -508,6 +508,32 @@
       })) : h("p", { class: "adm-card" }, "Nu există oferte încă."));
   }
 
+  // ---------- facilitati: proprietarul adauga cate vrea, fiecare cu "x" ----------
+  // tine lista intr-un textarea ascuns (name="amenities"), ca formularele sa o citeasca la fel ca inainte
+  function amenityEditor(list) {
+    const items = [...(list || [])];
+    const hidden = h("textarea", { name: "amenities", hidden: true });
+    const chips = h("div", { class: "adm-chips" });
+    const draw = () => {
+      hidden.value = items.join("\n");
+      chips.replaceChildren(...items.map((a, i) => h("span", { class: "adm-chip" }, a,
+        h("button", { type: "button", "aria-label": `Șterge ${a}`, on: { click: () => { items.splice(i, 1); draw(); } } }, "×"))));
+      if (!items.length) chips.append(h("span", { class: "adm-chip-empty" }, "Nicio facilitate încă."));
+    };
+    const input = h("input", { maxlength: 80, placeholder: "Ex.: Balcon cu vedere la munte", "aria-label": "Facilitate nouă" });
+    const add = () => {
+      // se pot lipi mai multe deodata, cate una pe rand sau separate prin virgula
+      for (const v of input.value.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean)) if (items.length < 100 && !items.includes(v)) items.push(v.slice(0, 80));
+      input.value = "";
+      draw();
+      input.focus();
+    };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+    draw();
+    return h("div", { class: "bk-field" }, h("span", null, "Facilități (adaugă câte vrei; piscina, spa-ul și sala apar automat)"), chips,
+      h("div", { class: "adm-chip-add" }, input, h("button", { type: "button", class: "btn btn-ghost", on: { click: add } }, "Adaugă")), hidden);
+  }
+
   // ---------- apartament nou si prezentare ----------
   const listingFields = (p) => [
     h("label", { class: "bk-field" }, h("span", null, "Numele apartamentului"), h("input", { name: "name", required: true, maxlength: 60, value: p?.name || "" })),
@@ -517,7 +543,7 @@
     h("label", { class: "bk-field" }, h("span", null, "O frază scurtă"), h("input", { name: "tagline", maxlength: 160, value: p?.tagline || "" })),
     (() => { const t = h("textarea", { name: "story", rows: 4, maxlength: 1200, placeholder: "De ce ai amenajat locul așa? Ce simte cineva când intră aici?" }); t.value = p?.story || ""; return h("label", { class: "bk-field" }, h("span", null, "Povestea apartamentului (apare într-un chenar auriu)"), t); })(),
     (() => { const t = h("textarea", { name: "description", rows: 6, maxlength: 4000 }); t.value = p?.description || ""; return h("label", { class: "bk-field" }, h("span", null, "Descriere"), t); })(),
-    (() => { const t = h("textarea", { name: "amenities", rows: 6, maxlength: 2000, placeholder: "Wi-Fi\nBucătărie utilată\nBalcon" }); t.value = (p?.amenities || []).join("\n"); return h("label", { class: "bk-field" }, h("span", null, "Facilități, câte una pe rând"), t); })(),
+    amenityEditor(p?.amenities),
     // nota de pe Booking: doar administratorul o completeaza
     p && isAdmin ? h("div", { class: "adm-row" },
       h("label", { class: "bk-field" }, h("span", null, "Nota pe Booking (ex. 9,4)"), h("input", { name: "bookingScore", inputmode: "decimal", value: p.bookingScore ?? "" })),
@@ -670,6 +696,17 @@
       : null;
     const addBtn = h("button", { type: "button", class: "btn btn-ghost", on: { click: renderNewListing } }, "Adaugă apartament");
     const presentation = p.dynamic ? await listingEditor(p, slug, reload) : null;
+    // apartamentele cu pagina fixa (ex. Studio Dandelion) isi schimba aici doar facilitatile
+    let amenCard = null;
+    if (!p.dynamic) {
+      const amenSay = h("p", { role: "status" });
+      amenCard = h("form", { class: "adm-card adm-form", on: { submit: guarded(async (ev) => {
+        ev.preventDefault();
+        const list = String(new FormData(ev.currentTarget).get("amenities") || "").split("\n").filter(Boolean);
+        await api(`properties/${slug}/amenities`, "PUT", { amenities: list });
+        amenSay.textContent = "Facilitățile au fost salvate. Apar pe pagina apartamentului.";
+      }) } }, h("h2", null, "Facilități"), amenityEditor(p.amenities), h("button", { class: "btn btn-primary", type: "submit" }, "Salvează facilitățile"), amenSay);
+    }
     // check-in online: regulamentul apartamentului + linkul pentru oaspetii de pe Booking / Airbnb
     const rulesSay = h("p", { role: "status" });
     const rulesText = h("textarea", { name: "text", rows: 8, maxlength: 8000, placeholder: "Ex.: Fumatul interzis în apartament. Liniște după ora 22. Animalele de companie doar cu acordul gazdei." });
@@ -689,7 +726,7 @@
     const STATUS_LABEL = { draft: "Ciornă, nu apare pe site", pending: "Așteaptă aprobarea", published: "Publicat" };
     fill(h("div", { class: "adm-head" }, h("h1", null, p.name), picker, addBtn),
       p.dynamic ? h("p", null, h("span", { class: `mg-status ${p.status === "published" ? "is-confirmed" : "is-pending"}` }, STATUS_LABEL[p.status])) : null,
-      presentation, settings, checkin, rates, blocks, cal);
+      presentation, amenCard, settings, checkin, rates, blocks, cal);
   }
 
   // ---------- check-in-uri: buletin + regulament ----------

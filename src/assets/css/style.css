@@ -1194,3 +1194,14 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .ap-top .ap-story { width: 100%; }
 #despre .article-intro .rich { max-width: none; }
 #despre .rich p, .ap-top .ap-story p, .pg-quote p { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+
+/* facilitati in panou: etichete cu "x" */
+.adm-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .3rem 0 .5rem; }
+.adm-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .4rem .3rem .7rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); font-size: .9rem; }
+.adm-chip button { border: 0; background: none; color: var(--ink-soft); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0 .2rem; }
+.adm-chip button:hover { color: var(--ink); }
+.adm-chip-empty { color: var(--ink-soft); font-size: .9rem; }
+.adm-chip-add { display: flex; gap: .5rem; }
+.adm-chip-add input { flex: 1; min-width: 0; }
+.ap-owner { display: flex; justify-content: center; margin-top: 1.2rem; }
+.ap-owner .btn { border-color: var(--line); } .ap-owner .btn:hover { border-color: var(--accent); }

@@ -14,7 +14,7 @@ layout: base.njk
   </div>
   <div class="pg-wrap" data-photo-grid data-photos="{{ gdata | dump | urlencode }}"></div>
   {% if amenities and amenities.length %}
-  <div class="wrap ap-amen" id="dotari">
+  <div class="wrap ap-amen" id="dotari" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}">
     {% for a in amenities %}<span><span class="ck">✓</span>{{ a }}</span>{% endfor %}
   </div>
   {% endif %}
@@ -80,14 +80,6 @@ layout: base.njk
       <div class="sec-head"><span class="eyebrow">{{ t.ap_book_pill }}</span><h2>{{ t.bk_title }}</h2><p>{{ t.bk_sub }}</p></div>
     </div>
     <div class="bk" id="bk" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}" hidden></div>
-    <div class="band">
-      <span class="pill">{{ t.ap_book_pill }}</span>
-      <h2>{{ t.ap_book_prefix }} {{ name }}</h2>
-      <p>{{ t.ap_book_text }}</p>
-      <div class="cta-row">
-        {% if bookingUrl %}<a href="{{ bookingUrl }}" target="_blank" rel="noopener" class="btn btn-white btn-lg">{{ t.check_booking }}</a>{% endif %}
-        <a href="{{ '/mesaje/' if lang == 'ro' else '/en/messages/' }}?p={{ page.fileSlug }}" class="btn btn-outline btn-lg">{{ "Scrie proprietarului" if lang == "ro" else "Message the owner" }}</a>
-      </div>
-    </div>
+    <div class="ap-owner"><a href="{{ '/mesaje/' if lang == 'ro' else '/en/messages/' }}?p={{ page.fileSlug }}" class="btn btn-outline btn-lg">{{ "Scrie proprietarului" if lang == "ro" else "Message the owner" }}</a></div>
   </div>
 </section>

@@ -67,11 +67,7 @@ eleventyComputed:
       <div class="sec-head"><span class="eyebrow">{{ t.ap_book_pill }}</span><h2>{{ t.bk_title }}</h2><p>{{ t.bk_sub }}</p></div>
     </div>
     <div class="bk" id="bk" data-lang="{{ lang }}" hidden></div>
-    <div class="band">
-      <h2>{{ t.bk_question }}</h2>
-      <p>{{ t.bk_question_text }}</p>
-      <div class="cta-row"><a id="ap-chat" class="btn btn-outline btn-lg">{{ "Scrie proprietarului" if lang == "ro" else "Message the owner" }}</a></div>
-    </div>
+    <div class="ap-owner"><a id="ap-chat" class="btn btn-outline btn-lg">{{ "Scrie proprietarului" if lang == "ro" else "Message the owner" }}</a></div>
   </div>
 </section>
 

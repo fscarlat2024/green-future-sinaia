@@ -655,6 +655,13 @@ async function adminRoutes(req, env, ctx, parts) {
     let p = await ownedProperty(env, a, second);
     if (!p.checkin_key) { await checkinKey(env, p); p = await getProperty(env, p.slug); }
     if (["listing", "photos", "submit", "approve", "unpublish"].includes(third)) return listingRoutes(req, env, ctx, a, p, third);
+    // facilitatile: le scrie proprietarul, la orice apartament (si la cele cu pagina fixa, ca Studio Dandelion)
+    if (third === "amenities" && req.method === "PUT") {
+      const list = ((await readJson(req)).amenities || []).map((x) => String(x).trim().slice(0, 80)).filter(Boolean).slice(0, 100);
+      await env.DB.prepare("UPDATE properties SET amenities = ? WHERE slug = ?").bind(JSON.stringify(list), p.slug).run();
+      ctx.waitUntil(translateListing(env, p.slug).catch((e) => console.error("traducere", e)));
+      return json({ ok: true });
+    }
     // regulamentul apartamentului, scris de proprietar; oaspetele il bifeaza la check-in
     if (third === "rules" && req.method === "PUT") {
       const text = String((await readJson(req)).text || "").trim().slice(0, 8000);
@@ -1429,7 +1436,7 @@ function cleanListing(b) {
   if (name.length < 2 || name.length > 60) fail(400, "invalid_name");
   const capacity = Number(b.capacity);
   if (!Number.isInteger(capacity) || capacity < 1 || capacity > 30) fail(400, "invalid_value");
-  const amenities = (Array.isArray(b.amenities) ? b.amenities : []).map((a) => String(a).trim().slice(0, 80)).filter(Boolean).slice(0, 40);
+  const amenities = (Array.isArray(b.amenities) ? b.amenities : []).map((a) => String(a).trim().slice(0, 80)).filter(Boolean).slice(0, 100);
   return { name, capacity, amenities, roomType: String(b.roomType || "").trim().slice(0, 60) || null, tagline: String(b.tagline || "").trim().slice(0, 160) || null, description: String(b.description || "").trim().slice(0, 4000) || null, story: String(b.story || "").trim().slice(0, 1200) || null };
 }
 async function createListing(env, a, b) {
@@ -2039,6 +2046,14 @@ async function api(req, env, ctx, url) {
         amenities: withComplex(tx.amenities, url.searchParams.get("lang") === "en" ? "en" : "ro"), photos: (await photoIds(env, p.slug)).map(photoUrl), booking: bookingOf(p),
         bookingReviews: (() => { try { return (JSON.parse(p.booking_reviews || "[]") || []).slice(0, 12); } catch { return []; } })(),
       });
+    }
+    // pagina fixa (Studio Dandelion) isi ia facilitatile de aici, ca proprietarul sa le poata schimba din panou
+    if (third === "amenities") {
+      const p = await getProperty(env, second);
+      if (!p) fail(404, "not_found");
+      const lang = url.searchParams.get("lang") === "en" ? "en" : "ro";
+      const own = listingText(p, lang).amenities || [];
+      return json({ amenities: own.length ? withComplex(own, lang) : [] });
     }
     if (third === "reviews") {
       const p = await getProperty(env, second);

@@ -1,6 +1,21 @@
 // Calendar + formular de rezervare pe pagina apartamentului.
 // Daca apartamentul nu are rezervari active, sectiunea ramane ascunsa si se vede doar contactul.
 (function () {
+  const amen = document.querySelector("#dotari[data-slug]");
+  if (amen) {
+    fetch(`/api/properties/${encodeURIComponent(amen.dataset.slug)}/amenities?lang=${amen.dataset.lang === "en" ? "en" : "ro"}`)
+      .then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (!d || !d.amenities || !d.amenities.length) return;
+        amen.replaceChildren(...d.amenities.map((a) => {
+          const s = document.createElement("span"), c = document.createElement("span");
+          c.className = "ck"; c.textContent = "✓";
+          s.append(c, a);
+          return s;
+        }));
+      }).catch(() => {});
+  }
+})();
+(function () {
   const root = document.getElementById("bk");
   if (!root) return;
   const lang = root.dataset.lang === "en" ? "en" : "ro";

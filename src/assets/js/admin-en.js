@@ -87,7 +87,7 @@
     "Numele apartamentului": "Apartment name", "Câte persoane": "How many guests", "Tip (ex. garsonieră, 2 camere)": "Type (e.g. studio, 2 rooms)",
     "O frază scurtă": "A short tagline", "De ce ai amenajat locul așa? Ce simte cineva când intră aici?": "Why did you design the place this way? How does it feel to walk in?",
     "Povestea apartamentului (apare într-un chenar auriu)": "The apartment's story (shown in a gold frame)", "Descriere": "Description",
-    "Facilități, câte una pe rând": "Amenities, one per line", "Nota pe Booking (ex. 9,4)": "Booking score (e.g. 9.4)",
+    "Facilități, câte una pe rând": "Amenities, one per line", "Facilități (adaugă câte vrei; piscina, spa-ul și sala apar automat)": "Amenities (add as many as you like; the pool, spa and gym are added automatically)", "Nicio facilitate încă.": "No amenities yet.", "Ex.: Balcon cu vedere la munte": "E.g. Balcony with mountain view", "Facilitate nouă": "New amenity", "Adaugă": "Add", "Facilități": "Amenities", "Salvează facilitățile": "Save amenities", "Facilitățile au fost salvate. Apar pe pagina apartamentului.": "Amenities saved. They show on the apartment page.", "Nota pe Booking (ex. 9,4)": "Booking score (e.g. 9.4)",
     "Număr evaluări pe Booking": "Number of Booking reviews", "Link Booking": "Booking link", "Apartament nou": "New apartment",
     "Îl poți completa pe rând. Apare pe site abia după ce îl trimiți și e aprobat.": "You can fill it in step by step. It appears on the site only after you submit it and it is approved.",
     "Continuă cu pozele": "Continue with photos", "Alege poze": "Choose photos",
