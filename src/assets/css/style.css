@@ -770,6 +770,63 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
 /* galeria are forma unei poze obisnuite (4:3) si arata poza intreaga; inainte, banda lata taia pozele de telefon sus si jos */
 .ap-gallery { position: relative; width: min(100%, 1200px, calc(78vh * 4 / 3)); aspect-ratio: 4 / 3; min-height: 240px; margin: 0 auto; background: var(--surface-2); overflow: hidden; }
 .ap-gallery .hero-slide { transition: opacity .25s ease; background-size: contain; background-repeat: no-repeat; }
+/* galerie ca pe Booking (photo-grid.js) */
+.pg-wrap { display: grid; gap: .6rem; width: min(100% - 1.2rem, var(--maxw)); margin: .6rem auto 0; }
+.pg-wrap[hidden] { display: none; }
+.pg { display: grid; gap: .35rem; min-width: 0; }
+.pg-top { display: grid; gap: .35rem; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; aspect-ratio: 16 / 10; }
+.pg-top.pg-n1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.pg-top.pg-n2 { grid-template-rows: 1fr; }
+.pg-big { grid-row: 1 / -1; }
+.pg-thumbs { display: grid; gap: .35rem; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.pg-tile { position: relative; display: block; padding: 0; border: 0; border-radius: var(--radius); overflow: hidden; background: var(--surface-2); cursor: zoom-in; min-height: 0; }
+.pg-tile img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease, filter .2s ease; }
+.pg-tile:hover img { transform: scale(1.03); filter: brightness(1.05); }
+.pg-thumb { aspect-ratio: 4 / 3; }
+.pg-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8, 12, 9, .55); color: #fff; font-weight: 600; font-size: clamp(.72rem, 2.6vw, 1.05rem); text-decoration: underline; text-underline-offset: 3px; }
+.pg-all { justify-self: start; padding: .45rem .9rem; font: inherit; font-size: .82rem; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
+.pg-aside { display: grid; gap: .6rem; align-content: start; min-width: 0; }
+.pg-card { display: grid; gap: .8rem; padding: 1rem 1.1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.pg-score { display: flex; align-items: center; justify-content: flex-end; gap: .7rem; text-align: right; }
+.pg-score-t b { display: block; font-size: 1.05rem; }
+.pg-score-t small { color: var(--ink-soft); font-size: .8rem; }
+.pg-score-n { display: grid; place-items: center; min-width: 2.6rem; height: 2.6rem; padding: 0 .35rem; border-radius: 8px 8px 8px 0; background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 1.1rem; }
+.pg-quote { display: grid; gap: .35rem; padding-top: .8rem; border-top: 1px solid var(--line); }
+.pg-quote small { font-weight: 600; font-size: .82rem; }
+.pg-quote p { margin: 0; font-size: .9rem; line-height: 1.45; color: var(--ink-soft); }
+.pg-author { font-size: .82rem; color: var(--accent-strong); }
+.pg-read { font-size: .85rem; color: var(--accent-strong); text-decoration: none; }
+.pg-map { position: relative; display: grid; place-items: center; gap: .4rem; min-height: 150px; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; text-decoration: none; color: var(--ink);
+  background: radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--accent) 14%, transparent) 0 18%, transparent 19%), repeating-linear-gradient(35deg, transparent 0 22px, color-mix(in srgb, var(--ink) 7%, transparent) 22px 24px), repeating-linear-gradient(-55deg, transparent 0 30px, color-mix(in srgb, var(--ink) 6%, transparent) 30px 32px), var(--surface-2); }
+.pg-pin { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent); }
+.pg-map-addr { font-size: .82rem; color: var(--ink-soft); text-align: center; }
+.pg-map-btn { padding: .5rem 1rem; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: .88rem; }
+.pg-map:hover .pg-map-btn { filter: brightness(1.08); }
+.pg-more-s { display: none; }
+@media (max-width: 699px) {
+  .pg-more-l { display: none; } .pg-more-s { display: inline; font-size: 1.1rem; }
+  .pg-map, .pg-quote { display: none; }
+  .pg-card { padding: .7rem .9rem; gap: .4rem; }
+  .pg-score { justify-content: space-between; text-align: left; }
+}
+@media (min-width: 700px) {
+  .pg-aside { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1000px) {
+  .pg-wrap { grid-template-columns: minmax(0, 1fr) 300px; gap: .8rem; margin-top: 1.2rem; }
+  .pg-top { aspect-ratio: auto; height: clamp(340px, 42vw, 520px); }
+  .pg-all { display: none; }
+  .pg-aside { grid-template-columns: 1fr; }
+  .pg-map { min-height: 190px; }
+}
+/* vizualizare pe tot ecranul */
+.pg-lb { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(5, 7, 5, .94); }
+.pg-lb-img { max-width: min(96vw, 1400px); max-height: 84vh; object-fit: contain; border-radius: 4px; user-select: none; }
+.pg-lb-bar { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: .8rem 1rem; padding-top: calc(.8rem + env(safe-area-inset-top)); color: #eee; font-size: .9rem; }
+.pg-lb-x { width: 2.6rem; height: 2.6rem; font-size: 1.8rem; line-height: 1; color: #fff; background: rgba(255,255,255,.1); border: 0; border-radius: 50%; cursor: pointer; }
+.pg-lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 3rem; height: 3rem; font-size: 2.2rem; line-height: 1; color: #fff; background: rgba(255,255,255,.12); border: 0; border-radius: 50%; cursor: pointer; }
+.pg-lb-prev { left: .8rem; } .pg-lb-next { right: .8rem; }
+@media (max-width: 600px) { .pg-lb-nav { width: 2.4rem; height: 2.4rem; font-size: 1.7rem; } .pg-lb-prev { left: .3rem; } .pg-lb-next { right: .3rem; } }
 @media (min-width: 900px) { .ap-gallery { margin-top: 1.2rem; border-radius: var(--radius); } }
 .ap-head { display: grid; gap: .5rem; justify-items: start; padding-top: 1.4rem; padding-bottom: .4rem; }
 .ap-head h1 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: clamp(2.1rem, 6vw, 3.2rem); font-weight: 500; line-height: 1.05; }
@@ -1100,3 +1157,4 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .pass-edit { background: var(--ground); }
 .pass-extra { align-items: end; }
 .pass-save { position: sticky; bottom: 70px; background: var(--ground); padding: .6rem 0; z-index: 2; }
+.ap-top:has(.pg-card) .ap-head .apt-rev { display: none; }

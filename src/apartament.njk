@@ -6,7 +6,7 @@ pagination:
 permalink: "{{ '/apartament/index.html' if lang == 'ro' else '/en/apartment/index.html' }}"
 layout: base.njk
 noindex: true
-scripts: ["/assets/js/apartment-view.js", "/assets/js/booking.js", "/assets/js/review.js"]
+scripts: ["/assets/js/photo-grid.js", "/assets/js/apartment-view.js", "/assets/js/booking.js", "/assets/js/review.js"]
 eleventyComputed:
   title: "{{ 'Apartament' if lang == 'ro' else 'Apartment' }} - {{ site.name }}"
   urlRo: "/apartament/"
@@ -14,7 +14,7 @@ eleventyComputed:
 ---
 {% set t = i18n[lang] %}
 <main id="top" class="ap-top" data-apartment data-lang="{{ lang }}" hidden>
-  <div class="ap-gallery"><div class="hero-slides" id="ap-slides" data-arrows data-noauto></div></div>
+  <div class="pg-wrap" id="ap-grid" data-photo-grid hidden></div>
   <div class="wrap ap-head">
     <div class="ap-info">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>

@@ -3,12 +3,10 @@ layout: base.njk
 ---
 {% set t = i18n[lang] %}
 <main id="top" class="ap-top">
-  <div class="ap-gallery">
-    <div class="hero-slides" data-slideshow data-arrows data-noauto>
-      <div class="hero-slide is-active" style="background-image:url('{{ hero }}')" role="img" aria-label="{{ name }}"></div>
-      {% for g in gallery %}<div class="hero-slide" data-bg="{{ g.src }}" role="img" aria-label="{{ g['alt_' ~ lang] or name }}"></div>{% endfor %}
-    </div>
-  </div>
+  {% set gp = [hero] %}{% for g in gallery %}{% set gp = (gp.push(g.src), gp) %}{% endfor %}
+  {% set q = reviews[0] if reviews and reviews.length else null %}
+  {% set gdata = { photos: gp, name: name, score: reviewScore, count: reviewCount, url: bookingUrl, reviewsHref: "#recenzii", quote: (q['text_' ~ lang] if q else ""), author: (q.author if q else "") } %}
+  <div class="pg-wrap" data-photo-grid data-photos="{{ gdata | dump | urlencode }}"></div>
   <div class="wrap ap-head">
     <div class="ap-info">
     <span class="loc-tag">{{ site.name }} · Sinaia</span>
