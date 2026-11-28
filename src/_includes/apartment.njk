@@ -76,6 +76,10 @@ layout: base.njk
 
 <section class="block" id="rezervare" style="padding-top:1rem">
   <div class="wrap">
+    <div class="bk-section" data-direct-show hidden>
+      <div class="sec-head"><span class="eyebrow">{{ t.ap_book_pill }}</span><h2>{{ t.bk_title }}</h2><p>{{ t.bk_sub }}</p></div>
+    </div>
+    <div class="bk" id="bk" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}" hidden></div>
     <div class="band">
       <span class="pill">{{ t.ap_book_pill }}</span>
       <h2>{{ t.ap_book_prefix }} {{ name }}</h2>

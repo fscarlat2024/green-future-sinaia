@@ -1058,6 +1058,16 @@ async function translateListing(env, slug) {
   await env.DB.prepare("UPDATE properties SET text_en = ? WHERE slug = ?").bind(JSON.stringify(en), slug).run();
 }
 // textele pentru pagina in engleza; ce nu s-a tradus inca ramane in romana
+// facilitatile complexului apar la toate apartamentele, chiar daca proprietarul nu le-a scris
+const COMPLEX_AMEN = {
+  ro: [[/piscin|spa/i, "Piscină interioară, jacuzzi și saune (contra cost)"], [/fitness|sal[aă] de for/i, "Sală de fitness (contra cost)"]],
+  en: [[/pool|spa/i, "Indoor pool, jacuzzi and saunas (extra fee)"], [/fitness|gym/i, "Fitness room (extra fee)"]],
+};
+function withComplex(list, lang) {
+  const out = [...(list || [])];
+  for (const [re, label] of COMPLEX_AMEN[lang]) if (!out.some((a) => re.test(a))) out.push(label);
+  return out;
+}
 function listingText(p, lang) {
   const ro = listingSource(p);
   if (lang !== "en") return ro;
@@ -2026,7 +2036,7 @@ async function api(req, env, ctx, url) {
       const tx = listingText(p, url.searchParams.get("lang") === "en" ? "en" : "ro");
       return json({
         slug: p.slug, name: p.name, capacity: p.capacity, roomType: tx.roomType, tagline: tx.tagline, description: tx.description, story: tx.story,
-        amenities: tx.amenities, photos: (await photoIds(env, p.slug)).map(photoUrl), booking: bookingOf(p),
+        amenities: withComplex(tx.amenities, url.searchParams.get("lang") === "en" ? "en" : "ro"), photos: (await photoIds(env, p.slug)).map(photoUrl), booking: bookingOf(p),
         bookingReviews: (() => { try { return (JSON.parse(p.booking_reviews || "[]") || []).slice(0, 12); } catch { return []; } })(),
       });
     }

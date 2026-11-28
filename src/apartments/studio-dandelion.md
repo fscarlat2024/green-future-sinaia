@@ -44,6 +44,8 @@ amenities_ro:
   - Baie modernă
   - Lenjerie & prosoape incluse
   - Decor cald, inspirat din natură
+  - Piscină interioară, jacuzzi și saune (contra cost)
+  - Sală de fitness (contra cost)
 amenities_en:
   - Balcony with mountain view
   - Fully equipped kitchen
@@ -54,6 +56,8 @@ amenities_en:
   - Modern bathroom
   - Linens & towels included
   - Warm, nature-inspired decor
+  - Indoor pool, jacuzzi and saunas (extra fee)
+  - Fitness room (extra fee)
 gallery:
   - { src: /assets/img/apartments/studio-dandelion/living-cozy.jpg, alt_ro: "Zona de living cu canapea muștar și perete decorat cu păpădii", alt_en: "Living area with mustard sofa and dandelion-decorated wall" }
   - { src: /assets/img/apartments/studio-dandelion/dandelion-detail.jpg, alt_ro: "Păpădie reală sub clopot de sticlă — simbolul studioului", alt_en: "A real dandelion under a glass dome — the studio's symbol" }
