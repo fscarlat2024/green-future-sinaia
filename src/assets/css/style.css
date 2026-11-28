@@ -823,8 +823,8 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
   .pg-wrap { grid-template-columns: minmax(0, 1fr) 300px; gap: .8rem; margin-top: 1.2rem; }
   .pg-top { aspect-ratio: auto; height: clamp(340px, 42vw, 520px); }
   .pg-all { display: none; }
-  .pg-aside { grid-template-columns: 1fr; }
-  .pg-map { min-height: 240px; }
+  .pg-aside { display: flex; flex-direction: column; }
+  .pg-map { flex: 1; min-height: 240px; }
 }
 /* vizualizare pe tot ecranul */
 .pg-lb { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(5, 7, 5, .94); }
