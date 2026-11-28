@@ -1205,3 +1205,13 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .adm-chip-add input { flex: 1; min-width: 0; }
 .ap-owner { display: flex; justify-content: center; margin-top: 1.2rem; }
 .ap-owner .btn { border-color: var(--line); } .ap-owner .btn:hover { border-color: var(--accent); }
+
+/* recenzii pe un singur rand, cu derulare */
+.review-quotes.rq-slider { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; align-items: stretch; min-width: 0; }
+.review-quotes.rq-slider::-webkit-scrollbar { display: none; }
+.rq-slider > * { flex: 0 0 100%; scroll-snap-align: start; }
+@media (min-width: 620px) { .rq-slider > * { flex-basis: calc((100% - 1rem) / 2); } }
+.rq-box { min-width: 0; }
+.rq-arrows { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .8rem; }
+.rq-nav { width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.rq-nav:hover { border-color: var(--accent); color: var(--accent); }

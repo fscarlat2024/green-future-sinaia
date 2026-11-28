@@ -1,5 +1,43 @@
 // Calendar + formular de rezervare pe pagina apartamentului.
 // Daca apartamentul nu are rezervari active, sectiunea ramane ascunsa si se vede doar contactul.
+// recenziile: un singur rand care se deruleaza singur, cu sageti; merge si cand lista se umple mai tarziu
+(function () {
+  const en = document.documentElement.lang === "en";
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll(".review-quotes").forEach((list) => {
+    list.classList.add("rq-slider");
+    const btn = (cls, label, txt, dir) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = `rq-nav ${cls}`; b.setAttribute("aria-label", label); b.textContent = txt;
+      b.addEventListener("click", () => { pause(); step(dir); });
+      return b;
+    };
+    const nav = document.createElement("div");
+    nav.className = "rq-arrows";
+    nav.append(btn("rq-prev", en ? "Previous review" : "Recenzia anterioară", "\u2039", -1), btn("rq-next", en ? "Next review" : "Recenzia următoare", "\u203A", 1));
+    const box = document.createElement("div");
+    box.className = "rq-box";
+    list.before(box);
+    box.append(list, nav);
+    const card = () => { const f = list.firstElementChild; return f ? f.getBoundingClientRect().width + parseFloat(getComputedStyle(list).columnGap || 0) : list.clientWidth; };
+    const step = (dir) => {
+      const max = list.scrollWidth - list.clientWidth;
+      if (max <= 2) return;
+      let to = list.scrollLeft + dir * card();
+      if (to > max + 2) to = 0;            // dupa ultima, revine la prima
+      else if (to < -2) to = max;
+      list.scrollTo({ left: Math.max(0, Math.min(to, max)), behavior: still ? "auto" : "smooth" });
+    };
+    const fit = () => { nav.hidden = list.scrollWidth - list.clientWidth <= 2; };
+    new ResizeObserver(fit).observe(list);
+    new MutationObserver(fit).observe(list, { childList: true });
+    fit();
+    let hold = 0;
+    const pause = () => { hold = Date.now() + 12000; };
+    ["mouseenter", "touchstart", "focusin", "wheel"].forEach((e) => list.addEventListener(e, pause, { passive: true }));
+    if (!still) setInterval(() => { if (Date.now() > hold && !document.hidden) step(1); }, 6000);
+  });
+})();
 (function () {
   const amen = document.querySelector("#dotari[data-slug]");
   if (amen) {
