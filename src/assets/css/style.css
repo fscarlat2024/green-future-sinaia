@@ -809,6 +809,13 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
 .pg-qdots span { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: background .3s; }
 .pg-qdots span.is-on { background: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .pg-q.is-on { animation: none; } }
+.pg-quote p { font-size: .98rem; color: var(--ink); }
+.pg-qmore { justify-self: start; padding: 0; font: inherit; font-size: .85rem; color: var(--accent-strong); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.pg-qdots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: var(--line); cursor: pointer; transition: background .3s; }
+.pg-qdots button.is-on { background: var(--accent); }
+.pg-links { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; padding-top: .7rem; border-top: 1px solid var(--line); margin-top: auto; }
+.pg-card { align-content: start; }
+
 .pg-more-s { display: none; }
 @media (max-width: 699px) {
   .pg-more-l { display: none; } .pg-more-s { display: inline; font-size: 1.1rem; }
@@ -824,7 +831,8 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
   .pg-top { aspect-ratio: auto; height: clamp(340px, 42vw, 520px); }
   .pg-all { display: none; }
   .pg-aside { display: flex; flex-direction: column; }
-  .pg-map { flex: 1; min-height: 240px; }
+  .pg-card { flex: 1.4; display: flex; flex-direction: column; }
+  .pg-map { flex: 1; min-height: 200px; }
 }
 /* vizualizare pe tot ecranul */
 .pg-lb { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(5, 7, 5, .94); }

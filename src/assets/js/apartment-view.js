@@ -20,13 +20,14 @@
       $("ap-story").append(...p.story.split(/\n+/).filter(Boolean).map((t) => { const e = document.createElement("p"); e.textContent = t; return e; }));
       $("ap-story").hidden = false;
     }
-    const grid = { photos: p.photos, name: p.name, score: p.booking?.score, count: p.booking?.count, url: p.booking?.url, reviewsHref: p.booking?.url };
+    const bk = (p.bookingReviews || []).map((r) => ({ text: r.text, author: r.author }));
+    const grid = { photos: p.photos, name: p.name, score: p.booking?.score, count: p.booking?.count, url: p.booking?.url, quotes: bk };
     window.gfPhotoGrid?.($("ap-grid"), grid);
     // prima recenzie directa, daca exista, apare in cardul cu nota
     fetch(`/api/properties/${encodeURIComponent(slug)}/reviews`).then((r) => (r.ok ? r.json() : null)).then((rv) => {
       const quotes = (rv?.reviews || []).filter((x) => x.body && x.body.length > 20).slice(0, 8)
         .map((x) => ({ text: x.body.length > 180 ? x.body.slice(0, 177) + "…" : x.body, author: x.author }));
-      if (quotes.length) window.gfPhotoGrid?.($("ap-grid"), { ...grid, quotes, reviewsHref: "#recenzii-directe" });
+      if (quotes.length) window.gfPhotoGrid?.($("ap-grid"), { ...grid, quotes: [...quotes, ...bk], reviewsHref: "#recenzii-directe" });
     }).catch(() => {});
     if (p.amenities.length) {
       $("ap-amenities").append(...p.amenities.map((a) => {

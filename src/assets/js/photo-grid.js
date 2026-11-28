@@ -4,8 +4,8 @@
 (function () {
   const lang = document.documentElement.lang === "en" ? "en" : "ro";
   const T = lang === "en"
-    ? { more: (n) => `+${n} photos`, all: "Show all photos", close: "Close", prev: "Previous photo", next: "Next photo", on: (n) => `${n} reviews on Booking`, read: "Read the reviews", map: "Show on map", addr: "Str. Walter Mărăcineanu 20, Sinaia", liked: "Guests who stayed here loved" }
-    : { more: (n) => `+${n} fotografii`, all: "Vezi toate fotografiile", close: "Închide", prev: "Poza anterioară", next: "Poza următoare", on: (n) => `${n} evaluări pe Booking`, read: "Citește recenziile", map: "Arată pe hartă", addr: "Str. Walter Mărăcineanu 20, Sinaia", liked: "Oaspeții cazați aici au apreciat" };
+    ? { more: (n) => `+${n} photos`, all: "Show all photos", close: "Close", prev: "Previous photo", next: "Next photo", on: (n) => `${n} reviews on Booking`, read: "All reviews", onBooking: "See reviews on Booking", moreTxt: "more", lessTxt: "less", guest: "Booking guest", map: "Show on map", addr: "Str. Walter Mărăcineanu 20, Sinaia", liked: "Guests who stayed here loved" }
+    : { more: (n) => `+${n} fotografii`, all: "Vezi toate fotografiile", close: "Închide", prev: "Poza anterioară", next: "Poza următoare", on: (n) => `${n} evaluări pe Booking`, read: "Toate recenziile", onBooking: "Vezi recenziile pe Booking", moreTxt: "mai mult", lessTxt: "mai puțin", guest: "Oaspete pe Booking", map: "Arată pe hartă", addr: "Str. Walter Mărăcineanu 20, Sinaia", liked: "Oaspeții cazați aici au apreciat" };
   const MAP = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("Strada Walter Mărăcineanu 20, Sinaia");
   const EMBED = "https://www.google.com/maps?q=" + encodeURIComponent("Strada Walter Mărăcineanu 20, Sinaia") + "&z=15&hl=" + lang + "&output=embed";
   const word = (s) => {
@@ -84,32 +84,62 @@
       const s = Math.round(Number(o.score) * 10) / 10;
       const head = el("div", "pg-score", el("div", "pg-score-t", el("b", null, word(s)), el("small", null, T.on(o.count || 0))), el("span", "pg-score-n", String(s).replace(".", lang === "en" ? "." : ",")));
       const card = el("div", "pg-card", head);
-      // recenziile se schimba singure, cu derulare in sus; pauza cand e mouse-ul pe ele
+      // recenziile se schimba singure, cu derulare in sus; textele lungi au "mai mult"
       const quotes = (o.quotes && o.quotes.length ? o.quotes : o.quote ? [{ text: o.quote, author: o.author }] : []).filter((q) => q && q.text);
+      let paused = false, expanded = false;
       if (quotes.length) {
-        const items = quotes.map((q, k) => el("div", `pg-q${k ? "" : " is-on"}`, el("p", null, `„${q.text}”`), q.author ? el("span", "pg-author", q.author) : null));
+        const items = quotes.map((q, k) => {
+          const long = q.text.length > 160;
+          const p = el("p", null, `„${long ? q.text.slice(0, q.text.lastIndexOf(" ", 150)) + "…" : q.text}”`);
+          let more = null;
+          if (long) {
+            more = el("button", "pg-qmore", T.moreTxt);
+            more.type = "button";
+            more.addEventListener("click", () => {
+              const open = more.dataset.open !== "1";
+              more.dataset.open = open ? "1" : "";
+              p.textContent = `„${open ? q.text : q.text.slice(0, q.text.lastIndexOf(" ", 150)) + "…"}”`;
+              more.textContent = open ? T.lessTxt : T.moreTxt;
+              expanded = open;
+            });
+          }
+          return el("div", `pg-q${k ? "" : " is-on"}`, p, more, el("span", "pg-author", q.author || T.guest));
+        });
         const list = el("div", "pg-qlist", ...items);
-        const dots = quotes.length > 1 ? el("div", "pg-qdots", ...quotes.map((_, k) => el("span", k ? "" : "is-on"))) : null;
+        const dots = quotes.length > 1 ? el("div", "pg-qdots", ...quotes.map((_, k) => {
+          const d = el("button", k ? "" : "is-on");
+          d.type = "button";
+          d.setAttribute("aria-label", `${k + 1} / ${quotes.length}`);
+          return d;
+        })) : null;
+        let cur = 0;
+        const go = (n) => {
+          items[cur].classList.remove("is-on"); dots?.children[cur].classList.remove("is-on");
+          const btn = items[cur].querySelector(".pg-qmore");
+          if (btn && btn.dataset.open === "1") btn.click();
+          cur = (n + items.length) % items.length;
+          items[cur].classList.add("is-on"); dots?.children[cur].classList.add("is-on");
+        };
+        dots && [...dots.children].forEach((d, k) => d.addEventListener("click", () => go(k)));
         card.append(el("div", "pg-quote", el("small", null, T.liked), list, dots));
         if (quotes.length > 1 && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-          let cur = 0, paused = false;
           list.addEventListener("mouseenter", () => { paused = true; });
           list.addEventListener("mouseleave", () => { paused = false; });
-          setInterval(() => {
-            if (paused || !list.isConnected) return;
-            items[cur].classList.remove("is-on"); dots.children[cur].classList.remove("is-on");
-            cur = (cur + 1) % items.length;
-            items[cur].classList.add("is-on"); dots.children[cur].classList.add("is-on");
-          }, 5000);
+          setInterval(() => { if (!paused && !expanded && list.isConnected) go(cur + 1); }, 6000);
         }
       }
-      const href = o.reviewsHref || o.url;
-      if (href) {
+      const links = el("div", "pg-links");
+      if (o.reviewsHref && !/^https?:/.test(o.reviewsHref)) {
         const a = el("a", "pg-read", T.read + " →");
-        a.href = href;
-        if (/^https?:/.test(href)) { a.target = "_blank"; a.rel = "noopener"; }
-        card.append(a);
+        a.href = o.reviewsHref;
+        links.append(a);
       }
+      if (o.url) {
+        const a = el("a", "pg-read pg-bk", T.onBooking + " ↗");
+        a.href = o.url; a.target = "_blank"; a.rel = "noopener";
+        links.append(a);
+      }
+      if (links.children.length) card.append(links);
       side.append(card);
     }
     // harta Google reala (fara cheie); click oriunde deschide Google Maps

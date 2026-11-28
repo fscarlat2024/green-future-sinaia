@@ -2027,6 +2027,7 @@ async function api(req, env, ctx, url) {
       return json({
         slug: p.slug, name: p.name, capacity: p.capacity, roomType: tx.roomType, tagline: tx.tagline, description: tx.description, story: tx.story,
         amenities: tx.amenities, photos: (await photoIds(env, p.slug)).map(photoUrl), booking: bookingOf(p),
+        bookingReviews: (() => { try { return (JSON.parse(p.booking_reviews || "[]") || []).slice(0, 12); } catch { return []; } })(),
       });
     }
     if (third === "reviews") {
