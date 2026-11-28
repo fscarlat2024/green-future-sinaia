@@ -38,6 +38,15 @@ layout: base.njk
   </div>
 </section>
 
+<section class="block" id="rezervare" style="padding-top:1rem">
+  <div class="wrap">
+    <div class="bk-section" data-direct-show hidden>
+      <div class="sec-head"><span class="eyebrow">{{ t.ap_book_pill }}</span><h2>{{ t.bk_title }}</h2><p>{{ t.bk_sub }}</p></div>
+    </div>
+    <div class="bk" id="bk" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}" hidden></div>
+  </div>
+</section>
+
 <section class="block" id="recenzii" style="background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)"{% if not reviewScore %} hidden{% endif %}>
   <div class="wrap">
     <div class="sec-head"><h2>{{ t.reviews_title }}</h2></div>
@@ -65,14 +74,5 @@ layout: base.njk
         <div class="review-quotes" id="direct-reviews" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}"></div>
       </div>
     </div>
-  </div>
-</section>
-
-<section class="block" id="rezervare" style="padding-top:1rem">
-  <div class="wrap">
-    <div class="bk-section" data-direct-show hidden>
-      <div class="sec-head"><span class="eyebrow">{{ t.ap_book_pill }}</span><h2>{{ t.bk_title }}</h2><p>{{ t.bk_sub }}</p></div>
-    </div>
-    <div class="bk" id="bk" data-slug="{{ page.fileSlug }}" data-lang="{{ lang }}" hidden></div>
   </div>
 </section>
