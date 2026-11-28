@@ -247,16 +247,16 @@
       h("div", { class: "adm-card" },
         h("p", null, "Notificarea ajunge doar la oaspeții cu rezervare confirmată la apartamentul tău care au aplicația Green Future cu notificările pornite. La apăsare, se deschide pagina apartamentului."),
         h("p", null, "Poți trimite o notificare pe săptămână. Folosește-o pentru lucruri utile: o perioadă liberă, o reducere, o veste despre apartament.")),
-      !d.properties.length ? h("p", { class: "adm-card" }, "Nu ai încă un apartament publicat. Notificările devin disponibile după ce apartamentul apare pe site.") :
       h("form", { class: "adm-card adm-login", on: { submit: send } },
         d.enabled ? null : h("p", { class: "bk-err" }, "Notificările nu sunt pornite pe server."),
+        !d.properties.length ? h("p", { class: "bk-err" }, "Nu ai încă un apartament publicat. Poți trimite notificări după ce apartamentul apare pe site și primește rezervări.") : null,
         waitNote,
-        h("label", { class: "bk-field" }, h("span", null, "Apartamentul"), h("select", { name: "slug" }, d.properties.map((p) => h("option", { value: p.slug }, `${p.name} (${p.devices} ${p.devices === 1 ? "telefon" : "telefoane"})`)))),
+        h("label", { class: "bk-field" }, h("span", null, "Apartamentul"), h("select", { name: "slug", disabled: !d.properties.length }, d.properties.length ? d.properties.map((p) => h("option", { value: p.slug }, `${p.name} (${p.devices} ${p.devices === 1 ? "telefon" : "telefoane"})`)) : h("option", { value: "" }, "Niciun apartament publicat"))),
         h("label", { class: "bk-field" }, h("span", null, "Titlu"), h("input", { name: "title", required: true, maxlength: 80, placeholder: "Ex.: Weekend liber la 1 decembrie" })),
         h("label", { class: "bk-field" }, h("span", null, "Mesaj"), h("textarea", { name: "body", rows: 3, required: true, maxlength: 240, placeholder: "Ex.: Apartamentul e liber de vineri până duminică. Rezervă direct din aplicație, fără comision." })),
         status,
         h("button", { class: "btn btn-primary btn-lg", type: "submit", disabled: !d.enabled || !!d.nextAt || !total }, "Trimite"),
-        !total ? h("p", null, "Momentan niciun oaspete al apartamentului tău nu are aplicația cu notificări. Pe măsură ce oaspeții rezervă din aplicație, vor apărea aici.") : null),
+        d.properties.length && !total ? h("p", null, "Momentan niciun oaspete al apartamentului tău nu are aplicația cu notificări. Pe măsură ce oaspeții rezervă din aplicație, vor apărea aici.") : null),
       d.history.length ? h("section", { class: "adm-card" }, h("h2", null, "Trimise"), d.history.map((x) => h("div", { class: "adm-item" }, h("span", null, `${when(x.created_at)} · ${x.title} · ${x.sent} ${x.sent === 1 ? "telefon" : "telefoane"}`)))) : null);
   }
 
