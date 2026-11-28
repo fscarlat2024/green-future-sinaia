@@ -1447,6 +1447,8 @@ async function createListing(env, a, b) {
     env.DB.prepare(`INSERT INTO properties (slug, name, capacity, ical_token, status, dynamic, room_type, tagline, description, amenities, story, checkin_key) VALUES (?,?,?,?, 'draft', 1, ?,?,?,?,?,?)`)
       .bind(slug, l.name, l.capacity, randomHex(20), l.roomType, l.tagline, l.description, JSON.stringify(l.amenities), l.story, randomHex(16)),
     ...(a.role === "admin" ? [] : [env.DB.prepare("INSERT INTO admin_properties (admin_id, property_slug) VALUES (?,?)").bind(a.id, slug)]),
+    // rezervarile ajung din prima pe emailul proprietarului care a creat apartamentul (il poate schimba in Setari)
+    ...(a.role === "admin" ? [] : [env.DB.prepare("UPDATE properties SET owner_email = (SELECT email FROM admins WHERE id = ?) WHERE slug = ? AND (owner_email IS NULL OR owner_email = '')").bind(a.id, slug)]),
   ]);
   return slug;
 }
