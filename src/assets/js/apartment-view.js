@@ -7,7 +7,6 @@
   const $ = (id) => document.getElementById(id);
   $("bk").dataset.slug = slug;
   $("direct-reviews").dataset.slug = slug;
-  $("ap-chat").href = `${lang === "en" ? "/en/messages/" : "/mesaje/"}?p=${encodeURIComponent(slug)}`;
   const missing = () => { $("ap-missing").hidden = false; };
   if (!slug) { missing(); return; }
   fetch(`/api/properties/${encodeURIComponent(slug)}/details?lang=${lang}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((p) => {
@@ -21,7 +20,7 @@
       $("ap-story").hidden = false;
     }
     const bk = (p.bookingReviews || []).map((r) => ({ text: r.text, author: r.author }));
-    const grid = { photos: p.photos, name: p.name, score: p.booking?.score, count: p.booking?.count, url: p.booking?.url, quotes: bk, reviewsHref: p.booking?.score ? "#recenzii" : "" };
+    const grid = { photos: p.photos, name: p.name, score: p.booking?.score, count: p.booking?.count, url: p.booking?.url, quotes: bk, reviewsHref: p.booking?.score ? "#recenzii" : "", ownerHref: `${lang === "en" ? "/en/messages/" : "/mesaje/"}?p=${encodeURIComponent(slug)}` };
     window.gfPhotoGrid?.($("ap-grid"), grid);
     // sectiunea "Ce spun oaspetii" de jos, cu nota si recenziile de pe Booking ale acestei proprietati
     if (p.booking?.score) {

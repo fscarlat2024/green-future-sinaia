@@ -1215,3 +1215,26 @@ html.gf-app .cart-bar:not([hidden]) { border-radius: 12px; }
 .rq-arrows { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .8rem; }
 .rq-nav { width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .rq-nav:hover { border-color: var(--accent); color: var(--accent); }
+
+/* galerie: rand de jos cu miniaturi + "Scrie proprietarului" */
+.pg-bottom { display: grid; gap: .6rem; min-width: 0; }
+.pg-owner { justify-self: start; border-color: var(--line); white-space: nowrap; }
+.pg-owner:hover { border-color: var(--accent); }
+@media (min-width: 700px) { .pg-bottom { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .8rem; } }
+@media (min-width: 1000px) {
+  .pg-wrap { grid-template-areas: "main side" "bottom bottom"; }
+  .pg-wrap > .pg { grid-area: main; }
+  .pg-wrap > .pg-aside { grid-area: side; }
+  .pg-wrap > .pg-bottom { grid-area: bottom; }
+  .pg-card { flex: 1; }
+}
+@media (max-width: 999px) { .pg-wrap > .pg-bottom { order: 1; } .pg-wrap > .pg-aside { order: 2; grid-template-columns: 1fr; } }
+/* harta in subsol, pe paginile de apartament */
+.foot-map { position: relative; height: 220px; margin-top: 1.4rem; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface-2); }
+.foot-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.foot-map-btn { position: absolute; left: 50%; bottom: .8rem; transform: translateX(-50%); padding: .5rem 1rem; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: .88rem; text-decoration: none; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+@media (min-width: 900px) {
+  .foot-has-map { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 2.5rem; }
+  .foot-has-map > * { grid-column: 1; }
+  .foot-has-map > .foot-map { grid-column: 2; grid-row: 1 / span 4; margin-top: 0; height: auto; min-height: 220px; }
+}

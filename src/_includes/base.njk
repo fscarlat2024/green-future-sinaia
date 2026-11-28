@@ -87,7 +87,7 @@
   {{ content | safe }}
 
   <footer>
-    <div class="wrap">
+    <div class="wrap{% if footMap %} foot-has-map{% endif %}">
       <div class="foot-grid">
         <div class="brand">
           <span class="lm" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C7 8 6 13 8 17c1.2 2.4 3 3.5 4 4 1-.5 2.8-1.6 4-4 2-4 1-9-4-15Z" fill="currentColor"/></svg></span>
@@ -104,6 +104,12 @@
       </nav>
       <p class="foot-credit">{{ "Foto:" if lang == "ro" else "Photo:" }} Castelul Peleș, <a href="{{ site.heroCredit.url }}" rel="noopener">{{ site.heroCredit.author }}, Wikimedia Commons</a>, {{ site.heroCredit.license }}</p>
       <p class="foot-credit">{{ "Plățile cu cardul sunt procesate de" if lang == "ro" else "Card payments processed by" }} <strong>Grow LLC</strong>, 16192 Coastal Hwy, Lewes, Delaware 19958, {{ "SUA" if lang == "ro" else "USA" }}.</p>
+      {% if footMap %}
+      <div class="foot-map">
+        <iframe src="https://www.google.com/maps?q={{ 'Strada Walter Mărăcineanu 20, Sinaia' | urlencode }}&z=15&hl={{ lang }}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ site.address }}"></iframe>
+        <a class="foot-map-btn" href="https://www.google.com/maps/search/?api=1&query={{ 'Strada Walter Mărăcineanu 20, Sinaia' | urlencode }}" target="_blank" rel="noopener">{{ "Arată pe hartă" if lang == "ro" else "Show on map" }}</a>
+      </div>
+      {% endif %}
     </div>
   </footer>
 

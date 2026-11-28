@@ -77,7 +77,14 @@
     const all = el("button", "pg-all", T.all + ` (${photos.length})`);
     all.type = "button";
     all.addEventListener("click", () => lightbox(photos, o.name, 0));
-    const grid = el("div", "pg", top, shown.length ? thumbs : null, all);
+    const grid = el("div", "pg", top, all);
+    // randul de jos: miniaturile, apoi butonul catre proprietar
+    let owner = null;
+    if (o.ownerHref) {
+      owner = el("a", "btn btn-outline pg-owner", lang === "en" ? "Message the owner" : "Scrie proprietarului");
+      owner.href = o.ownerHref;
+    }
+    const bottom = shown.length || owner ? el("div", "pg-bottom", shown.length ? thumbs : el("span"), owner) : null;
 
     const side = el("aside", "pg-aside");
     if (o.score) {
@@ -142,14 +149,8 @@
       if (links.children.length) card.append(links);
       side.append(card);
     }
-    // harta Google reala (fara cheie); click oriunde deschide Google Maps
-    const frame = el("iframe", "pg-map-frame");
-    frame.src = EMBED; frame.loading = "lazy"; frame.referrerPolicy = "no-referrer-when-downgrade";
-    frame.title = T.addr; frame.tabIndex = -1; frame.setAttribute("aria-hidden", "true");
-    const btn = el("a", "pg-map-btn", T.map);
-    btn.href = MAP; btn.target = "_blank"; btn.rel = "noopener";
-    side.append(el("div", "pg-map", frame, btn));
-    box.replaceChildren(grid, side);
+    // harta e acum jos, in subsolul paginii
+    box.replaceChildren(grid, side, bottom || "");
     box.hidden = false;
   }
   window.gfPhotoGrid = build;
