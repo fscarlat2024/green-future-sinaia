@@ -605,6 +605,58 @@ async function adminRoutes(req, env, ctx, parts) {
     }
   }
 
+  // proprietarul anunta doar oaspetii care au rezervat la apartamentele lui (rezervare confirmata, cu aplicatia pe telefon).
+  // O notificare pe saptamana de la fiecare proprietar; administratorul primeste o copie pe Telegram.
+  if (first === "owner-push") {
+    const owned = a.role === "admin"
+      ? (await env.DB.prepare("SELECT slug, name FROM properties WHERE status = 'published' ORDER BY name").all()).results
+      : (await env.DB.prepare("SELECT p.slug, p.name FROM admin_properties ap JOIN properties p ON p.slug = ap.property_slug WHERE ap.admin_id = ? AND p.status = 'published' ORDER BY p.name").bind(a.id).all()).results;
+    const audience = async (slugs) => {
+      if (!slugs.length) return [];
+      const q = slugs.map(() => "?").join(",");
+      const { results } = await env.DB.prepare(
+        `SELECT DISTINCT d.token, d.lang FROM push_devices d
+         WHERE d.admin_id IS NULL AND (
+           d.token IN (SELECT push_token FROM bookings WHERE property_slug IN (${q}) AND status = 'confirmed' AND push_token IS NOT NULL)
+           OR d.guest_id IN (SELECT guest_id FROM bookings WHERE property_slug IN (${q}) AND status = 'confirmed' AND guest_id IS NOT NULL))
+         LIMIT 200`
+      ).bind(...slugs, ...slugs).all();
+      return results;
+    };
+    const WEEK = 7 * 86400000;
+    const last = await env.DB.prepare("SELECT created_at FROM owner_pushes WHERE admin_id = ? ORDER BY created_at DESC LIMIT 1").bind(a.id).first();
+    const nextAt = last && a.role !== "admin" ? last.created_at + WEEK : 0;
+    if (req.method === "GET") {
+      const per = [];
+      for (const p of owned) per.push({ slug: p.slug, name: p.name, devices: (await audience([p.slug])).length });
+      const { results: history } = await env.DB.prepare("SELECT property_slug, title, body, sent, created_at FROM owner_pushes WHERE admin_id = ? ORDER BY created_at DESC LIMIT 10").bind(a.id).all();
+      return json({ properties: per, nextAt: nextAt > Date.now() ? nextAt : 0, history, enabled: pushEnabled(env) });
+    }
+    if (req.method === "POST") {
+      const b = await readJson(req);
+      const title = String(b.title || "").trim();
+      const body = String(b.body || "").trim();
+      if (!title || title.length > 80 || !body || body.length > 240) fail(400, "invalid_value");
+      const p = owned.find((x) => x.slug === b.slug);
+      if (!p) fail(403, "forbidden");
+      if (!pushEnabled(env)) fail(409, "push_off");
+      if (nextAt > Date.now()) fail(429, "owner_push_wait", { nextAt });
+      const list = await audience([p.slug]);
+      if (!list.length) fail(409, "no_audience");
+      let sent = 0, failed = 0;
+      for (const lang of ["ro", "en"]) {
+        const tokens = list.filter((d) => (d.lang === "en" ? "en" : "ro") === lang).map((d) => d.token);
+        for (let i = 0; i < tokens.length; i += 40) {
+          const r = await pushTo(env, tokens.slice(i, i + 40), { title, body, url: aptPath(p.slug, lang) });
+          sent += r.sent; failed += r.failed;
+        }
+      }
+      await env.DB.prepare("INSERT INTO owner_pushes (admin_id, property_slug, title, body, sent, failed, created_at) VALUES (?,?,?,?,?,?,?)")
+        .bind(a.id, p.slug, title, body, sent, failed, Date.now()).run();
+      ctx.waitUntil(telegram(env, `📣 Notificare de la proprietar (${a.email}) · ${p.name}\nTrimisă la ${sent} telefoane\n${title}\n${body}`));
+      return json({ sent, failed });
+    }
+  }
   if (first === "push") {
     // anunturi: administratorul si contul Attitude. Doua publicuri: toti utilizatorii Green Future
     // sau doar clientii Attitude (telefoanele care au comandat la bistro din aplicatie).

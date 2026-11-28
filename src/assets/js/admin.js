@@ -7,6 +7,7 @@
   try { token = localStorage.getItem(KEY); } catch {}
 
   const ERR = {
+    owner_push_wait: "Ai trimis deja o notificare săptămâna aceasta. Poți trimite din nou după data afișată.", no_audience: "Niciun oaspete al acestui apartament nu are încă aplicația cu notificările pornite.", push_off: "Notificările nu sunt pornite pe server.",
     bad_login: "Email sau parolă greșită.", wrong_password: "Parola actuală nu e corectă.", weak_password: "Parola nouă trebuie să aibă cel puțin 8 caractere.", same_password: "Parola nouă trebuie să fie diferită de cea actuală.", too_many_requests: "Prea multe încercări. Reîncearcă în 15 minute.",
     calendar_conflict: "Perioada se suprapune cu o rezervare sau cu un calendar extern.", wrong_status: "Rezervarea și-a schimbat deja starea.",
     invalid_hours: "Completează ambele ore, diferite între ele, sau lasă-le goale pe amândouă.", category_not_empty: "Mută sau șterge întâi produsele din această categorie.", invalid_name: "Scrie numele.", need_photos: "Adaugă cel puțin 3 poze.", need_description: "Scrie descrierea apartamentului și salveaz-o.", too_many_photos: "Poți avea cel mult 20 de poze.", invalid_photo: "Fișierul nu e o poză validă.", photo_too_large: "Poza e prea mare.",
@@ -218,6 +219,47 @@
   }
 
   // ---------- anunt in aplicatie ----------
+  // ---------- notificari de la proprietar catre oaspetii lui ----------
+  async function renderOwnerPush() {
+    const d = await api("owner-push");
+    const status = h("p", { role: "status" });
+    const when = (ms) => new Date(ms).toLocaleDateString("ro-RO", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    const total = d.properties.reduce((s, p) => s + p.devices, 0);
+    const waitNote = d.nextAt ? h("p", { class: "bk-err" }, `Următoarea notificare o poți trimite după ${when(d.nextAt)}.`) : null;
+    const send = async (ev) => {
+      ev.preventDefault();
+      const form = ev.currentTarget;
+      const f = new FormData(form);
+      const p = d.properties.find((x) => x.slug === f.get("slug"));
+      if (!confirm(`Trimiți notificarea la ${p ? p.devices : 0} ${p && p.devices === 1 ? "telefon" : "telefoane"}? Nu poate fi retrasă și următoarea o poți trimite peste 7 zile.`)) return;
+      const btn = form.querySelector("[type=submit]");
+      btn.disabled = true;
+      status.textContent = "Se trimite...";
+      try {
+        const r = await api("owner-push", "POST", { slug: f.get("slug"), title: f.get("title"), body: f.get("body") });
+        status.textContent = `Trimisă la ${r.sent} ${r.sent === 1 ? "telefon" : "telefoane"}${r.failed ? `, nereușite: ${r.failed}` : ""}.`;
+        form.reset();
+        setTimeout(() => guarded(renderOwnerPush)(), 1500);
+      } catch (e) { status.textContent = e.message; btn.disabled = false; }
+    };
+    fill(
+      h("div", { class: "adm-head" }, h("h1", null, "Notificări"), h("p", null, "Trimite un mesaj pe telefon oaspeților care au stat sau vor sta la apartamentul tău.")),
+      h("div", { class: "adm-card" },
+        h("p", null, "Notificarea ajunge doar la oaspeții cu rezervare confirmată la apartamentul tău care au aplicația Green Future cu notificările pornite. La apăsare, se deschide pagina apartamentului."),
+        h("p", null, "Poți trimite o notificare pe săptămână. Folosește-o pentru lucruri utile: o perioadă liberă, o reducere, o veste despre apartament.")),
+      !d.properties.length ? h("p", { class: "adm-card" }, "Nu ai încă un apartament publicat. Notificările devin disponibile după ce apartamentul apare pe site.") :
+      h("form", { class: "adm-card adm-login", on: { submit: send } },
+        d.enabled ? null : h("p", { class: "bk-err" }, "Notificările nu sunt pornite pe server."),
+        waitNote,
+        h("label", { class: "bk-field" }, h("span", null, "Apartamentul"), h("select", { name: "slug" }, d.properties.map((p) => h("option", { value: p.slug }, `${p.name} (${p.devices} ${p.devices === 1 ? "telefon" : "telefoane"})`)))),
+        h("label", { class: "bk-field" }, h("span", null, "Titlu"), h("input", { name: "title", required: true, maxlength: 80, placeholder: "Ex.: Weekend liber la 1 decembrie" })),
+        h("label", { class: "bk-field" }, h("span", null, "Mesaj"), h("textarea", { name: "body", rows: 3, required: true, maxlength: 240, placeholder: "Ex.: Apartamentul e liber de vineri până duminică. Rezervă direct din aplicație, fără comision." })),
+        status,
+        h("button", { class: "btn btn-primary btn-lg", type: "submit", disabled: !d.enabled || !!d.nextAt || !total }, "Trimite"),
+        !total ? h("p", null, "Momentan niciun oaspete al apartamentului tău nu are aplicația cu notificări. Pe măsură ce oaspeții rezervă din aplicație, vor apărea aici.") : null),
+      d.history.length ? h("section", { class: "adm-card" }, h("h2", null, "Trimise"), d.history.map((x) => h("div", { class: "adm-item" }, h("span", null, `${when(x.created_at)} · ${x.title} · ${x.sent} ${x.sent === 1 ? "telefon" : "telefoane"}`)))) : null);
+  }
+
   async function renderPush() {
     const { devices, attitude, ownersNew, enabled } = await api("push");
     const countFor = (aud) => (aud === "attitude" ? attitude : aud === "owners_new" ? ownersNew : devices);
@@ -888,7 +930,7 @@
         h("button", { class: "btn btn-primary", type: "submit" }, "Schimbă parola"), say));
   }
 
-  const TABS = { spa: renderSpa, passes: renderPasses, checkin: renderCheckins, password: renderPassword, bookings: renderBookings, orders: renderOrders, menu: () => renderMenu(), settings: () => renderSettings(), push: renderPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };
+  const TABS = { spa: renderSpa, passes: renderPasses, checkin: renderCheckins, password: renderPassword, bookings: renderBookings, orders: renderOrders, menu: () => renderMenu(), settings: () => renderSettings(), push: renderPush, ownerpush: renderOwnerPush, guests: renderGuests, offers: renderOffers, chats: renderChats, home: renderHome, more: renderMore, contacts: renderContacts, reviews: renderReviews };
   const ICON = {
     menu: '<path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
     home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.500 10v10h13V10"/>',
@@ -901,6 +943,7 @@
     offers: '<path d="M4 4h7l9 9-7 7-9-9V4Z"/><circle cx="8" cy="8" r="1.300"/>',
     reviews: '<path d="m12 3 2.700 5.700 6.300.8-4.600 4.300 1.200 6.200-5.600-3.100-5.600 3.100 1.200-6.200L3 9.500l6.300-.8L12 3Z"/>',
     push: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4"/>',
+    ownerpush: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4"/>',
     spa: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M8 15c1 0 1-.8 2-.8s1 .8 2 .8 1-.8 2-.8 1 .8 2 .8"/>',
     passes: '<path d="M3 15c2 0 2-1.500 4.500-1.500S9.500 15 12 15s2.500-1.500 4.500-1.500S19 15 21 15M3 19c2 0 2-1.500 4.500-1.500S9.500 19 12 19s2.500-1.500 4.500-1.500S19 19 21 19"/><path d="M8 12V6a2 2 0 0 1 4 0M12 12V6a2 2 0 0 1 4 0"/>',
     checkin: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.300"/><path d="M5.800 16.500c.6-1.700 1.800-2.500 3.200-2.500s2.600.8 3.200 2.500M14.500 10h4M14.500 13.500h3"/>',
@@ -933,7 +976,9 @@
       { tab: "offers", label: "Oferte", hint: "Reduceri personalizate" },
       { tab: "push", label: "Notificări", hint: "Anunț în aplicație" },
       { tab: "contacts", label: "Echipa", hint: "Numere de telefon" },
-    ] : []),
+    ] : [
+      { tab: "ownerpush", label: "Notificări", hint: "Mesaj către oaspeții tăi" },
+    ]),
     { tab: "password", label: "Parola mea", hint: "Schimbă parola" },
     { tab: "more", label: "Mai mult", main: true, phoneOnly: true },
   ];
