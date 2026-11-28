@@ -16,7 +16,9 @@ eleventyExcludeFromCollections: true
   <url><loc>{{ site.url }}/en/privacy/</loc></url>
   <url><loc>{{ site.url }}/anulare/</loc></url>
   <url><loc>{{ site.url }}/en/cancellation/</loc></url>
-  {% for apt in collections.apartmentsRo %}<url><loc>{{ site.url }}{{ apt.url }}</loc></url>
+  <url><loc>{{ site.url }}/ghid/</loc></url>
+  {% for a in collections.ghid %}<url><loc>{{ site.url }}{{ a.url }}</loc><lastmod>{{ a.date.toISOString().slice(0, 10) }}</lastmod></url>
+  {% endfor %}  {% for apt in collections.apartmentsRo %}<url><loc>{{ site.url }}{{ apt.url }}</loc></url>
   {% endfor %}{% for apt in collections.apartmentsEn %}<url><loc>{{ site.url }}{{ apt.url }}</loc></url>
   {% endfor %}
 </urlset>

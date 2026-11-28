@@ -1,0 +1,76 @@
+---
+layout: base.njk
+---
+{% set rest = [] %}{% for a in collections.ghid %}{% if a.url != page.url %}{% set rest = (rest.push(a), rest) %}{% endif %}{% endfor %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": {{ titlu | dump | safe }},
+      "description": {{ rezumat | dump | safe }},
+      "image": "{{ site.url }}{{ imagine }}",
+      "datePublished": "{{ page.date.toISOString().slice(0, 10) }}",
+      "dateModified": "{{ page.date.toISOString().slice(0, 10) }}",
+      "inLanguage": "ro",
+      "mainEntityOfPage": "{{ site.url }}{{ page.url }}",
+      "author": { "@type": "Organization", "name": "{{ site.name }}", "url": "{{ site.url }}" },
+      "publisher": { "@type": "Organization", "name": "{{ site.name }}", "url": "{{ site.url }}" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Acasă", "item": "{{ site.url }}/" },
+        { "@type": "ListItem", "position": 2, "name": "Ghid Sinaia", "item": "{{ site.url }}/ghid/" },
+        { "@type": "ListItem", "position": 3, "name": {{ titlu | dump | safe }}, "item": "{{ site.url }}{{ page.url }}" }
+      ]
+    }{% if intrebari and intrebari.length %},
+    {
+      "@type": "FAQPage",
+      "mainEntity": [{% for q in intrebari %}
+        { "@type": "Question", "name": {{ q.q | dump | safe }}, "acceptedAnswer": { "@type": "Answer", "text": {{ q.a | dump | safe }} } }{% if not loop.last %},{% endif %}{% endfor %}
+      ]
+    }{% endif %}
+  ]
+}
+</script>
+<main class="block gh-article">
+  <div class="wrap gh-narrow">
+    <nav class="gh-crumbs" aria-label="Navigare"><a href="/">Acasă</a> <span aria-hidden="true">/</span> <a href="/ghid/">Ghid Sinaia</a></nav>
+    <span class="eyebrow">{{ eticheta or "Ghid Sinaia" }}</span>
+    <h1>{{ titlu }}</h1>
+    <p class="gh-lead">{{ rezumat }}</p>
+    <p class="gh-meta">Actualizat: {{ page.date.toLocaleDateString("ro-RO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) }}</p>
+  </div>
+  <figure class="wrap gh-hero"><img src="{{ imagine }}" alt="{{ imagineAlt or titlu }}" width="1600" height="900"></figure>
+  <div class="wrap gh-narrow gh-body">
+    {{ content | safe }}
+    {% if intrebari and intrebari.length %}
+    <h2>Întrebări frecvente</h2>
+    <div class="gh-faq">
+      {% for q in intrebari %}<details><summary>{{ q.q }}</summary><p>{{ q.a }}</p></details>{% endfor %}
+    </div>
+    {% endif %}
+    <aside class="gh-cta">
+      <div>
+        <b>Cazare la Green Future Sinaia</b>
+        <p>Apartamente în complexul de pe Str. Walter Mărăcineanu nr. 20, cu piscină interioară, saune, sală de forță și bistro în clădire. Rezervi direct de la proprietari, fără comision.</p>
+      </div>
+      <div class="gh-cta-btns">
+        <a class="btn btn-primary" href="/#apartamente">Vezi apartamentele</a>
+        <a class="btn btn-outline" href="/abonamente/#spa">Piscină &amp; Spa</a>
+      </div>
+    </aside>
+  </div>
+  {% if rest.length %}
+  <div class="wrap gh-more">
+    <h2>Mai citește</h2>
+    <div class="gh-grid">
+      {% for a in rest | reverse %}{% if loop.index <= 3 %}
+      <a class="gh-card" href="{{ a.url }}"><img src="{{ a.data.imagine }}" alt="" loading="lazy"><span><b>{{ a.data.titlu }}</b><small>{{ a.data.rezumat }}</small></span></a>
+      {% endif %}{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</main>

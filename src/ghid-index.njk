@@ -1,0 +1,21 @@
+---
+layout: base.njk
+lang: ro
+permalink: /ghid/
+title: "Ghid Sinaia: cazare, piscină, spa și ce să vezi | Green Future Sinaia"
+description: "Ghid practic pentru Sinaia: unde găsești cazare cu piscină interioară, spa și sală de fitness, cum alegi un aparthotel și ce să vezi într-un weekend."
+---
+<main class="block gh-index">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Ghid Sinaia</span>
+      <h1>Ghid pentru o ședere în Sinaia</h1>
+      <p>Sfaturi practice despre cazare, piscină și spa, sală de fitness, unde mănânci și ce vezi în oraș și pe munte.</p>
+    </div>
+    <div class="gh-grid">
+      {% for a in collections.ghid | reverse %}
+      <a class="gh-card" href="{{ a.url }}"><img src="{{ a.data.imagine }}" alt="" loading="lazy"><span><b>{{ a.data.titlu }}</b><small>{{ a.data.rezumat }}</small></span></a>
+      {% endfor %}
+    </div>
+  </div>
+</main>

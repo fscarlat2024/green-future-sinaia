@@ -152,6 +152,9 @@ eleventyComputed:
       {% endfor %}
     </div>
     <p class="attr-note">{{ t.sinaia_attr }} · {{ t.act_note }}</p>
+    {% if lang == "ro" and collections.ghid and collections.ghid.length %}
+    <div class="gh-home-link"><div class="gh-grid">{% for a in collections.ghid | reverse %}{% if loop.index <= 3 %}<a class="gh-card" href="{{ a.url }}"><img src="{{ a.data.imagine }}" alt="" loading="lazy"><span><b>{{ a.data.titlu }}</b><small>{{ a.data.rezumat }}</small></span></a>{% endif %}{% endfor %}</div><p style="margin-top:1rem"><a class="btn btn-outline" href="/ghid/">Toate articolele din Ghid Sinaia</a></p></div>
+    {% endif %}
   </div>
 </section>
 
