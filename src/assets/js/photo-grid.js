@@ -56,6 +56,8 @@
     if (!photos.length) return;
     const tile = (k, cls, eager) => {
       const b = el("button", `pg-tile ${cls}`, img(photos[k], `${o.name} ${k + 1}`, eager));
+      // poza intreaga (fara taiere), cu aceeasi poza estompata pe fundal ca sa umple spatiul
+      b.style.setProperty("--bg", `url("${photos[k]}")`);
       b.type = "button";
       b.setAttribute("aria-label", `${o.name}, ${k + 1} / ${photos.length}`);
       b.addEventListener("click", () => lightbox(photos, o.name, k));

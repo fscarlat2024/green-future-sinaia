@@ -780,7 +780,8 @@ html.gf-app .acc-page { padding-top: 1.5rem; }
 .pg-big { grid-row: 1 / -1; }
 .pg-thumbs { display: grid; gap: .35rem; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .pg-tile { position: relative; display: block; padding: 0; border: 0; border-radius: var(--radius); overflow: hidden; background: var(--surface-2); cursor: zoom-in; min-height: 0; }
-.pg-tile img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease, filter .2s ease; }
+.pg-tile::before { content: ""; position: absolute; inset: -12px; background: var(--bg) center / cover no-repeat; filter: blur(14px) brightness(.55); }
+.pg-tile img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; transition: transform .35s ease, filter .2s ease; }
 .pg-tile:hover img { transform: scale(1.03); filter: brightness(1.05); }
 .pg-thumb { aspect-ratio: 4 / 3; }
 .pg-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8, 12, 9, .55); color: #fff; font-weight: 600; font-size: clamp(.72rem, 2.6vw, 1.05rem); text-decoration: underline; text-underline-offset: 3px; }
