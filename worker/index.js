@@ -1121,8 +1121,8 @@ async function translateListing(env, slug) {
 // textele pentru pagina in engleza; ce nu s-a tradus inca ramane in romana
 // facilitatile complexului apar la toate apartamentele, chiar daca proprietarul nu le-a scris
 const COMPLEX_AMEN = {
-  ro: [[/piscin|spa/i, "Piscină interioară, jacuzzi și saune (contra cost)"], [/fitness|sal[aă] de for/i, "Sală de fitness (contra cost)"]],
-  en: [[/pool|spa/i, "Indoor pool, jacuzzi and saunas (extra fee)"], [/fitness|gym/i, "Fitness room (extra fee)"]],
+  ro: [[/piscin/i, "Piscină interioară (contra cost)"], [/(^|\s)spa(\s|:|,|$)|saun|jacuzzi/i, "Spa: saune și jacuzzi (contra cost)"], [/fitness|sal[aă] de for/i, "Sală de fitness (contra cost)"]],
+  en: [[/pool/i, "Indoor pool (extra fee)"], [/(^|\s)spa(\s|:|,|$)|sauna|jacuzzi|hot tub/i, "Spa: saunas and jacuzzi (extra fee)"], [/fitness|gym/i, "Fitness room (extra fee)"]],
 };
 function withComplex(list, lang) {
   const out = [...(list || [])];

@@ -555,6 +555,7 @@
   // tine lista intr-un textarea ascuns (name="amenities"), ca formularele sa o citeasca la fel ca inainte
   // facilitatile cele mai des intalnite: se bifeaza; restul se scriu in campul de jos
   const COMMON_AMEN = [
+    "Piscină interioară (contra cost)", "Spa: saune și jacuzzi (contra cost)", "Sală de fitness (contra cost)",
     "Wi-Fi", "Smart TV", "Bucătărie complet utilată", "Espressor", "Mașină de spălat vase", "Mașină de spălat rufe",
     "Uscător de rufe", "Fier de călcat", "Uscător de păr", "Aer condiționat", "Balcon", "Terasă", "Vedere la munte",
     "Parcare gratuită", "Parcare subterană", "Lift", "Lenjerie și prosoape incluse", "Pat matrimonial", "Canapea extensibilă",
@@ -593,7 +594,7 @@
     };
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
     draw();
-    return h("div", { class: "bk-field" }, h("span", null, "Facilități (bifează ce ai; piscina, spa-ul și sala apar automat)"),
+    return h("div", { class: "bk-field" }, h("span", null, "Facilități (bifează ce ai)"),
       h("div", { class: "adm-ticks" }, boxes.map((b) => b.el)),
       h("span", { class: "adm-sub" }, "Altele, scrise de tine"), chips,
       h("div", { class: "adm-chip-add" }, input, h("button", { type: "button", class: "btn btn-ghost", on: { click: add } }, "Adaugă")), hidden);
